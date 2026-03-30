@@ -20,6 +20,7 @@ html, body, #app {
   display: flex;
   align-items: center;
   background: #111;
+  width: 100%;
 }
 
 .board-qr {
@@ -51,6 +52,12 @@ html, body, #app {
 .board-game {
   flex: 1;
   min-height: 0;
+  width: 100%;
+}
+
+.board-game canvas {
+  margin: 0 !important;
+  display: block;
 }
 
 button {
