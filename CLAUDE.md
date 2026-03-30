@@ -33,6 +33,7 @@ Online multiplayer racing card game inspired by Mario Kart and Slay the Spire 2.
 ## Development Guidelines
 
 - **Commit style**: Small, focused commits — baby steps. Each commit should be understandable on its own.
+- **Always commit**: After completing a change, immediately create a git commit. Never leave changes uncommitted.
 - **Tests**: Write automated tests as much as possible to support a fast-growing codebase.
 - **Game state**: Defined as a data structure on the backend (Colyseus schema).
 
