@@ -93,12 +93,12 @@ class GameRoom extends Room {
       if (droppedBanana !== null) this.broadcastBananas();
       this.broadcastPlayers();
 
-      // Check if player landed on banana(s)
-      const bananaCount = this.bananas[player.cellId] || 0;
-      if (bananaCount > 0) {
-        delete this.bananas[player.cellId];
+      // Check if player landed on a banana
+      if (this.bananas[player.cellId] > 0) {
+        this.bananas[player.cellId]--;
+        if (this.bananas[player.cellId] === 0) delete this.bananas[player.cellId];
         this.broadcastBananas();
-        player.pendingBananaDiscards = bananaCount;
+        player.pendingBananaDiscards = 1;
         let autoDrawn = null;
         if (player.hand.length === 0) {
           const totalAvailable = player.drawPile.length + player.discardPile.length;
@@ -108,15 +108,15 @@ class GameRoom extends Room {
         }
         client.send("bananaHit", {
           cellId: player.cellId,
-          count: bananaCount,
-          mustDiscard: bananaCount,
+          count: 1,
+          mustDiscard: 1,
           autoDrawn,
           ...this._cardState(player),
         });
         this.broadcast("bananaHitBoard", {
           playerId: player.playerId,
           cellId: player.cellId,
-          count: bananaCount,
+          count: 1,
         });
       }
     });

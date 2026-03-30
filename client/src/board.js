@@ -112,8 +112,8 @@ export function initBoard(gameId) {
 
     onResize() {
       this.layoutTrack();
-      this.refreshBananaPositions();
       this.refreshPlayerPositions();
+      this.snapCellLayout();
     }
 
     cellSlotPos(cellId, slotIndex, totalSlots) {
@@ -166,39 +166,50 @@ export function initBoard(gameId) {
       }
     }
 
-    tweenPlayersToGrid() {
+    tweenCellLayout() {
       const cellW = this.track.displayWidth / 5;
       const helmetSlot = cellW / 4.5;
       const helmetDisplaySize = helmetSlot * 0.9;
+      const bananaSize = helmetSlot * 0.9;
 
+      // Collect all cells that have players or bananas
+      const allCells = new Set();
       const byCell = new Map();
       for (const p of (this.latestPlayers || [])) {
         if (!p.playerId || !CELL_POSITIONS[p.cellId]) continue;
+        allCells.add(p.cellId);
         if (!byCell.has(p.cellId)) byCell.set(p.cellId, []);
         byCell.get(p.cellId).push(p);
       }
+      for (const cellIdStr of Object.keys(this.latestBananas || {})) {
+        allCells.add(Number(cellIdStr));
+      }
 
-      for (const [cellId, cellPlayers] of byCell) {
-        const { total } = this.cellOccupantCount(cellId);
+      for (const cellId of allCells) {
+        if (!CELL_POSITIONS[cellId]) continue;
+        const { playerCount, total } = this.cellOccupantCount(cellId);
+        const cellPlayers = byCell.get(cellId) || [];
+
+        // Tween players to their grid slots
         cellPlayers.forEach((p, i) => {
           const { x, y } = this.cellSlotPos(cellId, i, total);
           const helmet = this.helmets.get(p.playerId);
           const label = this.nameLabels.get(p.playerId);
           if (!helmet) return;
           if (helmet.x !== x || helmet.y !== y) {
-            this.tweens.add({
-              targets: helmet,
-              x, y,
-              duration: 300,
-              ease: "Power2",
-            });
-            this.tweens.add({
-              targets: label,
-              x, y: y - helmetDisplaySize * 0.7,
-              duration: 300,
-              ease: "Power2",
-            });
+            this.tweens.add({ targets: helmet, x, y, duration: 300, ease: "Power2" });
+            this.tweens.add({ targets: label, x, y: y - helmetDisplaySize * 0.7, duration: 300, ease: "Power2" });
           }
+        });
+
+        // Tween bananas to their grid slots (after players)
+        const sprites = this.bananaSprites.get(cellId) || [];
+        sprites.forEach((sprite, i) => {
+          const { x, y } = this.cellSlotPos(cellId, playerCount + i, total);
+          if (sprite.x !== x || sprite.y !== y) {
+            this.tweens.add({ targets: sprite, x, y, duration: 300, ease: "Power2" });
+          }
+          sprite.setScale(bananaSize / sprite.width);
         });
       }
     }
@@ -215,7 +226,7 @@ export function initBoard(gameId) {
       });
       room.onMessage("bananas", (bananas) => {
         this.updateBananas(bananas);
-        this.tweenPlayersToGrid();
+        this.tweenCellLayout();
       });
       room.onMessage("bananaHitBoard", (data) => {
         this.animateBananaHit(data.playerId, data.cellId);
@@ -224,9 +235,6 @@ export function initBoard(gameId) {
 
     updateBananas(bananas) {
       this.latestBananas = bananas;
-      const cellW = this.track.displayWidth / 5;
-      const helmetSlot = cellW / 4.5;
-      const bananaSize = helmetSlot * 0.9;
 
       // Remove sprites for cells no longer in bananas
       for (const [cellId, sprites] of this.bananaSprites) {
@@ -236,37 +244,37 @@ export function initBoard(gameId) {
         }
       }
 
-      // Create or update sprites per cell
+      // Create or destroy sprites to match counts (positioning done by tweenCellLayout)
       for (const [cellIdStr, count] of Object.entries(bananas)) {
         const cellId = Number(cellIdStr);
         if (!CELL_POSITIONS[cellId]) continue;
         const existing = this.bananaSprites.get(cellId) || [];
-
-        // Remove excess sprites
         while (existing.length > count) {
           existing.pop().destroy();
         }
-        // Add missing sprites
         while (existing.length < count) {
-          const sprite = this.add.image(0, 0, "banana");
-          sprite.setScale(bananaSize / sprite.width);
+          const center = this.cellPixelPos(cellId);
+          const sprite = this.add.image(center.x, center.y, "banana");
           sprite.setDepth(0);
           existing.push(sprite);
         }
-        // Position bananas after players in the shared grid
-        const { playerCount, total } = this.cellOccupantCount(cellId);
-        existing.forEach((sprite, i) => {
-          const { x, y } = this.cellSlotPos(cellId, playerCount + i, total);
-          sprite.setPosition(x, y);
-          sprite.setScale(bananaSize / sprite.width);
-        });
-
         this.bananaSprites.set(cellId, existing);
       }
     }
 
-    refreshBananaPositions() {
-      if (this.latestBananas) this.updateBananas(this.latestBananas);
+    snapCellLayout() {
+      const cellW = this.track.displayWidth / 5;
+      const helmetSlot = cellW / 4.5;
+      const bananaSize = helmetSlot * 0.9;
+
+      for (const [cellId, sprites] of this.bananaSprites) {
+        const { playerCount, total } = this.cellOccupantCount(cellId);
+        sprites.forEach((sprite, i) => {
+          const { x, y } = this.cellSlotPos(cellId, playerCount + i, total);
+          sprite.setPosition(x, y);
+          sprite.setScale(bananaSize / sprite.width);
+        });
+      }
     }
 
     animateBananaHit(playerId, cellId) {
@@ -435,8 +443,8 @@ export function initBoard(gameId) {
         }
       }
 
-      // Reposition bananas since the shared grid may have changed
-      this.refreshBananaPositions();
+      // Reposition all cell occupants since the shared grid may have changed
+      this.tweenCellLayout();
     }
   }
 
