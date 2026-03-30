@@ -60,45 +60,42 @@ async function animateDrawCards(cards, startIndex = 0) {
     handArea.innerHTML = "";
   }
 
-  // Create card elements invisibly to get target positions
-  const totalInHand = startIndex + cards.length;
-  const angleStep = 10;
-  const imgs = cards.map((card, i) => {
-    const idx = startIndex + i;
+  // Animate each card one by one: add to DOM, recompute fan, fly in
+  for (let i = 0; i < cards.length; i++) {
+    const card = cards[i];
     const img = document.createElement("img");
     img.src = CARD_ASSETS[card.type];
     img.className = "card";
     img.dataset.cardId = card.id;
-    const offset = idx - (totalInHand - 1) / 2;
-    const rotation = offset * angleStep;
-    const lift = Math.abs(offset) * 8;
-    img.dataset.fanTransform = `rotate(${rotation}deg) translateY(${lift}px)`;
     img.style.visibility = "hidden";
-    img.style.transform = img.dataset.fanTransform;
+    img.style.transform = "rotate(0deg) translateY(0px)";
     handArea.appendChild(img);
-    return img;
-  });
 
-  // Recompute fan transforms for ALL cards in hand (including earlier ones)
-  const allCards = Array.from(handArea.children);
-  allCards.forEach((img, idx) => {
-    const offset = idx - (totalInHand - 1) / 2;
-    const rotation = offset * angleStep;
-    const lift = Math.abs(offset) * 8;
-    img.dataset.fanTransform = `rotate(${rotation}deg) translateY(${lift}px)`;
+    // Recompute fan for all visible cards + this new one
+    const allCards = Array.from(handArea.children);
+    const visibleCount = allCards.length;
+    const angleStep = 10;
+    allCards.forEach((el, idx) => {
+      const offset = idx - (visibleCount - 1) / 2;
+      const rotation = offset * angleStep;
+      const lift = Math.abs(offset) * 8;
+      el.dataset.fanTransform = `rotate(${rotation}deg) translateY(${lift}px)`;
+      // Existing visible cards animate via CSS transition
+      if (el !== img) {
+        el.style.transform = el.dataset.fanTransform;
+      }
+    });
+
+    // Set the new card's transform to get its target position
     img.style.transform = img.dataset.fanTransform;
-  });
-
-  // Animate each new card from draw pile to its position
-  for (let i = 0; i < imgs.length; i++) {
-    const img = imgs[i];
     const targetRect = img.getBoundingClientRect();
 
-    // Update draw pile count as cards leave
+    // Update draw pile count
     animDrawCount--;
     renderPileContent("draw-pile-content", animDrawCount, "Draw pile", "/card - back.svg");
     updatePileCount("draw-count", animDrawCount);
 
+    // Create flying card from draw pile
     const flyer = document.createElement("img");
     flyer.src = "/card - back.svg";
     flyer.className = "card-anim";
@@ -124,6 +121,20 @@ async function animateDrawCards(cards, startIndex = 0) {
     flyer.addEventListener("transitionend", () => flyer.remove(), { once: true });
     setTimeout(() => flyer.remove(), 400);
   }
+}
+
+function recomputeFan() {
+  const handArea = document.getElementById("hand-area");
+  const cards = Array.from(handArea.querySelectorAll(".card:not([style*='visibility: hidden'])"));
+  const n = cards.length;
+  const angleStep = 10;
+  cards.forEach((img, i) => {
+    const offset = i - (n - 1) / 2;
+    const rotation = offset * angleStep;
+    const lift = Math.abs(offset) * 8;
+    img.dataset.fanTransform = `rotate(${rotation}deg) translateY(${lift}px)`;
+    img.style.transform = img.dataset.fanTransform;
+  });
 }
 
 function renderHand(hand) {
@@ -421,8 +432,14 @@ function startGame(gameId, name, existingPlayerId) {
 
       room.onMessage("cardPlayed", (data) => {
         playing = false;
+        // Remove drag clone
         document.querySelectorAll("body > .card").forEach((el) => el.remove());
-        renderHand(data.hand);
+        // Remove the played card from the hand
+        const handArea = document.getElementById("hand-area");
+        const played = handArea.querySelector(`[data-card-id="${data.cardId}"]`);
+        if (played) played.remove();
+        // Animate remaining cards to new fan positions
+        recomputeFan();
         updatePiles(data);
       });
 
