@@ -281,6 +281,9 @@ export function initBoard(gameId) {
       banana.setScale(size / banana.width);
       banana.setDepth(10);
 
+      // After move completes, rearrange remaining occupants on the cell
+      this.time.delayedCall(moveDelay, () => this.tweenCellLayout());
+
       // After move: helmet jumps up/down with one rotation + banana launches out
       this.tweens.add({
         targets: helmet,
