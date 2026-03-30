@@ -103,6 +103,12 @@ input {
   flex-shrink: 0;
 }
 
+.pile-icon {
+  width: 50px;
+  border-radius: 4px;
+  opacity: 0.6;
+}
+
 .pile-count {
   font-size: 1.2em;
   font-weight: bold;

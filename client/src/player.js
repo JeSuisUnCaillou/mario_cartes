@@ -4,6 +4,9 @@ const CARD_ASSETS = {
   move_forward_1: "/card - move forward.svg",
 };
 
+let playing = false;
+let currentRoom = null;
+
 function renderHand(hand) {
   const handArea = document.getElementById("hand-area");
   handArea.innerHTML = "";
@@ -18,8 +21,98 @@ function renderHand(hand) {
     const rotation = offset * angleStep;
     const lift = -Math.abs(offset) * 5;
     img.style.transform = `rotate(${rotation}deg) translateY(${lift}px)`;
+    img.dataset.fanTransform = img.style.transform;
+    addDragListeners(img);
     handArea.appendChild(img);
   });
+}
+
+function getPointerPos(e) {
+  if (e.touches) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  return { x: e.clientX, y: e.clientY };
+}
+
+function addDragListeners(card) {
+  let startX, startY, origLeft, origTop;
+
+  function onStart(e) {
+    if (playing) return;
+    e.preventDefault();
+    const pos = getPointerPos(e);
+    const rect = card.getBoundingClientRect();
+    startX = pos.x;
+    startY = pos.y;
+    origLeft = rect.left;
+    origTop = rect.top;
+
+    card.style.position = "fixed";
+    card.style.left = origLeft + "px";
+    card.style.top = origTop + "px";
+    card.style.transform = "scale(1.1)";
+    card.style.zIndex = "1000";
+    card.style.margin = "0";
+    card.style.transition = "none";
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onEnd);
+    document.addEventListener("touchmove", onMove, { passive: false });
+    document.addEventListener("touchend", onEnd);
+  }
+
+  function onMove(e) {
+    e.preventDefault();
+    const pos = getPointerPos(e);
+    const dx = pos.x - startX;
+    const dy = pos.y - startY;
+    card.style.left = (origLeft + dx) + "px";
+    card.style.top = (origTop + dy) + "px";
+  }
+
+  function onEnd(e) {
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onEnd);
+    document.removeEventListener("touchmove", onMove);
+    document.removeEventListener("touchend", onEnd);
+
+    const endPos = e.changedTouches ? e.changedTouches[0] : e;
+    const playZone = document.getElementById("play-zone");
+    const zoneRect = playZone.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    const cardCenterX = cardRect.left + cardRect.width / 2;
+    const cardCenterY = cardRect.top + cardRect.height / 2;
+
+    const hit =
+      cardCenterX >= zoneRect.left &&
+      cardCenterX <= zoneRect.right &&
+      cardCenterY >= zoneRect.top &&
+      cardCenterY <= zoneRect.bottom;
+
+    if (hit) {
+      playing = true;
+      card.style.transition = "all 0.3s ease";
+      card.style.left = (zoneRect.left + zoneRect.width / 2 - cardRect.width / 2) + "px";
+      card.style.top = (zoneRect.top + zoneRect.height / 2 - cardRect.height / 2) + "px";
+      card.style.transform = "scale(1)";
+
+      setTimeout(() => {
+        if (currentRoom) {
+          currentRoom.send("playCard", { cardId: card.dataset.cardId });
+        }
+      }, 500);
+    } else {
+      // Animate back to fan position
+      card.style.position = "";
+      card.style.left = "";
+      card.style.top = "";
+      card.style.zIndex = "";
+      card.style.margin = "";
+      card.style.transition = "";
+      card.style.transform = card.dataset.fanTransform;
+    }
+  }
+
+  card.addEventListener("mousedown", onStart);
+  card.addEventListener("touchstart", onStart, { passive: false });
 }
 
 function updatePiles({ drawCount, discardCount }) {
@@ -93,11 +186,13 @@ function startGame(gameId, name, existingPlayerId) {
       </div>
       <div class="cards-zone">
         <div id="draw-pile" class="draw-pile">
+          <img class="pile-icon" src="/card - back.svg" alt="Draw pile" />
           <div class="pile-count" id="draw-count">8</div>
           <button id="draw-btn" class="draw-btn">Draw</button>
         </div>
         <div id="hand-area" class="hand-area"></div>
         <div id="discard-pile" class="discard-pile">
+          <img class="pile-icon" src="/card - move forward.svg" alt="Discard pile" />
           <div class="pile-count" id="discard-count">0</div>
         </div>
       </div>
@@ -133,7 +228,15 @@ function startGame(gameId, name, existingPlayerId) {
         localStorage.setItem(playerIdKey, id);
       });
 
+      currentRoom = room;
+
       room.onMessage("cardsDrawn", (data) => {
+        renderHand(data.hand);
+        updatePiles(data);
+      });
+
+      room.onMessage("cardPlayed", (data) => {
+        playing = false;
         renderHand(data.hand);
         updatePiles(data);
       });
