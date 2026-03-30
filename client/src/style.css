@@ -254,3 +254,18 @@ input {
 .card-flyer-front {
   transform: rotateY(180deg);
 }
+
+.banana-throw {
+  animation: banana-throw 0.6s ease-out forwards;
+}
+
+@keyframes banana-throw {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-200px) scale(0.6);
+    opacity: 0;
+  }
+}

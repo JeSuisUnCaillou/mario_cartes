@@ -504,6 +504,24 @@ function startGame(gameId, name, existingPlayerId) {
         // Animate remaining cards from old positions to new fan positions
         recomputeFan(positions);
 
+        // Banana throw animation if server dropped a banana
+        if (data.droppedBanana !== null && data.droppedBanana !== undefined) {
+          const playZone = document.getElementById("play-zone");
+          const zoneRect = playZone.getBoundingClientRect();
+          const banana = document.createElement("img");
+          banana.src = "/banana.svg";
+          banana.className = "banana-throw";
+          banana.style.position = "fixed";
+          banana.style.width = "60px";
+          banana.style.height = "auto";
+          banana.style.left = (zoneRect.left + zoneRect.width / 2 - 30) + "px";
+          banana.style.top = (zoneRect.top + zoneRect.height / 2 - 30) + "px";
+          banana.style.zIndex = "999";
+          banana.style.pointerEvents = "none";
+          document.body.appendChild(banana);
+          banana.addEventListener("animationend", () => banana.remove(), { once: true });
+        }
+
         // Animate drag clone from play zone to discard pile
         const discardEl = document.getElementById("discard-pile");
         const discardRect = discardEl.getBoundingClientRect();
