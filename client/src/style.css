@@ -43,12 +43,6 @@ html, body, #app {
   letter-spacing: 0.1em;
 }
 
-.board-title-room {
-  font-size: 1.4em;
-  color: #aaa;
-  margin-top: 8px;
-}
-
 .board-game {
   flex: 1;
   min-height: 0;

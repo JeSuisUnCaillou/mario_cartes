@@ -37,11 +37,7 @@ function createInfoBar(gameId) {
   const title = document.createElement("div");
   title.className = "board-title-name";
   title.textContent = "Mario Cartes";
-  const roomId = document.createElement("div");
-  roomId.className = "board-title-room";
-  roomId.textContent = `Room: ${gameId}`;
   titleContainer.appendChild(title);
-  titleContainer.appendChild(roomId);
   bar.appendChild(titleContainer);
 
   const playerUrl = `${location.origin}/game/${gameId}/player`;
