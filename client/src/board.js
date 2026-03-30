@@ -72,20 +72,38 @@ export function initBoard(gameId) {
     updatePlayers(players) {
       const activePlayers = new Set();
 
+      const byCell = new Map();
       for (const p of players) {
         if (p.type !== "player") continue;
         activePlayers.add(p.sessionId);
+        if (!byCell.has(p.cellId)) byCell.set(p.cellId, []);
+        byCell.get(p.cellId).push(p);
+      }
 
-        const { x, y } = this.cellPixelPos(p.cellId);
+      const cellW = this.track.displayWidth / 5;
+      const maxPerRow = 4;
+      const helmetSlot = cellW / 4.5;
+      const helmetDisplaySize = helmetSlot * 0.9;
 
-        if (this.helmets.has(p.sessionId)) {
-          this.helmets.get(p.sessionId).setPosition(x, y);
-        } else {
-          const helmet = this.add.image(x, y, "helmet");
-          const cellSize = this.track.displayWidth / 5;
-          helmet.setScale((cellSize * 0.6) / (helmet.width / (window.devicePixelRatio || 1)));
-          this.helmets.set(p.sessionId, helmet);
-        }
+      for (const [cellId, cellPlayers] of byCell) {
+        const center = this.cellPixelPos(cellId);
+        const cols = Math.min(cellPlayers.length, maxPerRow);
+        const rows = Math.ceil(cellPlayers.length / maxPerRow);
+
+        cellPlayers.forEach((p, i) => {
+          const col = i % maxPerRow;
+          const row = Math.floor(i / maxPerRow);
+          const x = center.x + (col - (cols - 1) / 2) * helmetSlot;
+          const y = center.y + (row - (rows - 1) / 2) * helmetSlot;
+
+          if (this.helmets.has(p.sessionId)) {
+            this.helmets.get(p.sessionId).setPosition(x, y);
+          } else {
+            const helmet = this.add.image(x, y, "helmet");
+            helmet.setScale(helmetDisplaySize / helmet.width);
+            this.helmets.set(p.sessionId, helmet);
+          }
+        });
       }
 
       for (const [sessionId, helmet] of this.helmets) {
