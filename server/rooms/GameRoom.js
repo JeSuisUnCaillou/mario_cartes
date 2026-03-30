@@ -112,6 +112,11 @@ class GameRoom extends Room {
           autoDrawn,
           ...this._cardState(player),
         });
+        this.broadcast("bananaHitBoard", {
+          playerId: player.playerId,
+          cellId: player.cellId,
+          count: bananaCount,
+        });
       }
     });
 

@@ -84,7 +84,7 @@ export function initBoard(gameId) {
       const trackH = Math.round(maxDim / SVG_ASPECT);
       this.load.svg("racetrack", "/racetrack_0.svg", { width: trackW, height: trackH });
       this.load.svg("helmet", "/helmet.svg", { width: 64, height: 64 });
-      this.load.svg("banana", "/banana.svg", { width: 48, height: 48 });
+      this.load.svg("banana", "/banana.svg", { width: 128, height: 128 });
       this.load.image("space", "/space.jpg");
     }
 
@@ -164,11 +164,16 @@ export function initBoard(gameId) {
       room.onMessage("bananas", (bananas) => {
         this.updateBananas(bananas);
       });
+      room.onMessage("bananaHitBoard", (data) => {
+        this.animateBananaHit(data.playerId, data.cellId);
+      });
     }
 
     updateBananas(bananas) {
       this.latestBananas = bananas;
-      const bananaSize = this.track.displayWidth / 12;
+      const cellW = this.track.displayWidth / 5;
+      const helmetSlot = cellW / 4.5;
+      const bananaSize = helmetSlot * 0.9;
 
       // Remove sprites for cells no longer in bananas
       for (const [cellId, sprites] of this.bananaSprites) {
@@ -209,6 +214,58 @@ export function initBoard(gameId) {
 
     refreshBananaPositions() {
       if (this.latestBananas) this.updateBananas(this.latestBananas);
+    }
+
+    animateBananaHit(playerId, cellId) {
+      const helmet = this.helmets.get(playerId);
+      const label = this.nameLabels.get(playerId);
+      if (!helmet) return;
+
+      // Helmet: jump up then land, spin twice
+      const baseY = helmet.y;
+      const jumpHeight = helmet.displayHeight * 1.5;
+      this.tweens.add({
+        targets: helmet,
+        y: baseY - jumpHeight,
+        duration: 300,
+        ease: "Power2",
+        yoyo: true,
+      });
+      this.tweens.add({
+        targets: helmet,
+        angle: 720,
+        duration: 600,
+        ease: "Linear",
+        onComplete: () => { helmet.setAngle(0); },
+      });
+      if (label) {
+        const labelBaseY = label.y;
+        this.tweens.add({
+          targets: label,
+          y: labelBaseY - jumpHeight,
+          duration: 300,
+          ease: "Power2",
+          yoyo: true,
+        });
+      }
+
+      // Banana: create a temporary sprite at the cell and launch it upward
+      const center = this.cellPixelPos(cellId);
+      const cellW = this.track.displayWidth / 5;
+      const helmetSlot = cellW / 4.5;
+      const size = helmetSlot * 0.9;
+      const banana = this.add.image(center.x, center.y, "banana");
+      banana.setScale(size / banana.width);
+      banana.setDepth(10);
+      this.tweens.add({
+        targets: banana,
+        y: center.y - this.scale.height * 0.6,
+        angle: 360,
+        alpha: 0,
+        duration: 700,
+        ease: "Power2",
+        onComplete: () => { banana.destroy(); },
+      });
     }
 
     cellPixelPos(cellId) {
