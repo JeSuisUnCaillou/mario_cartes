@@ -34,6 +34,7 @@ export function initBoard(gameId) {
     constructor() {
       super("GameScene");
       this.helmets = new Map();
+      this.nameLabels = new Map();
     }
 
     preload() {
@@ -106,10 +107,21 @@ export function initBoard(gameId) {
 
           if (this.helmets.has(p.sessionId)) {
             this.helmets.get(p.sessionId).setPosition(x, y);
+            this.nameLabels.get(p.sessionId).setPosition(x, y - helmetDisplaySize * 0.7);
           } else {
             const helmet = this.add.image(x, y, "helmet");
             helmet.setScale(helmetDisplaySize / helmet.width);
             this.helmets.set(p.sessionId, helmet);
+
+            const label = this.add.text(x, y - helmetDisplaySize * 0.7, p.name || "???", {
+              fontFamily: "monospace",
+              fontSize: `${Math.round(helmetDisplaySize * 0.45)}px`,
+              color: "#ffffff",
+              stroke: "#000000",
+              strokeThickness: 3,
+              align: "center",
+            }).setOrigin(0.5, 1);
+            this.nameLabels.set(p.sessionId, label);
           }
         });
       }
@@ -118,6 +130,8 @@ export function initBoard(gameId) {
         if (!activePlayers.has(sessionId)) {
           helmet.destroy();
           this.helmets.delete(sessionId);
+          this.nameLabels.get(sessionId).destroy();
+          this.nameLabels.delete(sessionId);
         }
       }
     }
