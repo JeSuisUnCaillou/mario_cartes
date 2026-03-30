@@ -123,42 +123,49 @@ async function animateDrawCards(cards, startIndex = 0) {
   }
 }
 
-function recomputeFan() {
+function captureHandPositions() {
+  const handArea = document.getElementById("hand-area");
+  const cards = Array.from(handArea.querySelectorAll(".card"));
+  const positions = new Map();
+  cards.forEach((img) => {
+    positions.set(img.dataset.cardId, img.getBoundingClientRect());
+  });
+  return positions;
+}
+
+function recomputeFan(previousPositions) {
   const handArea = document.getElementById("hand-area");
   const cards = Array.from(handArea.querySelectorAll(".card:not([style*='visibility: hidden'])"));
   const n = cards.length;
   const angleStep = 10;
 
-  // FLIP: First — record current screen positions
-  const firstRects = cards.map((img) => img.getBoundingClientRect());
-
-  // Compute new fan transforms
+  // Compute and apply new fan transforms without transition
   cards.forEach((img, i) => {
+    img.style.transition = "none";
     const offset = i - (n - 1) / 2;
     const rotation = offset * angleStep;
     const lift = Math.abs(offset) * 8;
     img.dataset.fanTransform = `rotate(${rotation}deg) translateY(${lift}px)`;
-  });
-
-  // Apply new transforms without transition to get final positions
-  cards.forEach((img) => {
-    img.style.transition = "none";
     img.style.transform = img.dataset.fanTransform;
   });
 
-  // FLIP: Last — record new screen positions, Invert — offset to old positions
-  cards.forEach((img, i) => {
-    const lastRect = img.getBoundingClientRect();
-    const dx = firstRects[i].left - lastRect.left;
-    const dy = firstRects[i].top - lastRect.top;
-    // Jump back to old visual position
-    img.style.transform = `translate(${dx}px, ${dy}px) ${img.dataset.fanTransform}`;
-  });
+  // FLIP: Invert — if we have previous positions, offset cards back to where they were
+  if (previousPositions) {
+    cards.forEach((img) => {
+      const oldRect = previousPositions.get(img.dataset.cardId);
+      if (oldRect) {
+        const newRect = img.getBoundingClientRect();
+        const dx = oldRect.left - newRect.left;
+        const dy = oldRect.top - newRect.top;
+        img.style.transform = `translate(${dx}px, ${dy}px) ${img.dataset.fanTransform}`;
+      }
+    });
+  }
 
   // FLIP: Play — force reflow then animate to final positions
   handArea.getBoundingClientRect();
   cards.forEach((img) => {
-    img.style.transition = "transform 0.4s ease-in-out";
+    img.style.transition = "transform 0.4s ease-in-out, margin-left 0.4s ease-in-out";
     img.style.transform = img.dataset.fanTransform;
   });
 }
@@ -460,12 +467,14 @@ function startGame(gameId, name, existingPlayerId) {
         playing = false;
         // Remove drag clone
         document.querySelectorAll("body > .card").forEach((el) => el.remove());
+        // Capture positions BEFORE removing the card
+        const positions = captureHandPositions();
         // Remove the played card from the hand
         const handArea = document.getElementById("hand-area");
         const played = handArea.querySelector(`[data-card-id="${data.cardId}"]`);
         if (played) played.remove();
-        // Animate remaining cards to new fan positions
-        recomputeFan();
+        // Animate remaining cards from old positions to new fan positions
+        recomputeFan(positions);
         updatePiles(data);
       });
 
