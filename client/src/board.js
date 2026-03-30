@@ -128,9 +128,19 @@ export function initBoard(gameId) {
                 ease: "Power2",
               });
               this.playerCells.set(p.playerId, p.cellId);
-            } else {
-              helmet.setPosition(x, y);
-              label.setPosition(x, y - helmetDisplaySize * 0.7);
+            } else if (helmet.x !== x || helmet.y !== y) {
+              this.tweens.add({
+                targets: helmet,
+                x, y,
+                duration: 300,
+                ease: "Power2",
+              });
+              this.tweens.add({
+                targets: label,
+                x, y: y - helmetDisplaySize * 0.7,
+                duration: 300,
+                ease: "Power2",
+              });
             }
           } else {
             const helmet = this.add.image(x, y, "helmet");
