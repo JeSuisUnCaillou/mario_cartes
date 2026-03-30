@@ -82,6 +82,7 @@ export function initBoard(gameId) {
 
       const byCell = new Map();
       for (const p of players) {
+        if (!p.playerId || !CELL_POSITIONS[p.cellId]) continue;
         activePlayerIds.add(p.playerId);
         if (!byCell.has(p.cellId)) byCell.set(p.cellId, []);
         byCell.get(p.cellId).push(p);
