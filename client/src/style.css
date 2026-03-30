@@ -35,22 +35,17 @@ input {
   width: fit-content;
 }
 
-.editable-name {
-  cursor: pointer;
-  letter-spacing: 0.15em;
-  border-bottom: 2px solid #888;
-  display: inline-block;
-}
-
 .name-edit-input {
-  font: inherit;
+  font-size: 1.5em;
+  font-weight: bold;
   text-align: center;
-  width: 3ch;
+  width: 3.5ch;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   border: none;
-  border-bottom: 2px solid currentColor;
+  border-bottom: 2px solid #888;
   outline: none;
   background: transparent;
   color: inherit;
+  padding: 0;
 }

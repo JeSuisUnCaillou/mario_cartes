@@ -43,11 +43,17 @@ export function initPlayer(gameId) {
 function startGame(gameId, name) {
   document.getElementById("app").innerHTML = `
     <div class="player-container">
-      <h2 id="player-name" class="editable-name">${name}</h2>
+      <input id="player-name" class="name-edit-input" type="text" maxlength="3" value="${name}" autocomplete="off" />
       <p id="status">Joining…</p>
       <button id="ping-btn" disabled>Ping</button>
     </div>
   `;
+
+  const nameInput = document.getElementById("player-name");
+  nameInput.addEventListener("input", () => {
+    nameInput.value = nameInput.value.toUpperCase().replace(/[^A-Z]/g, "");
+  });
+  nameInput.addEventListener("focus", () => nameInput.select());
 
   const serverUrl = import.meta.env.DEV
     ? "ws://localhost:2567"
@@ -63,45 +69,14 @@ function startGame(gameId, name) {
       btn.addEventListener("click", () => {
         room.send("ping");
       });
-      setupEditableName(room, name);
+
+      nameInput.addEventListener("change", () => {
+        const newName = nameInput.value.trim() || "???";
+        nameInput.value = newName;
+        room.send("changeName", newName);
+      });
     })
     .catch(() => {
       document.getElementById("status").textContent = "Could not connect to the game.";
     });
-}
-
-function setupEditableName(room, currentName) {
-  const nameEl = document.getElementById("player-name");
-
-  nameEl.addEventListener("click", () => {
-    if (nameEl.querySelector("input")) return;
-
-    const input = document.createElement("input");
-    input.type = "text";
-    input.maxLength = 3;
-    input.value = currentName;
-    input.className = "name-edit-input";
-    input.autocomplete = "off";
-
-    input.addEventListener("input", () => {
-      input.value = input.value.toUpperCase().replace(/[^A-Z]/g, "");
-    });
-
-    const commit = () => {
-      const newName = input.value.trim() || currentName;
-      currentName = newName;
-      nameEl.textContent = currentName;
-      room.send("changeName", currentName);
-    };
-
-    input.addEventListener("blur", commit);
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") input.blur();
-    });
-
-    nameEl.textContent = "";
-    nameEl.appendChild(input);
-    input.focus();
-    input.select();
-  });
 }
