@@ -91,7 +91,7 @@ export function initBoard(gameId) {
     }
 
     create() {
-      this.bg = this.add.image(0, 0, "space");
+      this.bg = this.add.image(0, 0, "space").setAlpha(0.6);
       this.track = this.add.image(0, 0, "racetrack");
       this.layoutTrack();
       this.scale.on("resize", this.onResize, this);
@@ -272,7 +272,7 @@ export function initBoard(gameId) {
   new Phaser.Game({
     type: Phaser.AUTO,
     parent: gameContainer,
-    backgroundColor: "#1a1a2e",
+    backgroundColor: "#000000",
     scale: {
       mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,
