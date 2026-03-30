@@ -23,6 +23,7 @@ async function animateShuffle(count) {
   for (let i = 0; i < count; i++) {
     remaining--;
     renderPileContent("discard-pile-content", remaining, "Discard pile", "/card - move forward.svg");
+    updatePileCount("discard-count", remaining);
 
     const card = document.createElement("img");
     card.src = "/card - back.svg";
@@ -96,6 +97,7 @@ async function animateDrawCards(cards, startIndex = 0) {
     // Update draw pile count as cards leave
     animDrawCount--;
     renderPileContent("draw-pile-content", animDrawCount, "Draw pile", "/card - back.svg");
+    updatePileCount("draw-count", animDrawCount);
 
     const flyer = document.createElement("img");
     flyer.src = "/card - back.svg";
@@ -242,16 +244,19 @@ function renderPileContent(containerId, count, emptyLabel, iconSrc) {
   if (count === 0) {
     container.innerHTML = `<div class="pile-empty"><span>${emptyLabel}</span></div>`;
   } else {
-    container.innerHTML = `
-      <img class="pile-icon" src="${iconSrc}" alt="${emptyLabel}" />
-      <div class="pile-count">${count}</div>
-    `;
+    container.innerHTML = `<img class="pile-icon" src="${iconSrc}" alt="${emptyLabel}" />`;
   }
+}
+
+function updatePileCount(countId, count) {
+  document.getElementById(countId).textContent = count;
 }
 
 function updatePiles({ drawCount, discardCount }) {
   renderPileContent("draw-pile-content", drawCount, "Draw pile", "/card - back.svg");
   renderPileContent("discard-pile-content", discardCount, "Discard pile", "/card - move forward.svg");
+  updatePileCount("draw-count", drawCount);
+  updatePileCount("discard-count", discardCount);
   const drawBtn = document.getElementById("draw-btn");
   const handArea = document.getElementById("hand-area");
   const handEmpty = handArea.children.length === 0;
@@ -325,11 +330,13 @@ function startGame(gameId, name, existingPlayerId) {
       <div class="cards-zone">
         <div id="draw-pile" class="draw-pile">
           <div id="draw-pile-content"></div>
+          <div class="pile-count" id="draw-count">8</div>
           <button id="draw-btn" class="draw-btn">Draw 5 cards</button>
         </div>
         <div id="hand-area" class="hand-area"></div>
         <div id="discard-pile" class="discard-pile">
           <div id="discard-pile-content"></div>
+          <div class="pile-count" id="discard-count">0</div>
         </div>
       </div>
     </div>
@@ -400,6 +407,7 @@ function startGame(gameId, name, existingPlayerId) {
           // After shuffle, draw pile is refilled
           animDrawCount = data.drawCount + secondBatch.length;
           renderPileContent("draw-pile-content", animDrawCount, "Draw pile", "/card - back.svg");
+          updatePileCount("draw-count", animDrawCount);
         }
 
         // Draw second batch (cards from draw pile after shuffle)
