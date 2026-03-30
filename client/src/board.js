@@ -269,8 +269,6 @@ export function initBoard(gameId) {
       if (!helmet) return;
 
       const moveDelay = 400;
-      const jumpDuration = 600;
-      const jumpHeight = helmet.displayHeight * 1.5;
 
       // Create a temp banana at the cell (the real one is already removed by updateCellOccupants)
       const center = this.cellPixelPos(cellId);
@@ -284,51 +282,21 @@ export function initBoard(gameId) {
       // After move completes, rearrange remaining occupants on the cell
       this.time.delayedCall(moveDelay, () => this.tweenCellLayout());
 
-      // After move: helmet jumps up/down with one rotation + banana launches out
+      // After move: helmet rotates twice, banana launches out
       this.tweens.add({
         targets: helmet,
-        y: `-=${jumpHeight}`,
-        duration: jumpDuration / 2,
-        ease: "Sine.easeOut",
-        delay: moveDelay,
-        yoyo: true,
-        yoyoEase: "Sine.easeIn",
-      });
-      this.tweens.add({
-        targets: helmet,
-        angle: -360,
-        duration: jumpDuration,
+        angle: -720,
+        duration: 1000,
         ease: "Linear",
         delay: moveDelay,
-        onComplete: () => {
-          helmet.setAngle(0);
-          // Second rotation on the floor after landing
-          this.tweens.add({
-            targets: helmet,
-            angle: -360,
-            duration: 600,
-            ease: "Linear",
-            onComplete: () => { helmet.setAngle(0); },
-          });
-        },
+        onComplete: () => { helmet.setAngle(0); },
       });
-      if (label) {
-        this.tweens.add({
-          targets: label,
-          y: `-=${jumpHeight}`,
-          duration: jumpDuration / 2,
-          ease: "Sine.easeOut",
-          delay: moveDelay,
-          yoyo: true,
-          yoyoEase: "Sine.easeIn",
-        });
-      }
       this.tweens.add({
         targets: banana,
         y: center.y - this.scale.height * 0.6,
         angle: 360,
         alpha: 0,
-        duration: jumpDuration,
+        duration: 600,
         ease: "Power2",
         delay: moveDelay,
         onComplete: () => { banana.destroy(); },
