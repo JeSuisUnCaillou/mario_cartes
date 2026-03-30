@@ -44,8 +44,10 @@ function startGame(gameId, name) {
   document.getElementById("app").innerHTML = `
     <div class="player-container">
       <input id="player-name" class="name-edit-input" type="text" maxlength="3" value="${name}" autocomplete="off" />
-      <p id="status">Joining…</p>
-      <button id="ping-btn" disabled>Ping</button>
+      <div class="mt-1">
+        <p id="status">Joining…</p>
+        <button id="ping-btn" disabled>Ping</button>
+      </div>
     </div>
   `;
 
