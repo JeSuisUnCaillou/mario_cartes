@@ -45,6 +45,26 @@ class GameRoom extends Room {
     return { ...this._cardState(player), shuffledCount, drawnBeforeShuffle };
   }
 
+  _cellOccupants(cellId) {
+    if (!this.cellOccupants[cellId]) this.cellOccupants[cellId] = [];
+    return this.cellOccupants[cellId];
+  }
+
+  _addToCell(cellId, entry) {
+    this._cellOccupants(cellId).push(entry);
+  }
+
+  _removeFromCell(cellId, entry) {
+    const arr = this._cellOccupants(cellId);
+    const idx = arr.indexOf(entry);
+    if (idx !== -1) arr.splice(idx, 1);
+    if (arr.length === 0) delete this.cellOccupants[cellId];
+  }
+
+  _bananasOnCell(cellId) {
+    return this._cellOccupants(cellId).filter((e) => e === "banana").length;
+  }
+
   onCreate(options) {
     if (options._roomId) {
       this.roomId = options._roomId;
@@ -56,7 +76,7 @@ class GameRoom extends Room {
 
     const cellsData = require(path.join(__dirname, "../../assets/racetrack_0_cells.json"));
     this.cells = new Map(cellsData.map((cell) => [cell.id, cell]));
-    this.bananas = {};
+    this.cellOccupants = {};
 
     this.onMessage("changeName", (client, newName) => {
       const player = this._getPlayer(client);
@@ -83,21 +103,30 @@ class GameRoom extends Room {
       let droppedBanana = null;
       if (card.type === "banana_move_forward_1") {
         droppedBanana = player.cellId;
-        this.bananas[player.cellId] = (this.bananas[player.cellId] || 0) + 1;
+        // Insert banana at the player's position in the cell
+        const occupants = this._cellOccupants(player.cellId);
+        const playerIdx = occupants.indexOf(player.playerId);
+        if (playerIdx !== -1) {
+          occupants.splice(playerIdx, 0, "banana");
+        } else {
+          occupants.push("banana");
+        }
       }
       if (card.type === "move_forward_1" || card.type === "banana_move_forward_1") {
+        const oldCellId = player.cellId;
         player.cellId = this.cells.get(player.cellId).next_cell;
+        this._removeFromCell(oldCellId, player.playerId);
+        this._addToCell(player.cellId, player.playerId);
       }
       player.discardPile.push(card);
       client.send("cardPlayed", { cardId: card.id, droppedBanana, ...this._cardState(player) });
-      if (droppedBanana !== null) this.broadcastBananas();
+      this.broadcastCellOccupants();
       this.broadcastPlayers();
 
       // Check if player landed on a banana
-      if (this.bananas[player.cellId] > 0) {
-        this.bananas[player.cellId]--;
-        if (this.bananas[player.cellId] === 0) delete this.bananas[player.cellId];
-        this.broadcastBananas();
+      if (this._bananasOnCell(player.cellId) > 0) {
+        this._removeFromCell(player.cellId, "banana");
+        this.broadcastCellOccupants();
         player.pendingBananaDiscards = 1;
         let autoDrawn = null;
         if (player.hand.length === 0) {
@@ -167,6 +196,7 @@ class GameRoom extends Room {
           drawPile: this._createDeck(), hand: [], discardPile: [],
           pendingBananaDiscards: 0,
         });
+        this._addToCell(1, playerId);
         this.clientsInfo.set(client.sessionId, { type: "player", playerId });
         client.send("playerId", playerId);
       }
@@ -175,7 +205,7 @@ class GameRoom extends Room {
     }
 
     this.broadcastPlayers();
-    this.broadcastBananas();
+    this.broadcastCellOccupants();
   }
 
   onLeave(client) {
@@ -193,8 +223,8 @@ class GameRoom extends Room {
     }
   }
 
-  broadcastBananas() {
-    this.broadcast("bananas", this.bananas);
+  broadcastCellOccupants() {
+    this.broadcast("cellOccupants", this.cellOccupants);
   }
 
   broadcastPlayers() {

@@ -75,6 +75,7 @@ export function initBoard(gameId) {
       this.playerCells = new Map();
       this.latestPlayers = [];
       this.bananaSprites = new Map();
+      this.latestCellOccupants = {};
     }
 
     preload() {
@@ -131,33 +132,20 @@ export function initBoard(gameId) {
       };
     }
 
-    cellOccupantCount(cellId) {
-      const playerCount = (this.latestPlayers || []).filter(
-        (p) => p.playerId && p.cellId === cellId
-      ).length;
-      const bananaCount = (this.latestBananas && this.latestBananas[cellId]) || 0;
-      return { playerCount, bananaCount, total: playerCount + bananaCount };
-    }
-
     refreshPlayerPositions() {
       const cellW = this.track.displayWidth / 5;
       const helmetSlot = cellW / 4.5;
       const helmetDisplaySize = helmetSlot * 0.9;
 
-      const byCell = new Map();
-      for (const p of this.latestPlayers) {
-        if (!p.playerId || !CELL_POSITIONS[p.cellId]) continue;
-        if (!byCell.has(p.cellId)) byCell.set(p.cellId, []);
-        byCell.get(p.cellId).push(p);
-      }
-
-      for (const [cellId, cellPlayers] of byCell) {
-        const { total } = this.cellOccupantCount(cellId);
-        cellPlayers.forEach((p, i) => {
-          const { x, y } = this.cellSlotPos(cellId, i, total);
-          const helmet = this.helmets.get(p.playerId);
-          const label = this.nameLabels.get(p.playerId);
+      for (const [cellIdStr, occupants] of Object.entries(this.latestCellOccupants)) {
+        const cellId = Number(cellIdStr);
+        if (!CELL_POSITIONS[cellId]) continue;
+        occupants.forEach((entry, slotIndex) => {
+          if (entry === "banana") return;
+          const helmet = this.helmets.get(entry);
+          const label = this.nameLabels.get(entry);
           if (!helmet) return;
+          const { x, y } = this.cellSlotPos(cellId, slotIndex, occupants.length);
           helmet.setPosition(x, y);
           helmet.setScale(helmetDisplaySize / helmet.width);
           label.setPosition(x, y - helmetDisplaySize * 0.7);
@@ -172,44 +160,29 @@ export function initBoard(gameId) {
       const helmetDisplaySize = helmetSlot * 0.9;
       const bananaSize = helmetSlot * 0.9;
 
-      // Collect all cells that have players or bananas
-      const allCells = new Set();
-      const byCell = new Map();
-      for (const p of (this.latestPlayers || [])) {
-        if (!p.playerId || !CELL_POSITIONS[p.cellId]) continue;
-        allCells.add(p.cellId);
-        if (!byCell.has(p.cellId)) byCell.set(p.cellId, []);
-        byCell.get(p.cellId).push(p);
-      }
-      for (const cellIdStr of Object.keys(this.latestBananas || {})) {
-        allCells.add(Number(cellIdStr));
-      }
-
-      for (const cellId of allCells) {
+      for (const [cellIdStr, occupants] of Object.entries(this.latestCellOccupants)) {
+        const cellId = Number(cellIdStr);
         if (!CELL_POSITIONS[cellId]) continue;
-        const { playerCount, total } = this.cellOccupantCount(cellId);
-        const cellPlayers = byCell.get(cellId) || [];
-
-        // Tween players to their grid slots
-        cellPlayers.forEach((p, i) => {
-          const { x, y } = this.cellSlotPos(cellId, i, total);
-          const helmet = this.helmets.get(p.playerId);
-          const label = this.nameLabels.get(p.playerId);
-          if (!helmet) return;
-          if (helmet.x !== x || helmet.y !== y) {
-            this.tweens.add({ targets: helmet, x, y, duration: 300, ease: "Power2" });
-            this.tweens.add({ targets: label, x, y: y - helmetDisplaySize * 0.7, duration: 300, ease: "Power2" });
-          }
-        });
-
-        // Tween bananas to their grid slots (after players)
         const sprites = this.bananaSprites.get(cellId) || [];
-        sprites.forEach((sprite, i) => {
-          const { x, y } = this.cellSlotPos(cellId, playerCount + i, total);
-          if (sprite.x !== x || sprite.y !== y) {
-            this.tweens.add({ targets: sprite, x, y, duration: 300, ease: "Power2" });
+        let bananaIdx = 0;
+
+        occupants.forEach((entry, slotIndex) => {
+          const { x, y } = this.cellSlotPos(cellId, slotIndex, occupants.length);
+          if (entry === "banana") {
+            const sprite = sprites[bananaIdx++];
+            if (sprite && (sprite.x !== x || sprite.y !== y)) {
+              this.tweens.add({ targets: sprite, x, y, duration: 300, ease: "Power2" });
+            }
+            if (sprite) sprite.setScale(bananaSize / sprite.width);
+          } else {
+            const helmet = this.helmets.get(entry);
+            const label = this.nameLabels.get(entry);
+            if (!helmet) return;
+            if (helmet.x !== x || helmet.y !== y) {
+              this.tweens.add({ targets: helmet, x, y, duration: 300, ease: "Power2" });
+              this.tweens.add({ targets: label, x, y: y - helmetDisplaySize * 0.7, duration: 300, ease: "Power2" });
+            }
           }
-          sprite.setScale(bananaSize / sprite.width);
         });
       }
     }
@@ -224,42 +197,48 @@ export function initBoard(gameId) {
       room.onMessage("players", (players) => {
         this.updatePlayers(players);
       });
-      room.onMessage("bananas", (bananas) => {
-        this.updateBananas(bananas);
-        this.tweenCellLayout();
+      room.onMessage("cellOccupants", (cellOccupants) => {
+        this.updateCellOccupants(cellOccupants);
       });
       room.onMessage("bananaHitBoard", (data) => {
         this.animateBananaHit(data.playerId, data.cellId);
       });
     }
 
-    updateBananas(bananas) {
-      this.latestBananas = bananas;
+    updateCellOccupants(cellOccupants) {
+      this.latestCellOccupants = cellOccupants;
 
-      // Remove sprites for cells no longer in bananas
+      // Count bananas per cell from occupant lists
+      const bananaCounts = {};
+      for (const [cellIdStr, occupants] of Object.entries(cellOccupants)) {
+        const count = occupants.filter((e) => e === "banana").length;
+        if (count > 0) bananaCounts[Number(cellIdStr)] = count;
+      }
+
+      // Remove sprites for cells that no longer have bananas
       for (const [cellId, sprites] of this.bananaSprites) {
-        if (!bananas[cellId]) {
+        if (!bananaCounts[cellId]) {
           sprites.forEach((s) => s.destroy());
           this.bananaSprites.delete(cellId);
         }
       }
 
-      // Create or destroy sprites to match counts (positioning done by tweenCellLayout)
-      for (const [cellIdStr, count] of Object.entries(bananas)) {
-        const cellId = Number(cellIdStr);
-        if (!CELL_POSITIONS[cellId]) continue;
-        const existing = this.bananaSprites.get(cellId) || [];
+      // Create or destroy sprites to match counts
+      for (const [cellId, count] of Object.entries(bananaCounts)) {
+        const existing = this.bananaSprites.get(Number(cellId)) || [];
         while (existing.length > count) {
           existing.pop().destroy();
         }
         while (existing.length < count) {
-          const center = this.cellPixelPos(cellId);
+          const center = this.cellPixelPos(Number(cellId));
           const sprite = this.add.image(center.x, center.y, "banana");
           sprite.setDepth(0);
           existing.push(sprite);
         }
-        this.bananaSprites.set(cellId, existing);
+        this.bananaSprites.set(Number(cellId), existing);
       }
+
+      this.tweenCellLayout();
     }
 
     snapCellLayout() {
@@ -267,10 +246,17 @@ export function initBoard(gameId) {
       const helmetSlot = cellW / 4.5;
       const bananaSize = helmetSlot * 0.9;
 
-      for (const [cellId, sprites] of this.bananaSprites) {
-        const { playerCount, total } = this.cellOccupantCount(cellId);
-        sprites.forEach((sprite, i) => {
-          const { x, y } = this.cellSlotPos(cellId, playerCount + i, total);
+      for (const [cellIdStr, occupants] of Object.entries(this.latestCellOccupants)) {
+        const cellId = Number(cellIdStr);
+        if (!CELL_POSITIONS[cellId]) continue;
+        const sprites = this.bananaSprites.get(cellId) || [];
+        let bananaIdx = 0;
+
+        occupants.forEach((entry, slotIndex) => {
+          if (entry !== "banana") return;
+          const sprite = sprites[bananaIdx++];
+          if (!sprite) return;
+          const { x, y } = this.cellSlotPos(cellId, slotIndex, occupants.length);
           sprite.setPosition(x, y);
           sprite.setScale(bananaSize / sprite.width);
         });
@@ -286,7 +272,7 @@ export function initBoard(gameId) {
       const jumpDuration = 600;
       const jumpHeight = helmet.displayHeight * 1.5;
 
-      // Create a temp banana at the cell (the real one is already removed by updateBananas)
+      // Create a temp banana at the cell (the real one is already removed by updateCellOccupants)
       const center = this.cellPixelPos(cellId);
       const cellW = this.track.displayWidth / 5;
       const helmetSlot = cellW / 4.5;
@@ -370,10 +356,14 @@ export function initBoard(gameId) {
       const helmetDisplaySize = helmetSlot * 0.9;
 
       for (const [cellId, cellPlayers] of byCell) {
-        const { total } = this.cellOccupantCount(cellId);
+        const occupants = this.latestCellOccupants[cellId] || [];
 
-        cellPlayers.forEach((p, i) => {
-          const { x, y } = this.cellSlotPos(cellId, i, total);
+        cellPlayers.forEach((p) => {
+          const slotIndex = occupants.indexOf(p.playerId);
+          const slot = slotIndex !== -1
+            ? this.cellSlotPos(cellId, slotIndex, occupants.length)
+            : this.cellPixelPos(cellId);
+          const { x, y } = slot;
           const alpha = p.connected ? 1 : 0.5;
 
           if (this.helmets.has(p.playerId)) {
