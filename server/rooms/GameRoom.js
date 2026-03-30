@@ -40,6 +40,7 @@ class GameRoom extends Room {
 
     const cellsData = require(path.join(__dirname, "../../assets/racetrack_0_cells.json"));
     this.cells = new Map(cellsData.map((cell) => [cell.id, cell]));
+    this.bananas = {};
 
     this.onMessage("changeName", (client, newName) => {
       const player = this._getPlayer(client);
@@ -76,11 +77,17 @@ class GameRoom extends Room {
       const cardIndex = player.hand.findIndex((c) => c.id === data.cardId);
       if (cardIndex === -1) return;
       const [card] = player.hand.splice(cardIndex, 1);
+      let droppedBanana = null;
+      if (card.type === "banana_move_forward_1") {
+        droppedBanana = player.cellId;
+        this.bananas[player.cellId] = (this.bananas[player.cellId] || 0) + 1;
+      }
       if (card.type === "move_forward_1" || card.type === "banana_move_forward_1") {
         player.cellId = this.cells.get(player.cellId).next_cell;
       }
       player.discardPile.push(card);
-      client.send("cardPlayed", { cardId: card.id, ...this._cardState(player) });
+      client.send("cardPlayed", { cardId: card.id, droppedBanana, ...this._cardState(player) });
+      if (droppedBanana !== null) this.broadcastBananas();
       this.broadcastPlayers();
     });
   }
@@ -121,6 +128,7 @@ class GameRoom extends Room {
     }
 
     this.broadcastPlayers();
+    this.broadcastBananas();
   }
 
   onLeave(client) {
@@ -136,6 +144,10 @@ class GameRoom extends Room {
     if (this.clients.length === 0) {
       this._disposeTimer = setTimeout(() => this.disconnect(), DISPOSE_DELAY_MS);
     }
+  }
+
+  broadcastBananas() {
+    this.broadcast("bananas", this.bananas);
   }
 
   broadcastPlayers() {
