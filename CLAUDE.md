@@ -36,3 +36,8 @@ Online multiplayer racing card game inspired by Mario Kart and Slay the Spire 2.
 - **Tests**: Write automated tests as much as possible to support a fast-growing codebase.
 - **Game state**: Defined as a data structure on the backend (Colyseus schema).
 - Home page has a "Create game" link with a text input for the game UID (used as identifier).
+
+## Plans
+
+All the plans must be saved in `/docs/plans/`.
+If the plan has slices, make one commit per slice.
