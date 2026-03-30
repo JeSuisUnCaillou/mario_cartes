@@ -19,6 +19,8 @@ const CELL_POSITIONS = [
   [0.096, 0.626], // 14 — left side
 ];
 
+const SVG_ASPECT = 131.0025 / 104.54418;
+
 export function initBoard(gameId) {
   const app = document.getElementById("app");
   app.style.width = "100%";
@@ -36,27 +38,71 @@ export function initBoard(gameId) {
       this.helmets = new Map();
       this.nameLabels = new Map();
       this.playerCells = new Map();
+      this.latestPlayers = [];
     }
 
     preload() {
       const dpr = window.devicePixelRatio || 1;
-      const trackW = Math.round(window.innerWidth * 0.9 * dpr);
-      const trackH = Math.round(window.innerHeight * 0.9 * dpr);
+      const maxDim = Math.max(window.innerWidth, window.innerHeight) * dpr;
+      const trackW = Math.round(maxDim);
+      const trackH = Math.round(maxDim / SVG_ASPECT);
       this.load.svg("racetrack", "/racetrack_0.svg", { width: trackW, height: trackH });
       this.load.svg("helmet", "/helmet.svg", { width: 64, height: 64 });
     }
 
     create() {
+      this.track = this.add.image(0, 0, "racetrack");
+      this.layoutTrack();
+      this.scale.on("resize", this.onResize, this);
+      this.connectToRoom(gameId);
+    }
+
+    layoutTrack() {
       const { width, height } = this.scale;
-
-      this.track = this.add.image(width / 2, height / 2, "racetrack");
-
+      this.track.setPosition(width / 2, height / 2);
       const scaleX = (width * 0.9) / this.track.width;
       const scaleY = (height * 0.9) / this.track.height;
-      const trackScale = Math.min(scaleX, scaleY);
-      this.track.setScale(trackScale);
+      this.track.setScale(Math.min(scaleX, scaleY));
+    }
 
-      this.connectToRoom(gameId);
+    onResize() {
+      this.layoutTrack();
+      this.refreshPlayerPositions();
+    }
+
+    refreshPlayerPositions() {
+      const byCell = new Map();
+      for (const p of this.latestPlayers) {
+        if (!p.playerId || !CELL_POSITIONS[p.cellId]) continue;
+        if (!byCell.has(p.cellId)) byCell.set(p.cellId, []);
+        byCell.get(p.cellId).push(p);
+      }
+
+      const cellW = this.track.displayWidth / 5;
+      const maxPerRow = 4;
+      const helmetSlot = cellW / 4.5;
+      const helmetDisplaySize = helmetSlot * 0.9;
+
+      for (const [cellId, cellPlayers] of byCell) {
+        const center = this.cellPixelPos(cellId);
+        const rows = Math.ceil(cellPlayers.length / maxPerRow);
+
+        cellPlayers.forEach((p, i) => {
+          const row = Math.floor(i / maxPerRow);
+          const colsInRow = Math.min(maxPerRow, cellPlayers.length - row * maxPerRow);
+          const col = i % maxPerRow;
+          const x = center.x + (col - (colsInRow - 1) / 2) * helmetSlot;
+          const y = center.y + (row - (rows - 1) / 2) * helmetSlot;
+
+          const helmet = this.helmets.get(p.playerId);
+          const label = this.nameLabels.get(p.playerId);
+          if (!helmet) return;
+          helmet.setPosition(x, y);
+          helmet.setScale(helmetDisplaySize / helmet.width);
+          label.setPosition(x, y - helmetDisplaySize * 0.7);
+          label.setFontSize(Math.round(helmetDisplaySize * 0.45));
+        });
+      }
     }
 
     async connectToRoom(roomId) {
@@ -79,6 +125,7 @@ export function initBoard(gameId) {
     }
 
     updatePlayers(players) {
+      this.latestPlayers = players;
       const activePlayerIds = new Set();
 
       const byCell = new Map();
@@ -178,11 +225,9 @@ export function initBoard(gameId) {
   new Phaser.Game({
     type: Phaser.AUTO,
     parent: app,
-    width: window.innerWidth,
-    height: window.innerHeight,
     backgroundColor: "#1a1a2e",
     scale: {
-      mode: Phaser.Scale.FIT,
+      mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
     scene: GameScene,
