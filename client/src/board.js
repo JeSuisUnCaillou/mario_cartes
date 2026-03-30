@@ -87,9 +87,11 @@ export function initBoard(gameId) {
       const trackH = Math.round(maxDim / SVG_ASPECT);
       this.load.svg("racetrack", "/racetrack_0.svg", { width: trackW, height: trackH });
       this.load.svg("helmet", "/helmet.svg", { width: 64, height: 64 });
+      this.load.image("space", "/space.jpg");
     }
 
     create() {
+      this.bg = this.add.image(0, 0, "space");
       this.track = this.add.image(0, 0, "racetrack");
       this.layoutTrack();
       this.scale.on("resize", this.onResize, this);
@@ -98,6 +100,12 @@ export function initBoard(gameId) {
 
     layoutTrack() {
       const { width, height } = this.scale;
+
+      this.bg.setPosition(width / 2, height / 2);
+      const bgScaleX = width / this.bg.width;
+      const bgScaleY = height / this.bg.height;
+      this.bg.setScale(Math.max(bgScaleX, bgScaleY));
+
       this.track.setPosition(width / 2, height / 2);
       const scaleX = (width * 0.9) / this.track.width;
       const scaleY = (height * 0.9) / this.track.height;
