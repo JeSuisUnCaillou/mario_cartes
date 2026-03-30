@@ -1,4 +1,5 @@
 const { Room } = require("colyseus");
+const { randomUUID } = require("crypto");
 const path = require("path");
 
 const DISPOSE_DELAY_MS = 10 * 60 * 1000; // 10 minutes
@@ -11,23 +12,30 @@ class GameRoom extends Room {
     this.autoDispose = false;
     this._disposeTimer = null;
     this.clientsInfo = new Map();
+    this.players = new Map();
 
     const cellsData = require(path.join(__dirname, "../../assets/racetrack_0_cells.json"));
     this.cells = new Map(cellsData.map((cell) => [cell.id, cell]));
 
     this.onMessage("changeName", (client, newName) => {
-      const info = this.clientsInfo.get(client.sessionId);
-      if (!info || info.type !== "player") return;
-      info.name = (newName || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
+      const player = this._getPlayer(client);
+      if (!player) return;
+      player.name = (newName || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
       this.broadcastPlayers();
     });
 
     this.onMessage("ping", (client) => {
-      const info = this.clientsInfo.get(client.sessionId);
-      if (!info || info.type !== "player") return;
-      info.cellId = this.cells.get(info.cellId).next_cell;
+      const player = this._getPlayer(client);
+      if (!player) return;
+      player.cellId = this.cells.get(player.cellId).next_cell;
       this.broadcastPlayers();
     });
+  }
+
+  _getPlayer(client) {
+    const info = this.clientsInfo.get(client.sessionId);
+    if (!info || info.type !== "player") return null;
+    return this.players.get(info.playerId);
   }
 
   onJoin(client, options) {
@@ -35,17 +43,37 @@ class GameRoom extends Room {
       clearTimeout(this._disposeTimer);
       this._disposeTimer = null;
     }
+
     const type = options.type || "player";
-    const info = { type };
+
     if (type === "player") {
-      info.cellId = 1;
-      info.name = (options.name || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
+      const existingPlayerId = options.playerId;
+      if (existingPlayerId && this.players.has(existingPlayerId)) {
+        const player = this.players.get(existingPlayerId);
+        player.connected = true;
+        this.clientsInfo.set(client.sessionId, { type: "player", playerId: existingPlayerId });
+      } else {
+        const playerId = randomUUID();
+        const name = (options.name || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
+        this.players.set(playerId, { playerId, name, cellId: 1, connected: true });
+        this.clientsInfo.set(client.sessionId, { type: "player", playerId });
+        client.send("playerId", playerId);
+      }
+    } else {
+      this.clientsInfo.set(client.sessionId, { type });
     }
-    this.clientsInfo.set(client.sessionId, info);
+
     this.broadcastPlayers();
   }
 
   onLeave(client) {
+    const info = this.clientsInfo.get(client.sessionId);
+    if (info && info.type === "player" && info.playerId) {
+      const player = this.players.get(info.playerId);
+      if (player) {
+        player.connected = false;
+      }
+    }
     this.clientsInfo.delete(client.sessionId);
     this.broadcastPlayers();
     if (this.clients.length === 0) {
@@ -54,11 +82,11 @@ class GameRoom extends Room {
   }
 
   broadcastPlayers() {
-    const players = Array.from(this.clientsInfo.entries()).map(([id, info]) => ({
-      sessionId: id,
-      type: info.type,
-      cellId: info.cellId,
-      name: info.name,
+    const players = Array.from(this.players.values()).map((p) => ({
+      playerId: p.playerId,
+      name: p.name,
+      cellId: p.cellId,
+      connected: p.connected,
     }));
     this.broadcast("players", players);
   }
