@@ -170,6 +170,7 @@ function addDragListeners(card) {
     dragClone.style.margin = "0";
     dragClone.style.transition = "none";
     dragClone.style.pointerEvents = "none";
+    dragClone.style.filter = "drop-shadow(10px 15px 4px rgba(0, 0, 0, 0.35))";
     document.body.appendChild(dragClone);
 
     // Hide original to keep gap
@@ -214,6 +215,7 @@ function addDragListeners(card) {
       dragClone.style.left = (zoneRect.left + zoneRect.width / 2 - cloneRect.width / 2) + "px";
       dragClone.style.top = (zoneRect.top + zoneRect.height / 2 - cloneRect.height / 2) + "px";
       dragClone.style.transform = "scale(1)";
+      dragClone.style.filter = "drop-shadow(2px 2px 1px rgba(0, 0, 0, 0.3))";
 
       setTimeout(() => {
         if (currentRoom) {
