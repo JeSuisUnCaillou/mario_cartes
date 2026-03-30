@@ -1,13 +1,17 @@
 const { Room } = require("colyseus");
+const path = require("path");
 
 class GameRoom extends Room {
   onCreate() {
     this.clientsInfo = new Map();
 
+    const cellsData = require(path.join(__dirname, "../../assets/racetrack_0_cells.json"));
+    this.cells = new Map(cellsData.map((cell) => [cell.id, cell]));
+
     this.onMessage("ping", (client) => {
       const info = this.clientsInfo.get(client.sessionId);
       if (!info || info.type !== "player") return;
-      info.cellId = (info.cellId % 14) + 1;
+      info.cellId = this.cells.get(info.cellId).next_cell;
       this.broadcastPlayers();
     });
   }
