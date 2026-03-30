@@ -234,23 +234,33 @@ export function initBoard(gameId) {
       banana.setScale(size / banana.width);
       banana.setDepth(10);
 
-      // Phase 1 (after move): helmet jumps + banana launches out simultaneously
+      // After move: helmet jumps up/down with one rotation + banana launches out
       this.tweens.add({
         targets: helmet,
         y: `-=${jumpHeight}`,
-        duration: jumpDuration,
-        ease: "Bounce.easeOut",
-        yoyo: true,
+        duration: jumpDuration / 2,
+        ease: "Sine.easeOut",
         delay: moveDelay,
+        yoyo: true,
+        yoyoEase: "Sine.easeIn",
+      });
+      this.tweens.add({
+        targets: helmet,
+        angle: 360,
+        duration: jumpDuration,
+        ease: "Linear",
+        delay: moveDelay,
+        onComplete: () => { helmet.setAngle(0); },
       });
       if (label) {
         this.tweens.add({
           targets: label,
           y: `-=${jumpHeight}`,
-          duration: jumpDuration,
-          ease: "Bounce.easeOut",
-          yoyo: true,
+          duration: jumpDuration / 2,
+          ease: "Sine.easeOut",
           delay: moveDelay,
+          yoyo: true,
+          yoyoEase: "Sine.easeIn",
         });
       }
       this.tweens.add({
@@ -262,16 +272,6 @@ export function initBoard(gameId) {
         ease: "Power2",
         delay: moveDelay,
         onComplete: () => { banana.destroy(); },
-      });
-
-      // Phase 2 (after jump lands): helmet spins twice
-      this.tweens.add({
-        targets: helmet,
-        angle: 720,
-        duration: 600,
-        ease: "Linear",
-        delay: moveDelay + jumpDuration * 2,
-        onComplete: () => { helmet.setAngle(0); },
       });
     }
 
