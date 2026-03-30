@@ -551,27 +551,31 @@ function startGame(gameId, name, existingPlayerId) {
 
       room.onMessage("bananaHit", async (data) => {
         const playZone = document.getElementById("play-zone");
-        const zoneRect = playZone.getBoundingClientRect();
 
-        // Crash animation: banana falls from above into the play zone
-        const crashBanana = document.createElement("img");
-        crashBanana.src = "/banana.svg";
-        crashBanana.className = "banana-crash";
-        crashBanana.style.position = "fixed";
-        crashBanana.style.width = "80px";
-        crashBanana.style.height = "auto";
-        crashBanana.style.left = (zoneRect.left + zoneRect.width / 2 - 40) + "px";
-        crashBanana.style.top = "-100px";
-        crashBanana.style.zIndex = "999";
-        crashBanana.style.pointerEvents = "none";
-        document.body.appendChild(crashBanana);
-        crashBanana.getBoundingClientRect();
-        crashBanana.style.transition = "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
-        crashBanana.style.top = (zoneRect.top + zoneRect.height / 2 - 40) + "px";
-        await new Promise((resolve) => {
-          crashBanana.addEventListener("transitionend", resolve, { once: true });
-        });
-        crashBanana.remove();
+        // Skip animations on reconnect — just restore the discard UI
+        if (!data.reconnect) {
+          const zoneRect = playZone.getBoundingClientRect();
+
+          // Crash animation: banana falls from above into the play zone
+          const crashBanana = document.createElement("img");
+          crashBanana.src = "/banana.svg";
+          crashBanana.className = "banana-crash";
+          crashBanana.style.position = "fixed";
+          crashBanana.style.width = "80px";
+          crashBanana.style.height = "auto";
+          crashBanana.style.left = (zoneRect.left + zoneRect.width / 2 - 40) + "px";
+          crashBanana.style.top = "-100px";
+          crashBanana.style.zIndex = "999";
+          crashBanana.style.pointerEvents = "none";
+          document.body.appendChild(crashBanana);
+          crashBanana.getBoundingClientRect();
+          crashBanana.style.transition = "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
+          crashBanana.style.top = (zoneRect.top + zoneRect.height / 2 - 40) + "px";
+          await new Promise((resolve) => {
+            crashBanana.addEventListener("transitionend", resolve, { once: true });
+          });
+          crashBanana.remove();
+        }
 
         // Auto-draw if server drew cards for us
         if (data.autoDrawn) {
@@ -599,7 +603,7 @@ function startGame(gameId, name, existingPlayerId) {
         playZone.classList.add("banana-hit");
         playZone.innerHTML = `
           <img src="/banana.svg" class="play-zone-banana" />
-          <span class="play-zone-label">Banana! Drag a card here to discard it.</span>
+          <span class="play-zone-label"><h2>Banana!</h2><br />Drag a card here to discard it.</span>
         `;
       });
 

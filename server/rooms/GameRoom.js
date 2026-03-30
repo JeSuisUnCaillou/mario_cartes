@@ -158,6 +158,16 @@ class GameRoom extends Room {
         player.connected = true;
         this.clientsInfo.set(client.sessionId, { type: "player", playerId: existingPlayerId });
         client.send("cardsDrawn", this._cardState(player));
+        if (player.pendingBananaDiscards > 0) {
+          client.send("bananaHit", {
+            cellId: player.cellId,
+            count: player.pendingBananaDiscards,
+            mustDiscard: player.pendingBananaDiscards,
+            autoDrawn: null,
+            reconnect: true,
+            ...this._cardState(player),
+          });
+        }
       } else {
         const playerId = randomUUID();
         const name = (options.name || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
