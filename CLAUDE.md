@@ -40,3 +40,4 @@ Online multiplayer racing card game inspired by Mario Kart and Slay the Spire 2.
 
 All the plans must be saved in `/docs/plans/` BEFORE implementing.
 If the plan has slices, make one commit per slice.
+Don't cite yourself as the author in the commits.
