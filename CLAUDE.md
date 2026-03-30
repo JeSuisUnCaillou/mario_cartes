@@ -40,4 +40,5 @@ Online multiplayer racing card game inspired by Mario Kart and Slay the Spire 2.
 ## Plans
 
 All the plans must be saved in `/docs/plans/`.
-If the plan has slices, make one commit per slice.
+If the plan has slices, make one commit per slice, as you go on with the implementation.
+When you make a successful fix, make a commit for it.
