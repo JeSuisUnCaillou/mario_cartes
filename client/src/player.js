@@ -19,7 +19,7 @@ function renderHand(hand) {
     img.dataset.cardId = card.id;
     const offset = i - (n - 1) / 2;
     const rotation = offset * angleStep;
-    const lift = -Math.abs(offset) * 5;
+    const lift = Math.abs(offset) * 8;
     img.style.transform = `rotate(${rotation}deg) translateY(${lift}px)`;
     img.dataset.fanTransform = img.style.transform;
     addDragListeners(img);
