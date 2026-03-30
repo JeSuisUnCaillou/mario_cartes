@@ -18,8 +18,12 @@ async function animateShuffle(count) {
   const drawEl = document.getElementById("draw-pile");
   const discardRect = discardEl.getBoundingClientRect();
   const drawRect = drawEl.getBoundingClientRect();
+  let remaining = count;
 
   for (let i = 0; i < count; i++) {
+    remaining--;
+    renderPileContent("discard-pile-content", remaining, "Discard pile", "/card - move forward.svg");
+
     const card = document.createElement("img");
     card.src = "/card - back.svg";
     card.className = "card-anim";
