@@ -178,7 +178,6 @@ export function initBoard(gameId) {
       });
       room.onMessage("bananas", (bananas) => {
         this.updateBananas(bananas);
-        this.refreshPlayerPositions();
       });
       room.onMessage("bananaHitBoard", (data) => {
         this.animateBananaHit(data.playerId, data.cellId);
