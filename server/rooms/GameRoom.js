@@ -1,8 +1,12 @@
 const { Room } = require("colyseus");
 const path = require("path");
 
+const DISPOSE_DELAY_MS = 10 * 60 * 1000; // 10 minutes
+
 class GameRoom extends Room {
   onCreate() {
+    this.autoDispose = false;
+    this._disposeTimer = null;
     this.clientsInfo = new Map();
 
     const cellsData = require(path.join(__dirname, "../../assets/racetrack_0_cells.json"));
@@ -17,6 +21,10 @@ class GameRoom extends Room {
   }
 
   onJoin(client, options) {
+    if (this._disposeTimer) {
+      clearTimeout(this._disposeTimer);
+      this._disposeTimer = null;
+    }
     const type = options.type || "player";
     const info = { type };
     if (type === "player") info.cellId = 1;
@@ -27,6 +35,9 @@ class GameRoom extends Room {
   onLeave(client) {
     this.clientsInfo.delete(client.sessionId);
     this.broadcastPlayers();
+    if (this.clients.length === 0) {
+      this._disposeTimer = setTimeout(() => this.disconnect(), DISPOSE_DELAY_MS);
+    }
   }
 
   broadcastPlayers() {
