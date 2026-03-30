@@ -20,7 +20,7 @@ export function initPlayer(gameId) {
       <form id="name-form">
         <label for="name-input">Enter your player name, 3 letters.</label>
         <div class="mt-1">
-          <input id="name-input" type="text" maxlength="3" placeholder="KYU" autocomplete="off" />
+          <input id="name-input" type="text" maxlength="3" placeholder="KYU" autocomplete="off" value="${localStorage.getItem("playerName") || ""}" />
           <button type="submit">Join</button>
         </div>
       </form>
@@ -36,6 +36,7 @@ export function initPlayer(gameId) {
   document.getElementById("name-form").addEventListener("submit", (e) => {
     e.preventDefault();
     const name = nameInput.value.trim() || "???";
+    localStorage.setItem("playerName", name);
     startGame(gameId, name);
   });
 }
@@ -75,6 +76,7 @@ function startGame(gameId, name) {
       nameInput.addEventListener("change", () => {
         const newName = nameInput.value.trim() || "???";
         nameInput.value = newName;
+        localStorage.setItem("playerName", newName);
         room.send("changeName", newName);
       });
     })
