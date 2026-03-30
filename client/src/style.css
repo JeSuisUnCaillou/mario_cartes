@@ -168,7 +168,7 @@ input {
   /* 5 cards with 4 overlaps must fit in hand area: (100vw - 2*68px piles) */
   --hand-width: calc(100vw - 136px - 24px);
   --card-overlap: 20px;
-  width: calc((var(--hand-width) + 4 * var(--card-overlap)) / 5);
+  width: min(calc((var(--hand-width) + 4 * var(--card-overlap)) / 5), 120px);
   height: auto;
   aspect-ratio: 54 / 86;
   border-radius: 8px;
