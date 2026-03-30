@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { Client } from "colyseus.js";
+import QRCode from "qrcode";
 
 const CELL_POSITIONS = [
   null,           // index 0 unused (cells are 1-indexed)
@@ -21,10 +22,48 @@ const CELL_POSITIONS = [
 
 const SVG_ASPECT = 131.0025 / 104.54418;
 
+function createInfoBar(gameId) {
+  const bar = document.createElement("div");
+  bar.className = "board-info-bar";
+
+  const qrContainer = document.createElement("div");
+  qrContainer.className = "board-qr";
+  const qrCanvas = document.createElement("canvas");
+  qrContainer.appendChild(qrCanvas);
+  bar.appendChild(qrContainer);
+
+  const titleContainer = document.createElement("div");
+  titleContainer.className = "board-title";
+  const title = document.createElement("div");
+  title.className = "board-title-name";
+  title.textContent = "Mario Cartes";
+  const roomId = document.createElement("div");
+  roomId.className = "board-title-room";
+  roomId.textContent = `Room: ${gameId}`;
+  titleContainer.appendChild(title);
+  titleContainer.appendChild(roomId);
+  bar.appendChild(titleContainer);
+
+  const playerUrl = `${location.origin}/game/${gameId}/player`;
+  QRCode.toCanvas(qrCanvas, playerUrl, {
+    width: 170,
+    margin: 0,
+  });
+
+  return bar;
+}
+
 export function initBoard(gameId) {
   const app = document.getElementById("app");
   app.style.width = "100%";
   app.style.height = "100%";
+
+  app.classList.add("board-layout");
+  app.appendChild(createInfoBar(gameId));
+
+  const gameContainer = document.createElement("div");
+  gameContainer.className = "board-game";
+  app.appendChild(gameContainer);
 
   const serverUrl = import.meta.env.DEV
     ? "ws://localhost:2567"
@@ -224,7 +263,7 @@ export function initBoard(gameId) {
 
   new Phaser.Game({
     type: Phaser.AUTO,
-    parent: app,
+    parent: gameContainer,
     backgroundColor: "#1a1a2e",
     scale: {
       mode: Phaser.Scale.RESIZE,
