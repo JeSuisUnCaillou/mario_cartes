@@ -40,8 +40,8 @@ export function initPlayer(gameId) {
 function startGame(gameId, name) {
   document.getElementById("app").innerHTML = `
     <div class="player-container">
-      <h1>Game ${gameId}</h1>
-      <p id="status">Joining as <strong>${name}</strong>…</p>
+      <h2 id="player-name" class="editable-name">${name}</h2>
+      <p id="status">Joining…</p>
       <button id="ping-btn" disabled>Ping</button>
     </div>
   `;
@@ -60,8 +60,45 @@ function startGame(gameId, name) {
       btn.addEventListener("click", () => {
         room.send("ping");
       });
+      setupEditableName(room, name);
     })
     .catch(() => {
       document.getElementById("status").textContent = "Could not connect to the game.";
     });
+}
+
+function setupEditableName(room, currentName) {
+  const nameEl = document.getElementById("player-name");
+
+  nameEl.addEventListener("click", () => {
+    if (nameEl.querySelector("input")) return;
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.maxLength = 3;
+    input.value = currentName;
+    input.className = "name-edit-input";
+    input.autocomplete = "off";
+
+    input.addEventListener("input", () => {
+      input.value = input.value.toUpperCase().replace(/[^A-Z]/g, "");
+    });
+
+    const commit = () => {
+      const newName = input.value.trim() || currentName;
+      currentName = newName;
+      nameEl.textContent = currentName;
+      room.send("changeName", currentName);
+    };
+
+    input.addEventListener("blur", commit);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") input.blur();
+    });
+
+    nameEl.textContent = "";
+    nameEl.appendChild(input);
+    input.focus();
+    input.select();
+  });
 }

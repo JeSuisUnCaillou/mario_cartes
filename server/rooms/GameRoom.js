@@ -15,6 +15,13 @@ class GameRoom extends Room {
     const cellsData = require(path.join(__dirname, "../../assets/racetrack_0_cells.json"));
     this.cells = new Map(cellsData.map((cell) => [cell.id, cell]));
 
+    this.onMessage("changeName", (client, newName) => {
+      const info = this.clientsInfo.get(client.sessionId);
+      if (!info || info.type !== "player") return;
+      info.name = (newName || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
+      this.broadcastPlayers();
+    });
+
     this.onMessage("ping", (client) => {
       const info = this.clientsInfo.get(client.sessionId);
       if (!info || info.type !== "player") return;

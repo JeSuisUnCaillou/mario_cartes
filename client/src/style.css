@@ -16,3 +16,23 @@ button {
 .player-container, .home-container {
   text-align: center;
 }
+
+.editable-name {
+  cursor: pointer;
+  letter-spacing: 0.15em;
+  border-bottom: 2px dashed #888;
+  display: inline-block;
+}
+
+.name-edit-input {
+  font: inherit;
+  text-align: center;
+  width: 3ch;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border: none;
+  border-bottom: 2px solid currentColor;
+  outline: none;
+  background: transparent;
+  color: inherit;
+}
