@@ -183,3 +183,28 @@ input {
 .card:first-child {
   margin-left: 0;
 }
+
+.card-flyer-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.card-flyer-face {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  backface-visibility: hidden;
+  border-radius: 6px;
+}
+
+.card-flyer-back {
+  transform: rotateY(0deg);
+}
+
+.card-flyer-front {
+  transform: rotateY(180deg);
+}

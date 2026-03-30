@@ -95,31 +95,50 @@ async function animateDrawCards(cards, startIndex = 0) {
     renderPileContent("draw-pile-content", animDrawCount, "Draw pile", "/card - back.svg");
     updatePileCount("draw-count", animDrawCount);
 
-    // Create flying card from draw pile
-    const flyer = document.createElement("img");
-    flyer.src = "/card - back.svg";
-    flyer.className = "card-anim";
+    // Create 3D flipping card that flies from draw pile to hand
+    const flyer = document.createElement("div");
+    flyer.className = "card-flyer";
     flyer.style.position = "fixed";
     flyer.style.width = "40px";
-    flyer.style.height = "auto";
+    flyer.style.aspectRatio = "54 / 86";
     flyer.style.left = (drawRect.left + drawRect.width / 2 - 20) + "px";
     flyer.style.top = drawRect.top + "px";
     flyer.style.zIndex = "999";
-    flyer.style.transition = "all 0.35s ease-out";
     flyer.style.pointerEvents = "none";
+    flyer.style.perspective = "600px";
+
+    const inner = document.createElement("div");
+    inner.className = "card-flyer-inner";
+    inner.style.transition = "transform 0.5s ease-in-out";
+    inner.style.transform = "rotateY(0deg)";
+
+    const backFace = document.createElement("img");
+    backFace.src = "/card - back.svg";
+    backFace.className = "card-flyer-face card-flyer-back";
+
+    const frontFace = document.createElement("img");
+    frontFace.src = CARD_ASSETS[card.type];
+    frontFace.className = "card-flyer-face card-flyer-front";
+
+    inner.appendChild(backFace);
+    inner.appendChild(frontFace);
+    flyer.appendChild(inner);
     document.body.appendChild(flyer);
 
+    // Force reflow, then animate position + size + flip
     flyer.getBoundingClientRect();
+    flyer.style.transition = "left 0.5s ease-out, top 0.5s ease-out, width 0.5s ease-out";
     flyer.style.left = targetRect.left + "px";
     flyer.style.top = targetRect.top + "px";
     flyer.style.width = targetRect.width + "px";
+    inner.style.transform = "rotateY(180deg)";
 
-    await delay(200);
+    await delay(300);
 
     img.style.visibility = "";
     addDragListeners(img);
-    flyer.addEventListener("transitionend", () => flyer.remove(), { once: true });
-    setTimeout(() => flyer.remove(), 400);
+    await delay(250);
+    flyer.remove();
   }
 }
 
