@@ -35,6 +35,7 @@ export function initBoard(gameId) {
       super("GameScene");
       this.helmets = new Map();
       this.nameLabels = new Map();
+      this.playerCells = new Map();
     }
 
     preload() {
@@ -107,12 +108,30 @@ export function initBoard(gameId) {
 
           if (this.helmets.has(p.playerId)) {
             const helmet = this.helmets.get(p.playerId);
-            helmet.setPosition(x, y);
-            helmet.setAlpha(alpha);
             const label = this.nameLabels.get(p.playerId);
-            label.setPosition(x, y - helmetDisplaySize * 0.7);
+            const prevCell = this.playerCells.get(p.playerId);
             label.setText(p.name || "???");
+            helmet.setAlpha(alpha);
             label.setAlpha(alpha);
+
+            if (prevCell !== p.cellId) {
+              this.tweens.add({
+                targets: helmet,
+                x, y,
+                duration: 400,
+                ease: "Power2",
+              });
+              this.tweens.add({
+                targets: label,
+                x, y: y - helmetDisplaySize * 0.7,
+                duration: 400,
+                ease: "Power2",
+              });
+              this.playerCells.set(p.playerId, p.cellId);
+            } else {
+              helmet.setPosition(x, y);
+              label.setPosition(x, y - helmetDisplaySize * 0.7);
+            }
           } else {
             const helmet = this.add.image(x, y, "helmet");
             helmet.setScale(helmetDisplaySize / helmet.width);
@@ -129,6 +148,7 @@ export function initBoard(gameId) {
             }).setOrigin(0.5, 1);
             label.setAlpha(alpha);
             this.nameLabels.set(p.playerId, label);
+            this.playerCells.set(p.playerId, p.cellId);
           }
         });
       }
@@ -139,6 +159,7 @@ export function initBoard(gameId) {
           this.helmets.delete(playerId);
           this.nameLabels.get(playerId).destroy();
           this.nameLabels.delete(playerId);
+          this.playerCells.delete(playerId);
         }
       }
     }
