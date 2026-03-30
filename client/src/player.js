@@ -127,18 +127,22 @@ async function animateDrawCards(cards, startIndex = 0) {
 
     // Force reflow, then animate position + size + flip
     flyer.getBoundingClientRect();
-    flyer.style.transition = "left 0.25s ease-out, top 0.25s ease-out, width 0.25s ease-out";
+    const flyDuration = 250;
+    flyer.style.transition = `left ${flyDuration}ms ease-out, top ${flyDuration}ms ease-out, width ${flyDuration}ms ease-out`;
     flyer.style.left = targetRect.left + "px";
     flyer.style.top = targetRect.top + "px";
     flyer.style.width = targetRect.width + "px";
     inner.style.transform = "rotateY(180deg)";
 
-    await delay(100);
-
-    img.style.visibility = "";
-    addDragListeners(img);
-    await delay(150);
-    flyer.remove();
+    // Wait for fly+flip to fully complete, then swap instantly
+    await new Promise((resolve) => {
+      flyer.addEventListener("transitionend", () => {
+        img.style.visibility = "";
+        addDragListeners(img);
+        flyer.remove();
+        resolve();
+      }, { once: true });
+    });
   }
 }
 
