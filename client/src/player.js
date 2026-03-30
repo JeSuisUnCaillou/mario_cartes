@@ -2,6 +2,7 @@ import { Client } from "colyseus.js";
 
 const CARD_ASSETS = {
   move_forward_1: "/card - move forward.svg",
+  banana_move_forward_1: "/card - banana and move forward.svg",
 };
 
 let playing = false;
