@@ -115,13 +115,29 @@ function addDragListeners(card) {
   card.addEventListener("touchstart", onStart, { passive: false });
 }
 
+function renderPileContent(containerId, count, emptyLabel, iconSrc) {
+  const container = document.getElementById(containerId);
+  if (count === 0) {
+    container.innerHTML = `<div class="pile-empty"><span>${emptyLabel}</span></div>`;
+  } else {
+    container.innerHTML = `
+      <img class="pile-icon" src="${iconSrc}" alt="${emptyLabel}" />
+      <div class="pile-count">${count}</div>
+    `;
+  }
+}
+
 function updatePiles({ drawCount, discardCount }) {
-  document.getElementById("draw-count").textContent = drawCount;
-  document.getElementById("discard-count").textContent = discardCount;
+  renderPileContent("draw-pile-content", drawCount, "Draw pile", "/card - back.svg");
+  renderPileContent("discard-pile-content", discardCount, "Discard pile", "/card - move forward.svg");
   const drawBtn = document.getElementById("draw-btn");
   const handArea = document.getElementById("hand-area");
   const handEmpty = handArea.children.length === 0;
-  drawBtn.style.display = handEmpty && drawCount > 0 ? "" : "none";
+  const totalAvailable = drawCount + discardCount;
+  drawBtn.style.display = handEmpty && totalAvailable > 0 ? "" : "none";
+  if (handEmpty && totalAvailable > 0) {
+    drawBtn.textContent = `Draw ${Math.min(5, totalAvailable)} cards`;
+  }
 }
 
 async function joinWithRetry(client, gameId, options, maxAttempts = 30, delayMs = 2000) {
@@ -186,14 +202,12 @@ function startGame(gameId, name, existingPlayerId) {
       </div>
       <div class="cards-zone">
         <div id="draw-pile" class="draw-pile">
-          <img class="pile-icon" src="/card - back.svg" alt="Draw pile" />
-          <div class="pile-count" id="draw-count">8</div>
-          <button id="draw-btn" class="draw-btn">Draw</button>
+          <div id="draw-pile-content"></div>
+          <button id="draw-btn" class="draw-btn">Draw 5 cards</button>
         </div>
         <div id="hand-area" class="hand-area"></div>
         <div id="discard-pile" class="discard-pile">
-          <img class="pile-icon" src="/card - move forward.svg" alt="Discard pile" />
-          <div class="pile-count" id="discard-count">0</div>
+          <div id="discard-pile-content"></div>
         </div>
       </div>
     </div>
@@ -222,6 +236,7 @@ function startGame(gameId, name, existingPlayerId) {
   joinWithRetry(client, gameId, joinOptions)
     .then((room) => {
       document.getElementById("status").remove();
+      updatePiles({ drawCount: 8, discardCount: 0 });
 
       room.onMessage("playerId", (id) => {
         myPlayerId = id;
