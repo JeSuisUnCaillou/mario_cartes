@@ -9,6 +9,7 @@ let playing = false;
 let animating = false;
 let animDrawCount = 0;
 let currentRoom = null;
+let pendingDiscards = 0;
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -293,7 +294,11 @@ function addDragListeners(card) {
 
       setTimeout(() => {
         if (currentRoom) {
-          currentRoom.send("playCard", { cardId: card.dataset.cardId });
+          if (pendingDiscards > 0) {
+            currentRoom.send("discardCard", { cardId: card.dataset.cardId });
+          } else {
+            currentRoom.send("playCard", { cardId: card.dataset.cardId });
+          }
         }
       }, 500);
     } else {
@@ -541,6 +546,99 @@ function startGame(gameId, name, existingPlayerId) {
         });
         if (clones.length === 0) {
           updatePiles(data);
+        }
+      });
+
+      room.onMessage("bananaHit", async (data) => {
+        const playZone = document.getElementById("play-zone");
+        const zoneRect = playZone.getBoundingClientRect();
+
+        // Crash animation: banana falls from above into the play zone
+        const crashBanana = document.createElement("img");
+        crashBanana.src = "/banana.svg";
+        crashBanana.className = "banana-crash";
+        crashBanana.style.position = "fixed";
+        crashBanana.style.width = "80px";
+        crashBanana.style.height = "auto";
+        crashBanana.style.left = (zoneRect.left + zoneRect.width / 2 - 40) + "px";
+        crashBanana.style.top = "-100px";
+        crashBanana.style.zIndex = "999";
+        crashBanana.style.pointerEvents = "none";
+        document.body.appendChild(crashBanana);
+        crashBanana.getBoundingClientRect();
+        crashBanana.style.transition = "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
+        crashBanana.style.top = (zoneRect.top + zoneRect.height / 2 - 40) + "px";
+        await new Promise((resolve) => {
+          crashBanana.addEventListener("transitionend", resolve, { once: true });
+        });
+        crashBanana.remove();
+
+        // Auto-draw if server drew cards for us
+        if (data.autoDrawn) {
+          animating = true;
+          document.getElementById("draw-btn").style.display = "none";
+          const drawData = data.autoDrawn;
+          const before = drawData.drawnBeforeShuffle;
+          const firstBatch = drawData.hand.slice(0, before);
+          const secondBatch = drawData.hand.slice(before);
+          animDrawCount = drawData.shuffledCount > 0 ? before : drawData.drawCount + drawData.hand.length;
+          if (firstBatch.length > 0) await animateDrawCards(firstBatch);
+          if (drawData.shuffledCount > 0) {
+            await animateShuffle(drawData.shuffledCount);
+            animDrawCount = drawData.drawCount + secondBatch.length;
+            renderPileContent("draw-pile-content", animDrawCount, "Draw pile", "/card - back.svg");
+            updatePileCount("draw-count", animDrawCount);
+          }
+          if (secondBatch.length > 0) await animateDrawCards(secondBatch, firstBatch.length);
+          updatePiles(drawData);
+          animating = false;
+        }
+
+        // Enter banana discard mode
+        pendingDiscards = data.mustDiscard;
+        playZone.classList.add("banana-hit");
+        playZone.innerHTML = `
+          <img src="/banana.svg" class="play-zone-banana" />
+          <span class="play-zone-label">Banana! Drag a card here to discard it.</span>
+        `;
+      });
+
+      room.onMessage("cardDiscarded", (data) => {
+        playing = false;
+        // Remove the discarded card from hand
+        const positions = captureHandPositions();
+        const handArea = document.getElementById("hand-area");
+        const discarded = handArea.querySelector(`[data-card-id="${data.cardId}"]`);
+        if (discarded) discarded.remove();
+        recomputeFan(positions);
+
+        // Animate clone to discard pile
+        const discardEl = document.getElementById("discard-pile");
+        const discardRect = discardEl.getBoundingClientRect();
+        const clones = document.querySelectorAll("body > .card");
+        clones.forEach((clone) => {
+          clone.style.transition = "all 0.3s ease-in-out";
+          clone.style.left = (discardRect.left + discardRect.width / 2 - 25) + "px";
+          clone.style.top = discardRect.top + "px";
+          clone.style.width = "50px";
+          clone.style.height = "auto";
+          clone.style.transform = "rotate(0deg)";
+          clone.style.filter = "none";
+          clone.addEventListener("transitionend", () => {
+            clone.remove();
+            updatePiles(data);
+          }, { once: true });
+        });
+        if (clones.length === 0) {
+          updatePiles(data);
+        }
+
+        // Restore play zone when all discards are done
+        if (data.remaining <= 0) {
+          pendingDiscards = 0;
+          const playZone = document.getElementById("play-zone");
+          playZone.classList.remove("banana-hit");
+          playZone.innerHTML = `<span class="play-zone-label">Drag a card here to play it</span>`;
         }
       });
 

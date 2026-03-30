@@ -133,6 +133,19 @@ input {
   text-align: center;
 }
 
+.play-zone.banana-hit {
+  border-color: #e8a317;
+  background: rgba(232, 163, 23, 0.1);
+  flex-direction: column;
+  gap: 8px;
+}
+
+.play-zone-banana {
+  width: 60px;
+  height: auto;
+  pointer-events: none;
+}
+
 .cards-zone {
   display: flex;
   align-items: flex-end;
