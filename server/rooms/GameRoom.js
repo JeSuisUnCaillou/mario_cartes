@@ -5,6 +5,21 @@ const path = require("path");
 const DISPOSE_DELAY_MS = 10 * 60 * 1000; // 10 minutes
 
 class GameRoom extends Room {
+  _createDeck() {
+    return Array.from({ length: 8 }, () => ({
+      id: randomUUID(),
+      type: "move_forward_1",
+    }));
+  }
+
+  _cardState(player) {
+    return {
+      hand: player.hand,
+      drawCount: player.drawPile.length,
+      discardCount: player.discardPile.length,
+    };
+  }
+
   onCreate(options) {
     if (options._roomId) {
       this.roomId = options._roomId;
@@ -24,11 +39,13 @@ class GameRoom extends Room {
       this.broadcastPlayers();
     });
 
-    this.onMessage("ping", (client) => {
+    this.onMessage("drawCards", (client) => {
       const player = this._getPlayer(client);
       if (!player) return;
-      player.cellId = this.cells.get(player.cellId).next_cell;
-      this.broadcastPlayers();
+      if (player.hand.length > 0) return;
+      const drawn = player.drawPile.splice(0, 5);
+      player.hand.push(...drawn);
+      client.send("cardsDrawn", this._cardState(player));
     });
   }
 
@@ -52,10 +69,14 @@ class GameRoom extends Room {
         const player = this.players.get(existingPlayerId);
         player.connected = true;
         this.clientsInfo.set(client.sessionId, { type: "player", playerId: existingPlayerId });
+        client.send("cardsDrawn", this._cardState(player));
       } else {
         const playerId = randomUUID();
         const name = (options.name || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
-        this.players.set(playerId, { playerId, name, cellId: 1, connected: true });
+        this.players.set(playerId, {
+          playerId, name, cellId: 1, connected: true,
+          drawPile: this._createDeck(), hand: [], discardPile: [],
+        });
         this.clientsInfo.set(client.sessionId, { type: "player", playerId });
         client.send("playerId", playerId);
       }
