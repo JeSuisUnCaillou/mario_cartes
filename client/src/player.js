@@ -33,7 +33,7 @@ function getPointerPos(e) {
 }
 
 function addDragListeners(card) {
-  let startX, startY, origLeft, origTop;
+  let startX, startY, origLeft, origTop, dragClone;
 
   function onStart(e) {
     if (playing) return;
@@ -45,13 +45,22 @@ function addDragListeners(card) {
     origLeft = rect.left;
     origTop = rect.top;
 
-    card.style.position = "fixed";
-    card.style.left = origLeft + "px";
-    card.style.top = origTop + "px";
-    card.style.transform = "scale(1.1)";
-    card.style.zIndex = "1000";
-    card.style.margin = "0";
-    card.style.transition = "none";
+    // Create a visual clone for dragging
+    dragClone = card.cloneNode(true);
+    dragClone.style.position = "fixed";
+    dragClone.style.left = origLeft + "px";
+    dragClone.style.top = origTop + "px";
+    dragClone.style.width = rect.width + "px";
+    dragClone.style.height = rect.height + "px";
+    dragClone.style.transform = "scale(1.1)";
+    dragClone.style.zIndex = "1000";
+    dragClone.style.margin = "0";
+    dragClone.style.transition = "none";
+    dragClone.style.pointerEvents = "none";
+    document.body.appendChild(dragClone);
+
+    // Hide original to keep gap
+    card.style.visibility = "hidden";
 
     document.addEventListener("mousemove", onMove);
     document.addEventListener("mouseup", onEnd);
@@ -64,8 +73,8 @@ function addDragListeners(card) {
     const pos = getPointerPos(e);
     const dx = pos.x - startX;
     const dy = pos.y - startY;
-    card.style.left = (origLeft + dx) + "px";
-    card.style.top = (origTop + dy) + "px";
+    dragClone.style.left = (origLeft + dx) + "px";
+    dragClone.style.top = (origTop + dy) + "px";
   }
 
   function onEnd(e) {
@@ -74,25 +83,24 @@ function addDragListeners(card) {
     document.removeEventListener("touchmove", onMove);
     document.removeEventListener("touchend", onEnd);
 
-    const endPos = e.changedTouches ? e.changedTouches[0] : e;
     const playZone = document.getElementById("play-zone");
     const zoneRect = playZone.getBoundingClientRect();
-    const cardRect = card.getBoundingClientRect();
-    const cardCenterX = cardRect.left + cardRect.width / 2;
-    const cardCenterY = cardRect.top + cardRect.height / 2;
+    const cloneRect = dragClone.getBoundingClientRect();
+    const centerX = cloneRect.left + cloneRect.width / 2;
+    const centerY = cloneRect.top + cloneRect.height / 2;
 
     const hit =
-      cardCenterX >= zoneRect.left &&
-      cardCenterX <= zoneRect.right &&
-      cardCenterY >= zoneRect.top &&
-      cardCenterY <= zoneRect.bottom;
+      centerX >= zoneRect.left &&
+      centerX <= zoneRect.right &&
+      centerY >= zoneRect.top &&
+      centerY <= zoneRect.bottom;
 
     if (hit) {
       playing = true;
-      card.style.transition = "all 0.3s ease";
-      card.style.left = (zoneRect.left + zoneRect.width / 2 - cardRect.width / 2) + "px";
-      card.style.top = (zoneRect.top + zoneRect.height / 2 - cardRect.height / 2) + "px";
-      card.style.transform = "scale(1)";
+      dragClone.style.transition = "all 0.3s ease";
+      dragClone.style.left = (zoneRect.left + zoneRect.width / 2 - cloneRect.width / 2) + "px";
+      dragClone.style.top = (zoneRect.top + zoneRect.height / 2 - cloneRect.height / 2) + "px";
+      dragClone.style.transform = "scale(1)";
 
       setTimeout(() => {
         if (currentRoom) {
@@ -100,14 +108,9 @@ function addDragListeners(card) {
         }
       }, 500);
     } else {
-      // Animate back to fan position
-      card.style.position = "";
-      card.style.left = "";
-      card.style.top = "";
-      card.style.zIndex = "";
-      card.style.margin = "";
-      card.style.transition = "";
-      card.style.transform = card.dataset.fanTransform;
+      // Snap back: remove clone, show original
+      dragClone.remove();
+      card.style.visibility = "";
     }
   }
 
@@ -252,6 +255,7 @@ function startGame(gameId, name, existingPlayerId) {
 
       room.onMessage("cardPlayed", (data) => {
         playing = false;
+        document.querySelectorAll("body > .card").forEach((el) => el.remove());
         renderHand(data.hand);
         updatePiles(data);
       });
