@@ -49,3 +49,77 @@ input {
   color: inherit;
   padding: 0;
 }
+
+/* Player screen: 3-zone layout */
+.player-screen {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.top-zone {
+  text-align: center;
+  padding: 12px;
+  flex-shrink: 0;
+}
+
+.play-zone {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 8px 16px;
+  border: 3px dashed #555;
+  border-radius: 16px;
+  min-height: 80px;
+}
+
+.play-zone-label {
+  color: #777;
+  font-size: 1.1em;
+  pointer-events: none;
+}
+
+.cards-zone {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 8px;
+  height: 40vh;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.draw-pile,
+.discard-pile {
+  width: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.pile-count {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #aaa;
+}
+
+.draw-btn {
+  padding: 8px 12px;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+.hand-area {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 0;
+  position: relative;
+}

@@ -52,12 +52,23 @@ export function initPlayer(gameId) {
 
 function startGame(gameId, name, existingPlayerId) {
   document.getElementById("app").innerHTML = `
-    <div class="player-container">
-      <input id="player-name" class="name-edit-input" type="text" maxlength="3" value="${name}" autocomplete="off" />
-      <div class="mt-1">
+    <div class="player-screen">
+      <div class="top-zone">
+        <input id="player-name" class="name-edit-input" type="text" maxlength="3" value="${name}" autocomplete="off" />
         <p id="status">Joining…</p>
-        <p id="cell-info"></p>
-        <button id="ping-btn" disabled>Ping</button>
+      </div>
+      <div id="play-zone" class="play-zone">
+        <span class="play-zone-label">Drag a card here</span>
+      </div>
+      <div class="cards-zone">
+        <div id="draw-pile" class="draw-pile">
+          <div class="pile-count" id="draw-count">8</div>
+          <button id="draw-btn" class="draw-btn">Draw</button>
+        </div>
+        <div id="hand-area" class="hand-area"></div>
+        <div id="discard-pile" class="discard-pile">
+          <div class="pile-count" id="discard-count">0</div>
+        </div>
       </div>
     </div>
   `;
@@ -85,23 +96,10 @@ function startGame(gameId, name, existingPlayerId) {
   joinWithRetry(client, gameId, joinOptions)
     .then((room) => {
       document.getElementById("status").remove();
-      const btn = document.getElementById("ping-btn");
-      btn.disabled = false;
-      btn.addEventListener("click", () => {
-        room.send("ping");
-      });
 
       room.onMessage("playerId", (id) => {
         myPlayerId = id;
         localStorage.setItem(playerIdKey, id);
-      });
-
-      room.onMessage("players", (players) => {
-        if (!myPlayerId) return;
-        const me = players.find((p) => p.playerId === myPlayerId);
-        if (me) {
-          document.getElementById("cell-info").textContent = `Cell: ${me.cellId}`;
-        }
       });
 
       nameInput.addEventListener("change", () => {
