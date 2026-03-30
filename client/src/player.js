@@ -18,8 +18,11 @@ export function initPlayer(gameId) {
     <div class="player-container">
       <h1>Game ${gameId}</h1>
       <form id="name-form">
-        <input id="name-input" type="text" maxlength="3" placeholder="AAA" autocomplete="off" />
-        <button type="submit">Join</button>
+        <label for="name-input">Enter your player name, 3 letters.</label>
+        <div class="mt-1">
+          <input id="name-input" type="text" maxlength="3" placeholder="KYU" autocomplete="off" />
+          <button type="submit">Join</button>
+        </div>
       </form>
     </div>
   `;
