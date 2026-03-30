@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="53.98mm"
+   height="85.599998mm"
+   viewBox="0 0 53.98 85.599998"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="card - banana and move forward.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="1.6792922"
+     inkscape:cx="51.212052"
+     inkscape:cy="155.12488"
+     inkscape:window-width="1854"
+     inkscape:window-height="1131"
+     inkscape:window-x="66"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:#7f7f7f;stroke-width:0.502453;fill-opacity:1"
+       id="rect236"
+       width="53.98"
+       height="85.599998"
+       x="-1.6098234e-15"
+       y="-1.2767565e-15"
+       ry="4.2823" />
+    <rect
+       style="fill:#dcdcdc;fill-opacity:1;stroke-width:0.462668"
+       id="rect1287"
+       width="49.705761"
+       height="57.154411"
+       x="2.1651971"
+       y="2.1344836"
+       ry="3.9432192" />
+    <path
+       id="rect1026"
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       d="m 27.01769,8.2680697 c -3.291667,3.2916663 -6.584043,6.5829753 -9.874563,9.8757323 1.615094,-5.62e-4 3.230299,1.8e-5 4.845393,0 -0.0057,0.06792 -0.0094,0.13626 -0.0094,0.20569 v 10.99826 c 0,1.341324 1.079912,2.421236 2.421236,2.421236 H 29.6358 c 1.341324,0 2.421236,-1.079912 2.421236,-2.421236 v -10.99826 c 0,-0.06953 -0.0037,-0.137972 -0.0094,-0.205982 1.615143,8.4e-5 3.230252,3.61e-4 4.845393,0 z" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:5.88253px;line-height:1.5;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold';fill:#ffffff;fill-opacity:1;stroke-width:0.92638"
+       x="26.954704"
+       y="70.025909"
+       id="text1619"><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold';text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke-width:0.926382"
+         x="26.954706"
+         y="70.025909"
+         id="tspan1723">Drop a banana,</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:sans-serif;-inkscape-font-specification:'sans-serif Bold';text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke-width:0.926382"
+         x="26.954702"
+         y="78.849709"
+         id="tspan8084">Move forward</tspan></text>
+    <g
+       id="g5545"
+       transform="translate(1.3457344,7.7760417)"
+       style="stroke-width:0.5;stroke-dasharray:none">
+      <path
+         style="fill:#f6e500;fill-opacity:1;stroke:#000000;stroke-width:0.5;stroke-dasharray:none;stroke-opacity:1"
+         d="m 33.946175,32.395794 c -7.479395,9.703344 -20.091917,5.832708 -20.091917,5.832708 l -1.008717,1.614264 c 0,0 1.222335,0.180107 1.589457,1.222153 0.367122,1.042043 7.645463,6.267792 15.610942,3.564084 7.965481,-2.703706 5.289514,-11.157237 6.066524,-12.58565 0.777002,-1.428418 2.282184,-2.423298 2.282184,-2.423298 l -2.699164,-1.196458 z"
+         id="path668" />
+      <path
+         style="opacity:1;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+         d="m 15.635399,40.614404 c 8.53305,2.13514 15.258886,0.45066 18.28655,-5.238737"
+         id="path5445"
+         sodipodi:nodetypes="cc" />
+    </g>
+  </g>
+</svg>
