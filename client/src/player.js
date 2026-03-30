@@ -292,9 +292,15 @@ function addDragListeners(card) {
         }
       }, 500);
     } else {
-      // Snap back: remove clone, show original
-      dragClone.remove();
-      card.style.visibility = "";
+      // Animate back to original position
+      dragClone.style.transition = "all 0.3s ease-in-out";
+      dragClone.style.left = origLeft + "px";
+      dragClone.style.top = origTop + "px";
+      dragClone.style.transform = card.dataset.fanTransform;
+      dragClone.addEventListener("transitionend", () => {
+        dragClone.remove();
+        card.style.visibility = "";
+      }, { once: true });
     }
   }
 
