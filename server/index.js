@@ -20,6 +20,16 @@ app.get("/create", async (req, res) => {
   res.json({ id: room.roomId });
 });
 
+app.get("/find-or-create/:gameId", async (req, res) => {
+  const { gameId } = req.params;
+  const rooms = await matchMaker.query({ roomId: gameId });
+  if (rooms.length > 0) {
+    return res.json({ id: gameId });
+  }
+  const room = await matchMaker.createRoom("game", {});
+  res.json({ id: room.roomId });
+});
+
 const port = process.env.PORT || 2567;
 httpServer.listen(port, () => {
   console.log(`Server listening on port ${port}`);

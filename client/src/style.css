@@ -12,3 +12,7 @@ button {
   padding: 10px 15px;
   cursor: pointer;
 }
+
+.player-container, .home-container {
+  text-align: center;
+}

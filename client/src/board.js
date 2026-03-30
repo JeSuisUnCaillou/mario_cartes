@@ -55,11 +55,27 @@ export function initBoard(gameId) {
       const trackScale = Math.min(scaleX, scaleY);
       this.track.setScale(trackScale);
 
-      colyseusClient.joinById(gameId, { type: "board" }).then((room) => {
+      this.connectToRoom(gameId);
+    }
+
+    async connectToRoom(targetId) {
+      let roomId = targetId;
+      try {
+        await colyseusClient.joinById(roomId, { type: "board" }).then((room) => {
+          room.onMessage("players", (players) => {
+            this.updatePlayers(players);
+          });
+        });
+      } catch {
+        const res = await fetch(`/find-or-create/${roomId}`);
+        const data = await res.json();
+        roomId = data.id;
+        history.replaceState(null, "", `/game/${roomId}/board`);
+        const room = await colyseusClient.joinById(roomId, { type: "board" });
         room.onMessage("players", (players) => {
           this.updatePlayers(players);
         });
-      });
+      }
     }
 
     cellPixelPos(cellId) {

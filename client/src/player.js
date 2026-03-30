@@ -2,8 +2,10 @@ import { Client } from "colyseus.js";
 
 export function initPlayer(gameId) {
   document.getElementById("app").innerHTML = `
-    <h1>Player — Game ${gameId}</h1>
-    <button id="ping-btn">Ping</button>
+    <div class="player-container">
+      <h1>Player — Game ${gameId}</h1>
+      <button id="ping-btn">Ping</button>
+    </div>
   `;
 
   const serverUrl = import.meta.env.DEV
