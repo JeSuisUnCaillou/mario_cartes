@@ -116,7 +116,34 @@ export function initBoard(gameId) {
       this.refreshPlayerPositions();
     }
 
+    cellSlotPos(cellId, slotIndex, totalSlots) {
+      const cellW = this.track.displayWidth / 5;
+      const maxPerRow = 4;
+      const helmetSlot = cellW / 4.5;
+      const center = this.cellPixelPos(cellId);
+      const rows = Math.ceil(totalSlots / maxPerRow);
+      const row = Math.floor(slotIndex / maxPerRow);
+      const colsInRow = Math.min(maxPerRow, totalSlots - row * maxPerRow);
+      const col = slotIndex % maxPerRow;
+      return {
+        x: center.x + (col - (colsInRow - 1) / 2) * helmetSlot,
+        y: center.y + (row - (rows - 1) / 2) * helmetSlot,
+      };
+    }
+
+    cellOccupantCount(cellId) {
+      const playerCount = (this.latestPlayers || []).filter(
+        (p) => p.playerId && p.cellId === cellId
+      ).length;
+      const bananaCount = (this.latestBananas && this.latestBananas[cellId]) || 0;
+      return { playerCount, bananaCount, total: playerCount + bananaCount };
+    }
+
     refreshPlayerPositions() {
+      const cellW = this.track.displayWidth / 5;
+      const helmetSlot = cellW / 4.5;
+      const helmetDisplaySize = helmetSlot * 0.9;
+
       const byCell = new Map();
       for (const p of this.latestPlayers) {
         if (!p.playerId || !CELL_POSITIONS[p.cellId]) continue;
@@ -124,22 +151,10 @@ export function initBoard(gameId) {
         byCell.get(p.cellId).push(p);
       }
 
-      const cellW = this.track.displayWidth / 5;
-      const maxPerRow = 4;
-      const helmetSlot = cellW / 4.5;
-      const helmetDisplaySize = helmetSlot * 0.9;
-
       for (const [cellId, cellPlayers] of byCell) {
-        const center = this.cellPixelPos(cellId);
-        const rows = Math.ceil(cellPlayers.length / maxPerRow);
-
+        const { total } = this.cellOccupantCount(cellId);
         cellPlayers.forEach((p, i) => {
-          const row = Math.floor(i / maxPerRow);
-          const colsInRow = Math.min(maxPerRow, cellPlayers.length - row * maxPerRow);
-          const col = i % maxPerRow;
-          const x = center.x + (col - (colsInRow - 1) / 2) * helmetSlot;
-          const y = center.y + (row - (rows - 1) / 2) * helmetSlot;
-
+          const { x, y } = this.cellSlotPos(cellId, i, total);
           const helmet = this.helmets.get(p.playerId);
           const label = this.nameLabels.get(p.playerId);
           if (!helmet) return;
@@ -163,6 +178,7 @@ export function initBoard(gameId) {
       });
       room.onMessage("bananas", (bananas) => {
         this.updateBananas(bananas);
+        this.refreshPlayerPositions();
       });
       room.onMessage("bananaHitBoard", (data) => {
         this.animateBananaHit(data.playerId, data.cellId);
@@ -188,7 +204,6 @@ export function initBoard(gameId) {
         const cellId = Number(cellIdStr);
         if (!CELL_POSITIONS[cellId]) continue;
         const existing = this.bananaSprites.get(cellId) || [];
-        const center = this.cellPixelPos(cellId);
 
         // Remove excess sprites
         while (existing.length > count) {
@@ -196,15 +211,16 @@ export function initBoard(gameId) {
         }
         // Add missing sprites
         while (existing.length < count) {
-          const sprite = this.add.image(center.x, center.y, "banana");
+          const sprite = this.add.image(0, 0, "banana");
           sprite.setScale(bananaSize / sprite.width);
           sprite.setDepth(0);
           existing.push(sprite);
         }
-        // Position all sprites
+        // Position bananas after players in the shared grid
+        const { playerCount, total } = this.cellOccupantCount(cellId);
         existing.forEach((sprite, i) => {
-          const offset = (i - (existing.length - 1) / 2) * bananaSize * 0.4;
-          sprite.setPosition(center.x + offset, center.y);
+          const { x, y } = this.cellSlotPos(cellId, playerCount + i, total);
+          sprite.setPosition(x, y);
           sprite.setScale(bananaSize / sprite.width);
         });
 
@@ -305,20 +321,14 @@ export function initBoard(gameId) {
       }
 
       const cellW = this.track.displayWidth / 5;
-      const maxPerRow = 4;
       const helmetSlot = cellW / 4.5;
       const helmetDisplaySize = helmetSlot * 0.9;
 
       for (const [cellId, cellPlayers] of byCell) {
-        const center = this.cellPixelPos(cellId);
-        const rows = Math.ceil(cellPlayers.length / maxPerRow);
+        const { total } = this.cellOccupantCount(cellId);
 
         cellPlayers.forEach((p, i) => {
-          const row = Math.floor(i / maxPerRow);
-          const colsInRow = Math.min(maxPerRow, cellPlayers.length - row * maxPerRow);
-          const col = i % maxPerRow;
-          const x = center.x + (col - (colsInRow - 1) / 2) * helmetSlot;
-          const y = center.y + (row - (rows - 1) / 2) * helmetSlot;
+          const { x, y } = this.cellSlotPos(cellId, i, total);
           const alpha = p.connected ? 1 : 0.5;
 
           if (this.helmets.has(p.playerId)) {
@@ -387,6 +397,9 @@ export function initBoard(gameId) {
           this.playerCells.delete(playerId);
         }
       }
+
+      // Reposition bananas since the shared grid may have changed
+      this.refreshBananaPositions();
     }
   }
 
