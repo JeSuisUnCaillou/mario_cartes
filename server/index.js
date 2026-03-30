@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path");
 const { createServer } = require("http");
 const { Server, matchMaker } = require("colyseus");
 const { WebSocketTransport } = require("@colyseus/ws-transport");
@@ -8,6 +9,9 @@ const app = express();
 const httpServer = createServer(app);
 
 app.use(express.json());
+
+const clientDist = path.join(__dirname, "../client/dist");
+app.use(express.static(clientDist));
 
 const gameServer = new Server({
   transport: new WebSocketTransport({ server: httpServer }),
@@ -28,6 +32,10 @@ app.get("/find-or-create/:gameId", async (req, res) => {
   }
   const room = await matchMaker.createRoom("game", { _roomId: gameId });
   res.json({ id: room.roomId });
+});
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(clientDist, "index.html"));
 });
 
 const port = process.env.PORT || 2567;

@@ -2,8 +2,12 @@
   "name": "mario-cartes",
   "private": true,
   "workspaces": ["server", "client"],
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
-    "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\""
+    "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w client"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
