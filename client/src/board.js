@@ -221,39 +221,11 @@ export function initBoard(gameId) {
       const label = this.nameLabels.get(playerId);
       if (!helmet) return;
 
-      // Wait for the move tween (400ms) to finish before animating
       const moveDelay = 400;
+      const jumpDuration = 600;
       const jumpHeight = helmet.displayHeight * 1.5;
 
-      // Helmet: jump up then land, spin twice
-      this.tweens.add({
-        targets: helmet,
-        y: `-=${jumpHeight}`,
-        duration: 300,
-        ease: "Power2",
-        yoyo: true,
-        delay: moveDelay,
-      });
-      this.tweens.add({
-        targets: helmet,
-        angle: 720,
-        duration: 600,
-        ease: "Linear",
-        delay: moveDelay,
-        onComplete: () => { helmet.setAngle(0); },
-      });
-      if (label) {
-        this.tweens.add({
-          targets: label,
-          y: `-=${jumpHeight}`,
-          duration: 300,
-          ease: "Power2",
-          yoyo: true,
-          delay: moveDelay,
-        });
-      }
-
-      // Banana: create a temporary sprite at the cell and launch it upward
+      // Create a temp banana at the cell (the real one is already removed by updateBananas)
       const center = this.cellPixelPos(cellId);
       const cellW = this.track.displayWidth / 5;
       const helmetSlot = cellW / 4.5;
@@ -261,22 +233,45 @@ export function initBoard(gameId) {
       const banana = this.add.image(center.x, center.y, "banana");
       banana.setScale(size / banana.width);
       banana.setDepth(10);
-      banana.setAlpha(0);
+
+      // Phase 1 (after move): helmet jumps + banana launches out simultaneously
       this.tweens.add({
-        targets: banana,
-        alpha: 1,
-        duration: 1,
+        targets: helmet,
+        y: `-=${jumpHeight}`,
+        duration: jumpDuration,
+        ease: "Bounce.easeOut",
+        yoyo: true,
         delay: moveDelay,
       });
+      if (label) {
+        this.tweens.add({
+          targets: label,
+          y: `-=${jumpHeight}`,
+          duration: jumpDuration,
+          ease: "Bounce.easeOut",
+          yoyo: true,
+          delay: moveDelay,
+        });
+      }
       this.tweens.add({
         targets: banana,
         y: center.y - this.scale.height * 0.6,
         angle: 360,
         alpha: 0,
-        duration: 700,
+        duration: jumpDuration,
         ease: "Power2",
         delay: moveDelay,
         onComplete: () => { banana.destroy(); },
+      });
+
+      // Phase 2 (after jump lands): helmet spins twice
+      this.tweens.add({
+        targets: helmet,
+        angle: 720,
+        duration: 600,
+        ease: "Linear",
+        delay: moveDelay + jumpDuration * 2,
+        onComplete: () => { helmet.setAngle(0); },
       });
     }
 
