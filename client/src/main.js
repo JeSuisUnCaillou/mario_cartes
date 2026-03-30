@@ -1,3 +1,4 @@
+import "./style.css";
 import { initHome } from "./home.js";
 import { initBoard } from "./board.js";
 import { initPlayer } from "./player.js";
