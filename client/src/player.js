@@ -459,6 +459,15 @@ function startGame(gameId, name, existingPlayerId) {
         if (data.drawnBeforeShuffle === undefined) {
           renderHand(data.hand);
           updatePiles(data);
+          if (data.pendingBananaDiscards > 0) {
+            pendingDiscards = data.pendingBananaDiscards;
+            const playZone = document.getElementById("play-zone");
+            playZone.classList.add("banana-hit");
+            playZone.innerHTML = `
+              <img src="/banana.svg" class="play-zone-banana" />
+              <span class="play-zone-label">Banana! Drag a card here to discard it.</span>
+            `;
+          }
           return;
         }
         animating = true;
@@ -551,31 +560,27 @@ function startGame(gameId, name, existingPlayerId) {
 
       room.onMessage("bananaHit", async (data) => {
         const playZone = document.getElementById("play-zone");
+        const zoneRect = playZone.getBoundingClientRect();
 
-        // Skip animations on reconnect — just restore the discard UI
-        if (!data.reconnect) {
-          const zoneRect = playZone.getBoundingClientRect();
-
-          // Crash animation: banana falls from above into the play zone
-          const crashBanana = document.createElement("img");
-          crashBanana.src = "/banana.svg";
-          crashBanana.className = "banana-crash";
-          crashBanana.style.position = "fixed";
-          crashBanana.style.width = "80px";
-          crashBanana.style.height = "auto";
-          crashBanana.style.left = (zoneRect.left + zoneRect.width / 2 - 40) + "px";
-          crashBanana.style.top = "-100px";
-          crashBanana.style.zIndex = "999";
-          crashBanana.style.pointerEvents = "none";
-          document.body.appendChild(crashBanana);
-          crashBanana.getBoundingClientRect();
-          crashBanana.style.transition = "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
-          crashBanana.style.top = (zoneRect.top + zoneRect.height / 2 - 40) + "px";
-          await new Promise((resolve) => {
-            crashBanana.addEventListener("transitionend", resolve, { once: true });
-          });
-          crashBanana.remove();
-        }
+        // Crash animation: banana falls from above into the play zone
+        const crashBanana = document.createElement("img");
+        crashBanana.src = "/banana.svg";
+        crashBanana.className = "banana-crash";
+        crashBanana.style.position = "fixed";
+        crashBanana.style.width = "80px";
+        crashBanana.style.height = "auto";
+        crashBanana.style.left = (zoneRect.left + zoneRect.width / 2 - 40) + "px";
+        crashBanana.style.top = "-100px";
+        crashBanana.style.zIndex = "999";
+        crashBanana.style.pointerEvents = "none";
+        document.body.appendChild(crashBanana);
+        crashBanana.getBoundingClientRect();
+        crashBanana.style.transition = "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
+        crashBanana.style.top = (zoneRect.top + zoneRect.height / 2 - 40) + "px";
+        await new Promise((resolve) => {
+          crashBanana.addEventListener("transitionend", resolve, { once: true });
+        });
+        crashBanana.remove();
 
         // Auto-draw if server drew cards for us
         if (data.autoDrawn) {
