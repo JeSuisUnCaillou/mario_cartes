@@ -74,6 +74,7 @@ export function initBoard(gameId) {
       this.nameLabels = new Map();
       this.playerCells = new Map();
       this.latestPlayers = [];
+      this.bananaSprites = new Map();
     }
 
     preload() {
@@ -83,6 +84,7 @@ export function initBoard(gameId) {
       const trackH = Math.round(maxDim / SVG_ASPECT);
       this.load.svg("racetrack", "/racetrack_0.svg", { width: trackW, height: trackH });
       this.load.svg("helmet", "/helmet.svg", { width: 64, height: 64 });
+      this.load.svg("banana", "/banana.svg", { width: 48, height: 48 });
       this.load.image("space", "/space.jpg");
     }
 
@@ -110,6 +112,7 @@ export function initBoard(gameId) {
 
     onResize() {
       this.layoutTrack();
+      this.refreshBananaPositions();
       this.refreshPlayerPositions();
     }
 
@@ -158,6 +161,54 @@ export function initBoard(gameId) {
       room.onMessage("players", (players) => {
         this.updatePlayers(players);
       });
+      room.onMessage("bananas", (bananas) => {
+        this.updateBananas(bananas);
+      });
+    }
+
+    updateBananas(bananas) {
+      this.latestBananas = bananas;
+      const bananaSize = this.track.displayWidth / 12;
+
+      // Remove sprites for cells no longer in bananas
+      for (const [cellId, sprites] of this.bananaSprites) {
+        if (!bananas[cellId]) {
+          sprites.forEach((s) => s.destroy());
+          this.bananaSprites.delete(cellId);
+        }
+      }
+
+      // Create or update sprites per cell
+      for (const [cellIdStr, count] of Object.entries(bananas)) {
+        const cellId = Number(cellIdStr);
+        if (!CELL_POSITIONS[cellId]) continue;
+        const existing = this.bananaSprites.get(cellId) || [];
+        const center = this.cellPixelPos(cellId);
+
+        // Remove excess sprites
+        while (existing.length > count) {
+          existing.pop().destroy();
+        }
+        // Add missing sprites
+        while (existing.length < count) {
+          const sprite = this.add.image(center.x, center.y, "banana");
+          sprite.setScale(bananaSize / sprite.width);
+          sprite.setDepth(0);
+          existing.push(sprite);
+        }
+        // Position all sprites
+        existing.forEach((sprite, i) => {
+          const offset = (i - (existing.length - 1) / 2) * bananaSize * 0.4;
+          sprite.setPosition(center.x + offset, center.y);
+          sprite.setScale(bananaSize / sprite.width);
+        });
+
+        this.bananaSprites.set(cellId, existing);
+      }
+    }
+
+    refreshBananaPositions() {
+      if (this.latestBananas) this.updateBananas(this.latestBananas);
     }
 
     cellPixelPos(cellId) {
