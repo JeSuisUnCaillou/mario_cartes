@@ -40,9 +40,8 @@ export function initBoard(gameId) {
       const dpr = window.devicePixelRatio || 1;
       const trackW = Math.round(window.innerWidth * 0.9 * dpr);
       const trackH = Math.round(window.innerHeight * 0.9 * dpr);
-      const cellSize = Math.round((trackW / 5) * 0.8);
       this.load.svg("racetrack", "/racetrack_0.svg", { width: trackW, height: trackH });
-      this.load.svg("helmet", "/helmet.svg", { width: cellSize, height: cellSize });
+      this.load.svg("helmet", "/helmet.svg", { width: 64, height: 64 });
     }
 
     create() {
