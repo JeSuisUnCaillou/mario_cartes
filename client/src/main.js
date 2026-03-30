@@ -8,12 +8,32 @@ const playerMatch = path.match(/^\/game\/([^/]+)\/player$/);
 
 if (boardMatch) {
   const uid = boardMatch[1];
-  console.log('Board screen for game:', uid);
-  // TODO Slice 7: import and init BoardGame
+  const { joinAsBoard } = await import('./network/colyseusClient.js');
+  const { initBoardGame } = await import('./board/BoardGame.js');
+  const room = await joinAsBoard(uid).catch((err) => {
+    console.error('Failed to join board:', err);
+    return null;
+  });
+  initBoardGame(uid, room);
+
 } else if (playerMatch) {
   const uid = playerMatch[1];
-  console.log('Player screen for game:', uid);
-  // TODO Slice 8: import and init PlayerApp
+  const app = document.getElementById('app');
+
+  const name = prompt('Your name?') || 'Player';
+
+  const { joinAsPlayer } = await import('./network/colyseusClient.js');
+  const room = await joinAsPlayer(uid, name).catch((err) => {
+    console.error('Failed to join as player:', err);
+    app.textContent = 'Could not connect. Is the game started?';
+    return null;
+  });
+
+  if (room) {
+    const { PlayerApp } = await import('./player/PlayerApp.js');
+    new PlayerApp(app, room);
+  }
+
 } else {
   const app = document.getElementById('app');
   app.innerHTML = `
