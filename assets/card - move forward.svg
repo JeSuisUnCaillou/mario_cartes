@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="53.98mm"
+   height="85.599998mm"
+   viewBox="0 0 53.98 85.599998"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="card - move forward.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="1.439664"
+     inkscape:cx="-22.227409"
+     inkscape:cy="209.42387"
+     inkscape:window-width="1854"
+     inkscape:window-height="1131"
+     inkscape:window-x="66"
+     inkscape:window-y="32"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:#7f7f7f;stroke-width:0.502453;fill-opacity:1"
+       id="rect236"
+       width="53.98"
+       height="85.599998"
+       x="-1.6098234e-15"
+       y="-1.2767565e-15"
+       ry="4.2823" />
+    <rect
+       style="fill:#dcdcdc;fill-opacity:1;stroke-width:0.462668"
+       id="rect1287"
+       width="49.705761"
+       height="57.154411"
+       x="2.1651971"
+       y="2.1344836"
+       ry="3.9432192" />
+    <path
+       id="rect1026"
+       style="fill:#ffffff;fill-opacity:1;stroke-width:0.499999"
+       d="M 27.017307,9.9287202 C 21.195354,15.750671 15.372148,21.57199 9.5522224,27.39587 c 2.8566076,-9.93e-4 5.7134126,3.2e-5 8.5700206,0 -0.01003,0.120122 -0.01654,0.241002 -0.01654,0.363803 v 19.452559 c 0,2.372392 1.910034,4.282426 4.282425,4.282426 h 9.2599 c 2.372392,0 4.282426,-1.910034 4.282426,-4.282426 V 27.759673 c 0,-0.122976 -0.0065,-0.244031 -0.01654,-0.364319 2.856693,1.49e-4 5.713327,6.38e-4 8.570019,0 z" />
+    <text
+       xml:space="preserve"
+       style="font-size:5.88253px;fill:#ffffff;fill-opacity:1;stroke-width:0.92638"
+       x="26.954704"
+       y="71.084244"
+       id="text1619"><tspan
+         sodipodi:role="line"
+         id="tspan1617"
+         style="text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke-width:0.926382"
+         x="26.954704"
+         y="71.084244">Move forward</tspan><tspan
+         sodipodi:role="line"
+         style="text-align:center;text-anchor:middle;fill:#ffffff;fill-opacity:1;stroke-width:0.926382"
+         x="26.954704"
+         y="78.437408"
+         id="tspan1723">one cell</tspan></text>
+  </g>
+</svg>
