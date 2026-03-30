@@ -50,3 +50,7 @@ I want automated tests as much as we can to support the fast growing codebase.
 We need to split this V0 in understandable small commits, baby steps.
 
 We will host it on heroku.
+
+# Split the complexity
+
+We will not implement this shape at once, we are going to make several smaller shapes to implement step by step.
