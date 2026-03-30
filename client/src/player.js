@@ -198,7 +198,7 @@ function startGame(gameId, name, existingPlayerId) {
         <p id="status">Joining…</p>
       </div>
       <div id="play-zone" class="play-zone">
-        <span class="play-zone-label">Drag a card here</span>
+        <span class="play-zone-label">Drag a card here to play it</span>
       </div>
       <div class="cards-zone">
         <div id="draw-pile" class="draw-pile">

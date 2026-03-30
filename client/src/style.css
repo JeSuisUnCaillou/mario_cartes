@@ -66,14 +66,17 @@ input {
 }
 
 .play-zone {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 8px 16px;
+  align-self: center;
+  margin: 8px;
+  flex: 1;
+  aspect-ratio: 54 / 86;
+  max-height: 40vh;
   border: 3px dashed #555;
-  border-radius: 16px;
-  min-height: 80px;
+  border-radius: 8px;
+  box-sizing: border-box;
 }
 
 .play-zone-label {
