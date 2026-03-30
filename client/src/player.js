@@ -336,14 +336,6 @@ function updatePiles({ drawCount, discardCount }) {
   renderPileContent("discard-pile-content", discardCount, "Discard pile", "/card - move forward.svg");
   updatePileCount("draw-count", drawCount);
   updatePileCount("discard-count", discardCount);
-  const drawBtn = document.getElementById("draw-btn");
-  const handArea = document.getElementById("hand-area");
-  const handEmpty = handArea.children.length === 0;
-  const totalAvailable = drawCount + discardCount;
-  drawBtn.style.display = handEmpty && totalAvailable > 0 ? "" : "none";
-  if (handEmpty && totalAvailable > 0) {
-    drawBtn.textContent = `Draw ${Math.min(5, totalAvailable)} cards`;
-  }
 }
 
 function autoDrawIfEmpty({ drawCount, discardCount }) {
@@ -417,7 +409,6 @@ function startGame(gameId, name, existingPlayerId) {
         <div id="draw-pile" class="draw-pile">
           <div id="draw-pile-content"></div>
           <div class="pile-count" id="draw-count">8</div>
-          <button id="draw-btn" class="draw-btn">Draw 5 cards</button>
         </div>
         <div id="hand-area" class="hand-area"></div>
         <div id="discard-pile" class="discard-pile">
@@ -478,7 +469,6 @@ function startGame(gameId, name, existingPlayerId) {
           return;
         }
         animating = true;
-        document.getElementById("draw-btn").style.display = "none";
 
         const before = data.drawnBeforeShuffle;
         const firstBatch = data.hand.slice(0, before);
@@ -596,7 +586,6 @@ function startGame(gameId, name, existingPlayerId) {
         // Auto-draw if server drew cards for us
         if (data.autoDrawn) {
           animating = true;
-          document.getElementById("draw-btn").style.display = "none";
           const drawData = data.autoDrawn;
           const before = drawData.drawnBeforeShuffle;
           const firstBatch = drawData.hand.slice(0, before);
@@ -666,9 +655,13 @@ function startGame(gameId, name, existingPlayerId) {
         }
       });
 
-      document.getElementById("draw-btn").addEventListener("click", () => {
-        room.send("drawCards");
-      });
+      // Auto-draw first hand after 2 seconds
+      setTimeout(() => {
+        const handArea = document.getElementById("hand-area");
+        if (handArea.children.length === 0 && !animating) {
+          room.send("drawCards");
+        }
+      }, 2000);
 
       nameInput.addEventListener("change", () => {
         const newName = nameInput.value.trim() || "???";
