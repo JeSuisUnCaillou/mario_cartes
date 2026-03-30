@@ -5,6 +5,7 @@ import { monitor } from '@colyseus/monitor';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { GameRoom } from './rooms/GameRoom.js';
 
 const { Server } = colyseus;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -16,6 +17,9 @@ app.use(express.json());
 
 const httpServer = createServer(app);
 const gameServer = new Server({ server: httpServer });
+
+// Register game rooms
+gameServer.define('game', GameRoom);
 
 // Colyseus monitor (dev only)
 if (process.env.NODE_ENV !== 'production') {
