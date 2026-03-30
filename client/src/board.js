@@ -221,31 +221,35 @@ export function initBoard(gameId) {
       const label = this.nameLabels.get(playerId);
       if (!helmet) return;
 
-      // Helmet: jump up then land, spin twice
-      const baseY = helmet.y;
+      // Wait for the move tween (400ms) to finish before animating
+      const moveDelay = 400;
       const jumpHeight = helmet.displayHeight * 1.5;
+
+      // Helmet: jump up then land, spin twice
       this.tweens.add({
         targets: helmet,
-        y: baseY - jumpHeight,
+        y: `-=${jumpHeight}`,
         duration: 300,
         ease: "Power2",
         yoyo: true,
+        delay: moveDelay,
       });
       this.tweens.add({
         targets: helmet,
         angle: 720,
         duration: 600,
         ease: "Linear",
+        delay: moveDelay,
         onComplete: () => { helmet.setAngle(0); },
       });
       if (label) {
-        const labelBaseY = label.y;
         this.tweens.add({
           targets: label,
-          y: labelBaseY - jumpHeight,
+          y: `-=${jumpHeight}`,
           duration: 300,
           ease: "Power2",
           yoyo: true,
+          delay: moveDelay,
         });
       }
 
@@ -257,6 +261,13 @@ export function initBoard(gameId) {
       const banana = this.add.image(center.x, center.y, "banana");
       banana.setScale(size / banana.width);
       banana.setDepth(10);
+      banana.setAlpha(0);
+      this.tweens.add({
+        targets: banana,
+        alpha: 1,
+        duration: 1,
+        delay: moveDelay,
+      });
       this.tweens.add({
         targets: banana,
         y: center.y - this.scale.height * 0.6,
@@ -264,6 +275,7 @@ export function initBoard(gameId) {
         alpha: 0,
         duration: 700,
         ease: "Power2",
+        delay: moveDelay,
         onComplete: () => { banana.destroy(); },
       });
     }
