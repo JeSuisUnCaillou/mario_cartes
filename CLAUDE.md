@@ -35,9 +35,8 @@ Online multiplayer racing card game inspired by Mario Kart and Slay the Spire 2.
 - **Commit style**: Small, focused commits — baby steps. Each commit should be understandable on its own.
 - **Tests**: Write automated tests as much as possible to support a fast-growing codebase.
 - **Game state**: Defined as a data structure on the backend (Colyseus schema).
-- Home page has a "Create game" link with a text input for the game UID (used as identifier).
 
 ## Plans
 
-All the plans must be saved in `/docs/plans/`.
+All the plans must be saved in `/docs/plans/` BEFORE implementing.
 If the plan has slices, make one commit per slice.
