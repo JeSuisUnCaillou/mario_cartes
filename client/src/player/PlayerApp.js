@@ -25,7 +25,9 @@ export class PlayerApp {
       this._handView.render(hand);
     });
 
-    room.onStateChange((state) => {
+    room.send('request_state');
+
+    room.onMessage('state', (state) => {
       this._statusView.render(state, room.sessionId);
 
       if (state.phase === PHASES.PICKING) {

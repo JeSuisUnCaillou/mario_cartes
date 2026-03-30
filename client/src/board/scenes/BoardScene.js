@@ -3,6 +3,7 @@ import { TrackRenderer } from '../objects/TrackRenderer.js';
 import { CartSprite } from '../objects/CartSprite.js';
 import { TRACK } from '@mario-cartes/shared/track.js';
 import { PHASES } from '@mario-cartes/shared';
+import { getBoardInitData } from '../BoardGame.js';
 
 const BANANA_COLOR = 0xf1c40f;
 
@@ -15,12 +16,10 @@ export class BoardScene extends Phaser.Scene {
     this._room = null;
   }
 
-  init(data) {
-    this._room = data.room;
-    this._gameUid = data.gameUid;
-  }
-
   create() {
+    const { room, gameUid } = getBoardInitData() || {};
+    this._room = room || null;
+    this._gameUid = gameUid || null;
     new TrackRenderer(this);
     this._statusText = this.add.text(10, 10, 'Waiting for players...', {
       fontSize: '14px',
@@ -29,15 +28,9 @@ export class BoardScene extends Phaser.Scene {
 
     if (!this._room) return;
 
-    // Listen for state changes
-    this._room.onStateChange((state) => {
-      this._syncState(state);
-    });
-
-    // Listen for animation events
-    this._room.onMessage('round_events', ({ events }) => {
-      this._playEventQueue(events);
-    });
+    this._room.onMessage('state', (state) => this._syncState(state));
+    this._room.onMessage('round_events', ({ events }) => this._playEventQueue(events));
+    this._room.send('request_state');
   }
 
   _syncState(state) {

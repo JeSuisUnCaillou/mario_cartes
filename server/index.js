@@ -18,8 +18,8 @@ app.use(express.json());
 const httpServer = createServer(app);
 const gameServer = new Server({ server: httpServer });
 
-// Register game rooms
-gameServer.define('game', GameRoom);
+// Register game rooms — filterBy roomName so each game UID gets its own room
+gameServer.define('game', GameRoom).filterBy(['roomName']);
 
 // Colyseus monitor (dev only)
 if (process.env.NODE_ENV !== 'production') {
