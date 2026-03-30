@@ -1,5 +1,36 @@
 import { Client } from "colyseus.js";
 
+const CARD_ASSETS = {
+  move_forward_1: "/card - move forward.svg",
+};
+
+function renderHand(hand) {
+  const handArea = document.getElementById("hand-area");
+  handArea.innerHTML = "";
+  const n = hand.length;
+  const angleStep = 10;
+  hand.forEach((card, i) => {
+    const img = document.createElement("img");
+    img.src = CARD_ASSETS[card.type];
+    img.className = "card";
+    img.dataset.cardId = card.id;
+    const offset = i - (n - 1) / 2;
+    const rotation = offset * angleStep;
+    const lift = -Math.abs(offset) * 5;
+    img.style.transform = `rotate(${rotation}deg) translateY(${lift}px)`;
+    handArea.appendChild(img);
+  });
+}
+
+function updatePiles({ drawCount, discardCount }) {
+  document.getElementById("draw-count").textContent = drawCount;
+  document.getElementById("discard-count").textContent = discardCount;
+  const drawBtn = document.getElementById("draw-btn");
+  const handArea = document.getElementById("hand-area");
+  const handEmpty = handArea.children.length === 0;
+  drawBtn.style.display = handEmpty && drawCount > 0 ? "" : "none";
+}
+
 async function joinWithRetry(client, gameId, options, maxAttempts = 30, delayMs = 2000) {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
@@ -100,6 +131,15 @@ function startGame(gameId, name, existingPlayerId) {
       room.onMessage("playerId", (id) => {
         myPlayerId = id;
         localStorage.setItem(playerIdKey, id);
+      });
+
+      room.onMessage("cardsDrawn", (data) => {
+        renderHand(data.hand);
+        updatePiles(data);
+      });
+
+      document.getElementById("draw-btn").addEventListener("click", () => {
+        room.send("drawCards");
       });
 
       nameInput.addEventListener("change", () => {

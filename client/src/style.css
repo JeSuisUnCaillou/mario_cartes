@@ -123,3 +123,20 @@ input {
   min-height: 0;
   position: relative;
 }
+
+.card {
+  height: 30vh;
+  max-height: 200px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  transform-origin: bottom center;
+  transition: transform 0.2s ease;
+  margin-left: -20px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.card:first-child {
+  margin-left: 0;
+}
