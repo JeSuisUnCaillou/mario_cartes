@@ -6,10 +6,11 @@ const DISPOSE_DELAY_MS = 10 * 60 * 1000; // 10 minutes
 
 class GameRoom extends Room {
   _createDeck() {
-    return Array.from({ length: 8 }, () => ({
-      id: randomUUID(),
-      type: "move_forward_1",
-    }));
+    const cards = [
+      ...Array.from({ length: 8 }, () => ({ id: randomUUID(), type: "move_forward_1" })),
+      ...Array.from({ length: 2 }, () => ({ id: randomUUID(), type: "banana_move_forward_1" })),
+    ];
+    return this._shuffle(cards);
   }
 
   _shuffle(array) {
@@ -75,7 +76,7 @@ class GameRoom extends Room {
       const cardIndex = player.hand.findIndex((c) => c.id === data.cardId);
       if (cardIndex === -1) return;
       const [card] = player.hand.splice(cardIndex, 1);
-      if (card.type === "move_forward_1") {
+      if (card.type === "move_forward_1" || card.type === "banana_move_forward_1") {
         player.cellId = this.cells.get(player.cellId).next_cell;
       }
       player.discardPile.push(card);
