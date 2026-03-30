@@ -6,6 +6,7 @@ const CARD_ASSETS = {
 
 let playing = false;
 let animating = false;
+let animDrawCount = 0;
 let currentRoom = null;
 
 function delay(ms) {
@@ -87,6 +88,10 @@ async function animateDrawCards(cards, startIndex = 0) {
   for (let i = 0; i < imgs.length; i++) {
     const img = imgs[i];
     const targetRect = img.getBoundingClientRect();
+
+    // Update draw pile count as cards leave
+    animDrawCount--;
+    renderPileContent("draw-pile-content", animDrawCount, "Draw pile", "/card - back.svg");
 
     const flyer = document.createElement("img");
     flyer.src = "/card - back.svg";
@@ -371,6 +376,13 @@ function startGame(gameId, name, existingPlayerId) {
         const firstBatch = data.hand.slice(0, before);
         const secondBatch = data.hand.slice(before);
 
+        // Track draw pile count during animation
+        if (data.shuffledCount > 0) {
+          animDrawCount = before; // pile had exactly this many before drawing
+        } else {
+          animDrawCount = data.drawCount + data.hand.length;
+        }
+
         // Draw first batch (cards from draw pile before shuffle)
         if (firstBatch.length > 0) {
           await animateDrawCards(firstBatch);
@@ -379,7 +391,9 @@ function startGame(gameId, name, existingPlayerId) {
         // Shuffle animation if needed
         if (data.shuffledCount > 0) {
           await animateShuffle(data.shuffledCount);
-          updatePiles(data);
+          // After shuffle, draw pile is refilled
+          animDrawCount = data.drawCount + secondBatch.length;
+          renderPileContent("draw-pile-content", animDrawCount, "Draw pile", "/card - back.svg");
         }
 
         // Draw second batch (cards from draw pile after shuffle)

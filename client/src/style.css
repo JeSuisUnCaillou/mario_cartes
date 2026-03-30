@@ -154,6 +154,7 @@ input {
   justify-content: center;
   min-height: 0;
   position: relative;
+  z-index: 1;
 }
 
 .card {
@@ -164,7 +165,7 @@ input {
   height: auto;
   aspect-ratio: 54 / 86;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  filter: drop-shadow(3px 3px 2px rgba(0, 0, 0, 0.4));
   transform-origin: bottom center;
   transition: transform 0.2s ease;
   margin-left: calc(-1 * var(--card-overlap));
