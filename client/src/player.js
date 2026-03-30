@@ -14,13 +14,22 @@ async function joinWithRetry(client, gameId, options, maxAttempts = 30, delayMs 
 }
 
 export function initPlayer(gameId) {
+  const playerIdKey = `playerId:${gameId}`;
+  const existingPlayerId = localStorage.getItem(playerIdKey);
+  const existingName = localStorage.getItem("playerName");
+
+  if (existingPlayerId && existingName) {
+    startGame(gameId, existingName, existingPlayerId);
+    return;
+  }
+
   document.getElementById("app").innerHTML = `
     <div class="player-container">
       <h1>Game ${gameId}</h1>
       <form id="name-form">
         <label for="name-input">Enter your player name, 3 letters.</label>
         <div class="mt-1">
-          <input id="name-input" type="text" maxlength="3" placeholder="KYU" autocomplete="off" value="${localStorage.getItem("playerName") || ""}" />
+          <input id="name-input" type="text" maxlength="3" placeholder="KYU" autocomplete="off" value="${existingName || ""}" />
           <button type="submit">Join</button>
         </div>
       </form>
@@ -37,16 +46,17 @@ export function initPlayer(gameId) {
     e.preventDefault();
     const name = nameInput.value.trim() || "???";
     localStorage.setItem("playerName", name);
-    startGame(gameId, name);
+    startGame(gameId, name, null);
   });
 }
 
-function startGame(gameId, name) {
+function startGame(gameId, name, existingPlayerId) {
   document.getElementById("app").innerHTML = `
     <div class="player-container">
       <input id="player-name" class="name-edit-input" type="text" maxlength="3" value="${name}" autocomplete="off" />
       <div class="mt-1">
         <p id="status">Joining…</p>
+        <p id="cell-info"></p>
         <button id="ping-btn" disabled>Ping</button>
       </div>
     </div>
@@ -64,13 +74,34 @@ function startGame(gameId, name) {
 
   const client = new Client(serverUrl);
 
-  joinWithRetry(client, gameId, { type: "player", name })
+  const joinOptions = { type: "player", name };
+  if (existingPlayerId) {
+    joinOptions.playerId = existingPlayerId;
+  }
+
+  const playerIdKey = `playerId:${gameId}`;
+  let myPlayerId = existingPlayerId;
+
+  joinWithRetry(client, gameId, joinOptions)
     .then((room) => {
       document.getElementById("status").remove();
       const btn = document.getElementById("ping-btn");
       btn.disabled = false;
       btn.addEventListener("click", () => {
         room.send("ping");
+      });
+
+      room.onMessage("playerId", (id) => {
+        myPlayerId = id;
+        localStorage.setItem(playerIdKey, id);
+      });
+
+      room.onMessage("players", (players) => {
+        if (!myPlayerId) return;
+        const me = players.find((p) => p.playerId === myPlayerId);
+        if (me) {
+          document.getElementById("cell-info").textContent = `Cell: ${me.cellId}`;
+        }
       });
 
       nameInput.addEventListener("change", () => {
