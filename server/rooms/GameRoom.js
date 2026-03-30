@@ -29,6 +29,21 @@ class GameRoom extends Room {
     };
   }
 
+  _drawCards(player) {
+    let shuffledCount = 0;
+    let needed = 5;
+    const drawn = player.drawPile.splice(0, needed);
+    const drawnBeforeShuffle = drawn.length;
+    needed -= drawn.length;
+    if (needed > 0 && player.discardPile.length > 0) {
+      shuffledCount = player.discardPile.length;
+      player.drawPile.push(...this._shuffle(player.discardPile.splice(0)));
+      drawn.push(...player.drawPile.splice(0, needed));
+    }
+    player.hand.push(...drawn);
+    return { ...this._cardState(player), shuffledCount, drawnBeforeShuffle };
+  }
+
   onCreate(options) {
     if (options._roomId) {
       this.roomId = options._roomId;
@@ -53,27 +68,14 @@ class GameRoom extends Room {
       const player = this._getPlayer(client);
       if (!player) return;
       if (player.hand.length > 0) return;
-      let shuffledCount = 0;
-      let needed = 5;
-      const drawn = player.drawPile.splice(0, needed);
-      const drawnBeforeShuffle = drawn.length;
-      needed -= drawn.length;
-      if (needed > 0 && player.discardPile.length > 0) {
-        shuffledCount = player.discardPile.length;
-        player.drawPile.push(...this._shuffle(player.discardPile.splice(0)));
-        drawn.push(...player.drawPile.splice(0, needed));
-      }
-      player.hand.push(...drawn);
-      client.send("cardsDrawn", {
-        ...this._cardState(player),
-        shuffledCount,
-        drawnBeforeShuffle,
-      });
+      if (player.pendingBananaDiscards > 0) return;
+      client.send("cardsDrawn", this._drawCards(player));
     });
 
     this.onMessage("playCard", (client, data) => {
       const player = this._getPlayer(client);
       if (!player) return;
+      if (player.pendingBananaDiscards > 0) return;
       const cardIndex = player.hand.findIndex((c) => c.id === data.cardId);
       if (cardIndex === -1) return;
       const [card] = player.hand.splice(cardIndex, 1);
@@ -89,6 +91,44 @@ class GameRoom extends Room {
       client.send("cardPlayed", { cardId: card.id, droppedBanana, ...this._cardState(player) });
       if (droppedBanana !== null) this.broadcastBananas();
       this.broadcastPlayers();
+
+      // Check if player landed on banana(s)
+      const bananaCount = this.bananas[player.cellId] || 0;
+      if (bananaCount > 0) {
+        delete this.bananas[player.cellId];
+        this.broadcastBananas();
+        player.pendingBananaDiscards = bananaCount;
+        let autoDrawn = null;
+        if (player.hand.length === 0) {
+          const totalAvailable = player.drawPile.length + player.discardPile.length;
+          if (totalAvailable > 0) {
+            autoDrawn = this._drawCards(player);
+          }
+        }
+        client.send("bananaHit", {
+          cellId: player.cellId,
+          count: bananaCount,
+          mustDiscard: bananaCount,
+          autoDrawn,
+          ...this._cardState(player),
+        });
+      }
+    });
+
+    this.onMessage("discardCard", (client, data) => {
+      const player = this._getPlayer(client);
+      if (!player) return;
+      if (player.pendingBananaDiscards <= 0) return;
+      const cardIndex = player.hand.findIndex((c) => c.id === data.cardId);
+      if (cardIndex === -1) return;
+      const [card] = player.hand.splice(cardIndex, 1);
+      player.discardPile.push(card);
+      player.pendingBananaDiscards--;
+      client.send("cardDiscarded", {
+        cardId: card.id,
+        remaining: player.pendingBananaDiscards,
+        ...this._cardState(player),
+      });
     });
   }
 
@@ -119,6 +159,7 @@ class GameRoom extends Room {
         this.players.set(playerId, {
           playerId, name, cellId: 1, connected: true,
           drawPile: this._createDeck(), hand: [], discardPile: [],
+          pendingBananaDiscards: 0,
         });
         this.clientsInfo.set(client.sessionId, { type: "player", playerId });
         client.send("playerId", playerId);
