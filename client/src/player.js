@@ -34,7 +34,7 @@ async function animateShuffle(count) {
     card.style.left = (discardRect.left + discardRect.width / 2 - 20) + "px";
     card.style.top = (discardRect.top) + "px";
     card.style.zIndex = "999";
-    card.style.transition = "all 0.2s ease-in-out";
+    card.style.transition = "all 0.12s ease-in-out";
     card.style.pointerEvents = "none";
     document.body.appendChild(card);
 
@@ -43,11 +43,11 @@ async function animateShuffle(count) {
     card.style.left = (drawRect.left + drawRect.width / 2 - 20) + "px";
     card.style.top = (drawRect.top) + "px";
 
-    await delay(80);
+    await delay(50);
     card.addEventListener("transitionend", () => card.remove(), { once: true });
   }
   // Wait for last card transition to finish
-  await delay(250);
+  await delay(150);
 }
 
 async function animateDrawCards(cards, startIndex = 0) {
@@ -109,7 +109,7 @@ async function animateDrawCards(cards, startIndex = 0) {
 
     const inner = document.createElement("div");
     inner.className = "card-flyer-inner";
-    inner.style.transition = "transform 0.35s ease-in-out";
+    inner.style.transition = "transform 0.25s ease-in-out";
     inner.style.transform = "rotateY(0deg)";
 
     const backFace = document.createElement("img");
@@ -127,17 +127,17 @@ async function animateDrawCards(cards, startIndex = 0) {
 
     // Force reflow, then animate position + size + flip
     flyer.getBoundingClientRect();
-    flyer.style.transition = "left 0.35s ease-out, top 0.35s ease-out, width 0.35s ease-out";
+    flyer.style.transition = "left 0.25s ease-out, top 0.25s ease-out, width 0.25s ease-out";
     flyer.style.left = targetRect.left + "px";
     flyer.style.top = targetRect.top + "px";
     flyer.style.width = targetRect.width + "px";
     inner.style.transform = "rotateY(180deg)";
 
-    await delay(150);
+    await delay(100);
 
     img.style.visibility = "";
     addDragListeners(img);
-    await delay(200);
+    await delay(150);
     flyer.remove();
   }
 }
