@@ -5,12 +5,18 @@ class GameRoom extends Room {
     this.clientsInfo = new Map();
 
     this.onMessage("ping", (client) => {
-      this.broadcast("ping", { from: client.sessionId });
+      const info = this.clientsInfo.get(client.sessionId);
+      if (!info || info.type !== "player") return;
+      info.cellId = (info.cellId % 14) + 1;
+      this.broadcastPlayers();
     });
   }
 
   onJoin(client, options) {
-    this.clientsInfo.set(client.sessionId, { type: options.type || "player" });
+    const type = options.type || "player";
+    const info = { type };
+    if (type === "player") info.cellId = 1;
+    this.clientsInfo.set(client.sessionId, info);
     this.broadcastPlayers();
   }
 
@@ -23,6 +29,7 @@ class GameRoom extends Room {
     const players = Array.from(this.clientsInfo.entries()).map(([id, info]) => ({
       sessionId: id,
       type: info.type,
+      cellId: info.cellId,
     }));
     this.broadcast("players", players);
   }
