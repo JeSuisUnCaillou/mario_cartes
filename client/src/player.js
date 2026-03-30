@@ -5,7 +5,104 @@ const CARD_ASSETS = {
 };
 
 let playing = false;
+let animating = false;
 let currentRoom = null;
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function animateShuffle(count) {
+  const discardEl = document.getElementById("discard-pile");
+  const drawEl = document.getElementById("draw-pile");
+  const discardRect = discardEl.getBoundingClientRect();
+  const drawRect = drawEl.getBoundingClientRect();
+
+  for (let i = 0; i < count; i++) {
+    const card = document.createElement("img");
+    card.src = "/card - back.svg";
+    card.className = "card-anim";
+    card.style.position = "fixed";
+    card.style.width = "40px";
+    card.style.height = "auto";
+    card.style.left = (discardRect.left + discardRect.width / 2 - 20) + "px";
+    card.style.top = (discardRect.top) + "px";
+    card.style.zIndex = "999";
+    card.style.transition = "all 0.3s ease-in-out";
+    card.style.pointerEvents = "none";
+    document.body.appendChild(card);
+
+    // Force reflow then animate to draw pile in arc
+    card.getBoundingClientRect();
+    card.style.left = (drawRect.left + drawRect.width / 2 - 20) + "px";
+    card.style.top = (drawRect.top) + "px";
+
+    await delay(120);
+    card.addEventListener("transitionend", () => card.remove(), { once: true });
+  }
+  // Wait for last card transition to finish
+  await delay(350);
+}
+
+async function animateDrawCards(hand) {
+  const drawEl = document.getElementById("draw-pile");
+  const drawRect = drawEl.getBoundingClientRect();
+  const handArea = document.getElementById("hand-area");
+
+  // Render cards invisibly first to get target positions
+  handArea.innerHTML = "";
+  const n = hand.length;
+  const angleStep = 10;
+  const cards = hand.map((card, i) => {
+    const img = document.createElement("img");
+    img.src = CARD_ASSETS[card.type];
+    img.className = "card";
+    img.dataset.cardId = card.id;
+    const offset = i - (n - 1) / 2;
+    const rotation = offset * angleStep;
+    const lift = Math.abs(offset) * 8;
+    img.dataset.fanTransform = `rotate(${rotation}deg) translateY(${lift}px)`;
+    img.style.visibility = "hidden";
+    img.style.transform = img.dataset.fanTransform;
+    handArea.appendChild(img);
+    return img;
+  });
+
+  // Animate each card from draw pile to its position
+  for (let i = 0; i < cards.length; i++) {
+    const img = cards[i];
+    const targetRect = img.getBoundingClientRect();
+
+    // Create flying card
+    const flyer = document.createElement("img");
+    flyer.src = "/card - back.svg";
+    flyer.className = "card-anim";
+    flyer.style.position = "fixed";
+    flyer.style.width = "40px";
+    flyer.style.height = "auto";
+    flyer.style.left = (drawRect.left + drawRect.width / 2 - 20) + "px";
+    flyer.style.top = drawRect.top + "px";
+    flyer.style.zIndex = "999";
+    flyer.style.transition = "all 0.35s ease-out";
+    flyer.style.pointerEvents = "none";
+    document.body.appendChild(flyer);
+
+    // Force reflow then animate to target
+    flyer.getBoundingClientRect();
+    flyer.style.left = targetRect.left + "px";
+    flyer.style.top = targetRect.top + "px";
+    flyer.style.width = targetRect.width + "px";
+
+    await delay(200);
+
+    // Show the real card and remove flyer
+    img.style.visibility = "";
+    addDragListeners(img);
+    flyer.addEventListener("transitionend", () => flyer.remove(), { once: true });
+    // In case transition already ended
+    setTimeout(() => flyer.remove(), 400);
+  }
+}
 
 function renderHand(hand) {
   const handArea = document.getElementById("hand-area");
@@ -36,7 +133,7 @@ function addDragListeners(card) {
   let startX, startY, origLeft, origTop, dragClone;
 
   function onStart(e) {
-    if (playing) return;
+    if (playing || animating) return;
     e.preventDefault();
     const pos = getPointerPos(e);
     const rect = card.getBoundingClientRect();
@@ -248,9 +345,24 @@ function startGame(gameId, name, existingPlayerId) {
 
       currentRoom = room;
 
-      room.onMessage("cardsDrawn", (data) => {
-        renderHand(data.hand);
+      room.onMessage("cardsDrawn", async (data) => {
+        if (animating) return;
+        // On reconnect (hand already existed), just render without animation
+        if (!data.shuffledCount && data.shuffledCount !== 0) {
+          renderHand(data.hand);
+          updatePiles(data);
+          return;
+        }
+        animating = true;
+        document.getElementById("draw-btn").style.display = "none";
+
+        if (data.shuffledCount > 0) {
+          await animateShuffle(data.shuffledCount);
+        }
+
         updatePiles(data);
+        await animateDrawCards(data.hand);
+        animating = false;
       });
 
       room.onMessage("cardPlayed", (data) => {

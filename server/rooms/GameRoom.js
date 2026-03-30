@@ -51,17 +51,22 @@ class GameRoom extends Room {
       const player = this._getPlayer(client);
       if (!player) return;
       if (player.hand.length > 0) return;
-      let shuffled = false;
+      let shuffledCount = 0;
       let needed = 5;
       const drawn = player.drawPile.splice(0, needed);
+      const drawnBeforeShuffle = drawn.length;
       needed -= drawn.length;
       if (needed > 0 && player.discardPile.length > 0) {
-        shuffled = true;
+        shuffledCount = player.discardPile.length;
         player.drawPile.push(...this._shuffle(player.discardPile.splice(0)));
         drawn.push(...player.drawPile.splice(0, needed));
       }
       player.hand.push(...drawn);
-      client.send("cardsDrawn", { ...this._cardState(player), shuffled });
+      client.send("cardsDrawn", {
+        ...this._cardState(player),
+        shuffledCount,
+        drawnBeforeShuffle,
+      });
     });
 
     this.onMessage("playCard", (client, data) => {
