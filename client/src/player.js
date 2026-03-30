@@ -494,8 +494,6 @@ function startGame(gameId, name, existingPlayerId) {
 
       room.onMessage("cardPlayed", (data) => {
         playing = false;
-        // Remove drag clone
-        document.querySelectorAll("body > .card").forEach((el) => el.remove());
         // Capture positions BEFORE removing the card
         const positions = captureHandPositions();
         // Remove the played card from the hand
@@ -504,7 +502,27 @@ function startGame(gameId, name, existingPlayerId) {
         if (played) played.remove();
         // Animate remaining cards from old positions to new fan positions
         recomputeFan(positions);
-        updatePiles(data);
+
+        // Animate drag clone from play zone to discard pile
+        const discardEl = document.getElementById("discard-pile");
+        const discardRect = discardEl.getBoundingClientRect();
+        const clones = document.querySelectorAll("body > .card");
+        clones.forEach((clone) => {
+          clone.style.transition = "all 0.3s ease-in-out";
+          clone.style.left = (discardRect.left + discardRect.width / 2 - 25) + "px";
+          clone.style.top = discardRect.top + "px";
+          clone.style.width = "50px";
+          clone.style.height = "auto";
+          clone.style.transform = "rotate(0deg)";
+          clone.style.filter = "none";
+          clone.addEventListener("transitionend", () => {
+            clone.remove();
+            updatePiles(data);
+          }, { once: true });
+        });
+        if (clones.length === 0) {
+          updatePiles(data);
+        }
       });
 
       document.getElementById("draw-btn").addEventListener("click", () => {
