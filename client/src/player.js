@@ -346,6 +346,13 @@ function updatePiles({ drawCount, discardCount }) {
   }
 }
 
+function autoDrawIfEmpty({ drawCount, discardCount }) {
+  const handArea = document.getElementById("hand-area");
+  if (handArea.children.length === 0 && (drawCount + discardCount) > 0 && currentRoom) {
+    currentRoom.send("drawCards");
+  }
+}
+
 async function joinWithRetry(client, gameId, options, maxAttempts = 30, delayMs = 2000) {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
@@ -540,6 +547,10 @@ function startGame(gameId, name, existingPlayerId) {
         const discardEl = document.getElementById("discard-pile");
         const discardRect = discardEl.getBoundingClientRect();
         const clones = document.querySelectorAll("body > .card");
+        const afterDiscard = () => {
+          updatePiles(data);
+          autoDrawIfEmpty(data);
+        };
         clones.forEach((clone) => {
           clone.style.transition = "all 0.3s ease-in-out";
           clone.style.left = (discardRect.left + discardRect.width / 2 - 25) + "px";
@@ -550,11 +561,11 @@ function startGame(gameId, name, existingPlayerId) {
           clone.style.filter = "none";
           clone.addEventListener("transitionend", () => {
             clone.remove();
-            updatePiles(data);
+            afterDiscard();
           }, { once: true });
         });
         if (clones.length === 0) {
-          updatePiles(data);
+          afterDiscard();
         }
       });
 
@@ -625,6 +636,10 @@ function startGame(gameId, name, existingPlayerId) {
         const discardEl = document.getElementById("discard-pile");
         const discardRect = discardEl.getBoundingClientRect();
         const clones = document.querySelectorAll("body > .card");
+        const afterDiscard = () => {
+          updatePiles(data);
+          if (data.remaining <= 0) autoDrawIfEmpty(data);
+        };
         clones.forEach((clone) => {
           clone.style.transition = "all 0.3s ease-in-out";
           clone.style.left = (discardRect.left + discardRect.width / 2 - 25) + "px";
@@ -635,11 +650,11 @@ function startGame(gameId, name, existingPlayerId) {
           clone.style.filter = "none";
           clone.addEventListener("transitionend", () => {
             clone.remove();
-            updatePiles(data);
+            afterDiscard();
           }, { once: true });
         });
         if (clones.length === 0) {
-          updatePiles(data);
+          afterDiscard();
         }
 
         // Restore play zone when all discards are done
