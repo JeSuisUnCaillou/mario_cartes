@@ -166,6 +166,43 @@ export function initBoard(gameId) {
       }
     }
 
+    tweenPlayersToGrid() {
+      const cellW = this.track.displayWidth / 5;
+      const helmetSlot = cellW / 4.5;
+      const helmetDisplaySize = helmetSlot * 0.9;
+
+      const byCell = new Map();
+      for (const p of (this.latestPlayers || [])) {
+        if (!p.playerId || !CELL_POSITIONS[p.cellId]) continue;
+        if (!byCell.has(p.cellId)) byCell.set(p.cellId, []);
+        byCell.get(p.cellId).push(p);
+      }
+
+      for (const [cellId, cellPlayers] of byCell) {
+        const { total } = this.cellOccupantCount(cellId);
+        cellPlayers.forEach((p, i) => {
+          const { x, y } = this.cellSlotPos(cellId, i, total);
+          const helmet = this.helmets.get(p.playerId);
+          const label = this.nameLabels.get(p.playerId);
+          if (!helmet) return;
+          if (helmet.x !== x || helmet.y !== y) {
+            this.tweens.add({
+              targets: helmet,
+              x, y,
+              duration: 300,
+              ease: "Power2",
+            });
+            this.tweens.add({
+              targets: label,
+              x, y: y - helmetDisplaySize * 0.7,
+              duration: 300,
+              ease: "Power2",
+            });
+          }
+        });
+      }
+    }
+
     async connectToRoom(roomId) {
       try {
         await colyseusClient.joinById(roomId, { type: "board" });
@@ -178,6 +215,7 @@ export function initBoard(gameId) {
       });
       room.onMessage("bananas", (bananas) => {
         this.updateBananas(bananas);
+        this.tweenPlayersToGrid();
       });
       room.onMessage("bananaHitBoard", (data) => {
         this.animateBananaHit(data.playerId, data.cellId);
