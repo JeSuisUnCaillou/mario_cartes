@@ -93,7 +93,8 @@ export function initBoard(gameId) {
         cellPlayers.forEach((p, i) => {
           const col = i % maxPerRow;
           const row = Math.floor(i / maxPerRow);
-          const x = center.x + (col - (cols - 1) / 2) * helmetSlot;
+          const colsInRow = Math.min(maxPerRow, cellPlayers.length - row * maxPerRow);
+          const x = center.x + (col - (colsInRow - 1) / 2) * helmetSlot;
           const y = center.y + (row - (rows - 1) / 2) * helmetSlot;
 
           if (this.helmets.has(p.sessionId)) {
