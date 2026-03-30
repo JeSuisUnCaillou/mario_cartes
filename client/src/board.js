@@ -37,8 +37,12 @@ export function initBoard(gameId) {
     }
 
     preload() {
-      this.load.svg("racetrack", "/racetrack.svg", { scale: 4 });
-      this.load.svg("helmet", "/helmet.svg", { scale: 4 });
+      const dpr = window.devicePixelRatio || 1;
+      const trackW = Math.round(window.innerWidth * 0.9 * dpr);
+      const trackH = Math.round(window.innerHeight * 0.9 * dpr);
+      const cellSize = Math.round((trackW / 5) * 0.8);
+      this.load.svg("racetrack", "/racetrack.svg", { width: trackW, height: trackH });
+      this.load.svg("helmet", "/helmet.svg", { width: cellSize, height: cellSize });
     }
 
     create() {
@@ -79,7 +83,7 @@ export function initBoard(gameId) {
         } else {
           const helmet = this.add.image(x, y, "helmet");
           const cellSize = this.track.displayWidth / 5;
-          helmet.setScale((cellSize * 0.6) / helmet.width);
+          helmet.setScale((cellSize * 0.6) / (helmet.width / (window.devicePixelRatio || 1)));
           this.helmets.set(p.sessionId, helmet);
         }
       }
