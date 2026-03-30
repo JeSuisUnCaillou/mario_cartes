@@ -78,12 +78,11 @@ export function initBoard(gameId) {
     }
 
     updatePlayers(players) {
-      const activePlayers = new Set();
+      const activePlayerIds = new Set();
 
       const byCell = new Map();
       for (const p of players) {
-        if (p.type !== "player") continue;
-        activePlayers.add(p.sessionId);
+        activePlayerIds.add(p.playerId);
         if (!byCell.has(p.cellId)) byCell.set(p.cellId, []);
         byCell.get(p.cellId).push(p);
       }
@@ -95,25 +94,29 @@ export function initBoard(gameId) {
 
       for (const [cellId, cellPlayers] of byCell) {
         const center = this.cellPixelPos(cellId);
-        const cols = Math.min(cellPlayers.length, maxPerRow);
         const rows = Math.ceil(cellPlayers.length / maxPerRow);
 
         cellPlayers.forEach((p, i) => {
-          const col = i % maxPerRow;
           const row = Math.floor(i / maxPerRow);
           const colsInRow = Math.min(maxPerRow, cellPlayers.length - row * maxPerRow);
+          const col = i % maxPerRow;
           const x = center.x + (col - (colsInRow - 1) / 2) * helmetSlot;
           const y = center.y + (row - (rows - 1) / 2) * helmetSlot;
+          const alpha = p.connected ? 1 : 0.5;
 
-          if (this.helmets.has(p.sessionId)) {
-            this.helmets.get(p.sessionId).setPosition(x, y);
-            const label = this.nameLabels.get(p.sessionId);
+          if (this.helmets.has(p.playerId)) {
+            const helmet = this.helmets.get(p.playerId);
+            helmet.setPosition(x, y);
+            helmet.setAlpha(alpha);
+            const label = this.nameLabels.get(p.playerId);
             label.setPosition(x, y - helmetDisplaySize * 0.7);
             label.setText(p.name || "???");
+            label.setAlpha(alpha);
           } else {
             const helmet = this.add.image(x, y, "helmet");
             helmet.setScale(helmetDisplaySize / helmet.width);
-            this.helmets.set(p.sessionId, helmet);
+            helmet.setAlpha(alpha);
+            this.helmets.set(p.playerId, helmet);
 
             const label = this.add.text(x, y - helmetDisplaySize * 0.7, p.name || "???", {
               fontFamily: "monospace",
@@ -123,17 +126,18 @@ export function initBoard(gameId) {
               strokeThickness: 3,
               align: "center",
             }).setOrigin(0.5, 1);
-            this.nameLabels.set(p.sessionId, label);
+            label.setAlpha(alpha);
+            this.nameLabels.set(p.playerId, label);
           }
         });
       }
 
-      for (const [sessionId, helmet] of this.helmets) {
-        if (!activePlayers.has(sessionId)) {
+      for (const [playerId, helmet] of this.helmets) {
+        if (!activePlayerIds.has(playerId)) {
           helmet.destroy();
-          this.helmets.delete(sessionId);
-          this.nameLabels.get(sessionId).destroy();
-          this.nameLabels.delete(sessionId);
+          this.helmets.delete(playerId);
+          this.nameLabels.get(playerId).destroy();
+          this.nameLabels.delete(playerId);
         }
       }
     }
