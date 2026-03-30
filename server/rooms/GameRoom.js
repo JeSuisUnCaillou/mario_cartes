@@ -4,7 +4,10 @@ const path = require("path");
 const DISPOSE_DELAY_MS = 10 * 60 * 1000; // 10 minutes
 
 class GameRoom extends Room {
-  onCreate() {
+  onCreate(options) {
+    if (options._roomId) {
+      this.roomId = options._roomId;
+    }
     this.autoDispose = false;
     this._disposeTimer = null;
     this.clientsInfo = new Map();

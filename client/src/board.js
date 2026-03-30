@@ -58,24 +58,16 @@ export function initBoard(gameId) {
       this.connectToRoom(gameId);
     }
 
-    async connectToRoom(targetId) {
-      let roomId = targetId;
+    async connectToRoom(roomId) {
       try {
-        await colyseusClient.joinById(roomId, { type: "board" }).then((room) => {
-          room.onMessage("players", (players) => {
-            this.updatePlayers(players);
-          });
-        });
+        await colyseusClient.joinById(roomId, { type: "board" });
       } catch {
-        const res = await fetch(`/find-or-create/${roomId}`);
-        const data = await res.json();
-        roomId = data.id;
-        history.replaceState(null, "", `/game/${roomId}/board`);
-        const room = await colyseusClient.joinById(roomId, { type: "board" });
-        room.onMessage("players", (players) => {
-          this.updatePlayers(players);
-        });
+        await fetch(`/find-or-create/${roomId}`);
       }
+      const room = await colyseusClient.joinById(roomId, { type: "board" });
+      room.onMessage("players", (players) => {
+        this.updatePlayers(players);
+      });
     }
 
     cellPixelPos(cellId) {

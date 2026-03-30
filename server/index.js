@@ -26,7 +26,7 @@ app.get("/find-or-create/:gameId", async (req, res) => {
   if (rooms.length > 0) {
     return res.json({ id: gameId });
   }
-  const room = await matchMaker.createRoom("game", {});
+  const room = await matchMaker.createRoom("game", { _roomId: gameId });
   res.json({ id: room.roomId });
 });
 
