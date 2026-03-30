@@ -246,11 +246,21 @@ export function initBoard(gameId) {
       });
       this.tweens.add({
         targets: helmet,
-        angle: 360,
+        angle: -360,
         duration: jumpDuration,
         ease: "Linear",
         delay: moveDelay,
-        onComplete: () => { helmet.setAngle(0); },
+        onComplete: () => {
+          helmet.setAngle(0);
+          // Second rotation on the floor after landing
+          this.tweens.add({
+            targets: helmet,
+            angle: -360,
+            duration: 600,
+            ease: "Linear",
+            onComplete: () => { helmet.setAngle(0); },
+          });
+        },
       });
       if (label) {
         this.tweens.add({
