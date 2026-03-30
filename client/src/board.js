@@ -107,7 +107,9 @@ export function initBoard(gameId) {
 
           if (this.helmets.has(p.sessionId)) {
             this.helmets.get(p.sessionId).setPosition(x, y);
-            this.nameLabels.get(p.sessionId).setPosition(x, y - helmetDisplaySize * 0.7);
+            const label = this.nameLabels.get(p.sessionId);
+            label.setPosition(x, y - helmetDisplaySize * 0.7);
+            label.setText(p.name || "???");
           } else {
             const helmet = this.add.image(x, y, "helmet");
             helmet.setScale(helmetDisplaySize / helmet.width);
