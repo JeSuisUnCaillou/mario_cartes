@@ -128,11 +128,37 @@ function recomputeFan() {
   const cards = Array.from(handArea.querySelectorAll(".card:not([style*='visibility: hidden'])"));
   const n = cards.length;
   const angleStep = 10;
+
+  // FLIP: First — record current screen positions
+  const firstRects = cards.map((img) => img.getBoundingClientRect());
+
+  // Compute new fan transforms
   cards.forEach((img, i) => {
     const offset = i - (n - 1) / 2;
     const rotation = offset * angleStep;
     const lift = Math.abs(offset) * 8;
     img.dataset.fanTransform = `rotate(${rotation}deg) translateY(${lift}px)`;
+  });
+
+  // Apply new transforms without transition to get final positions
+  cards.forEach((img) => {
+    img.style.transition = "none";
+    img.style.transform = img.dataset.fanTransform;
+  });
+
+  // FLIP: Last — record new screen positions, Invert — offset to old positions
+  cards.forEach((img, i) => {
+    const lastRect = img.getBoundingClientRect();
+    const dx = firstRects[i].left - lastRect.left;
+    const dy = firstRects[i].top - lastRect.top;
+    // Jump back to old visual position
+    img.style.transform = `translate(${dx}px, ${dy}px) ${img.dataset.fanTransform}`;
+  });
+
+  // FLIP: Play — force reflow then animate to final positions
+  handArea.getBoundingClientRect();
+  cards.forEach((img) => {
+    img.style.transition = "transform 0.4s ease-in-out";
     img.style.transform = img.dataset.fanTransform;
   });
 }
