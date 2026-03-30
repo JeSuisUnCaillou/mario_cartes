@@ -12,6 +12,14 @@ class GameRoom extends Room {
     }));
   }
 
+  _shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  }
+
   _cardState(player) {
     return {
       hand: player.hand,
@@ -43,9 +51,17 @@ class GameRoom extends Room {
       const player = this._getPlayer(client);
       if (!player) return;
       if (player.hand.length > 0) return;
-      const drawn = player.drawPile.splice(0, 5);
+      let shuffled = false;
+      let needed = 5;
+      const drawn = player.drawPile.splice(0, needed);
+      needed -= drawn.length;
+      if (needed > 0 && player.discardPile.length > 0) {
+        shuffled = true;
+        player.drawPile.push(...this._shuffle(player.discardPile.splice(0)));
+        drawn.push(...player.drawPile.splice(0, needed));
+      }
       player.hand.push(...drawn);
-      client.send("cardsDrawn", this._cardState(player));
+      client.send("cardsDrawn", { ...this._cardState(player), shuffled });
     });
 
     this.onMessage("playCard", (client, data) => {
