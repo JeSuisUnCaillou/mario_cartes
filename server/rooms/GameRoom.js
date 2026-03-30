@@ -47,6 +47,20 @@ class GameRoom extends Room {
       player.hand.push(...drawn);
       client.send("cardsDrawn", this._cardState(player));
     });
+
+    this.onMessage("playCard", (client, data) => {
+      const player = this._getPlayer(client);
+      if (!player) return;
+      const cardIndex = player.hand.findIndex((c) => c.id === data.cardId);
+      if (cardIndex === -1) return;
+      const [card] = player.hand.splice(cardIndex, 1);
+      if (card.type === "move_forward_1") {
+        player.cellId = this.cells.get(player.cellId).next_cell;
+      }
+      player.discardPile.push(card);
+      client.send("cardPlayed", { cardId: card.id, ...this._cardState(player) });
+      this.broadcastPlayers();
+    });
   }
 
   _getPlayer(client) {
