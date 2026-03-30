@@ -44,21 +44,26 @@ async function animateShuffle(count) {
   await delay(350);
 }
 
-async function animateDrawCards(hand) {
+async function animateDrawCards(cards, startIndex = 0) {
   const drawEl = document.getElementById("draw-pile");
   const drawRect = drawEl.getBoundingClientRect();
   const handArea = document.getElementById("hand-area");
 
-  // Render cards invisibly first to get target positions
-  handArea.innerHTML = "";
-  const n = hand.length;
+  // If first batch, clear hand area
+  if (startIndex === 0) {
+    handArea.innerHTML = "";
+  }
+
+  // Create card elements invisibly to get target positions
+  const totalInHand = startIndex + cards.length;
   const angleStep = 10;
-  const cards = hand.map((card, i) => {
+  const imgs = cards.map((card, i) => {
+    const idx = startIndex + i;
     const img = document.createElement("img");
     img.src = CARD_ASSETS[card.type];
     img.className = "card";
     img.dataset.cardId = card.id;
-    const offset = i - (n - 1) / 2;
+    const offset = idx - (totalInHand - 1) / 2;
     const rotation = offset * angleStep;
     const lift = Math.abs(offset) * 8;
     img.dataset.fanTransform = `rotate(${rotation}deg) translateY(${lift}px)`;
@@ -68,12 +73,21 @@ async function animateDrawCards(hand) {
     return img;
   });
 
-  // Animate each card from draw pile to its position
-  for (let i = 0; i < cards.length; i++) {
-    const img = cards[i];
+  // Recompute fan transforms for ALL cards in hand (including earlier ones)
+  const allCards = Array.from(handArea.children);
+  allCards.forEach((img, idx) => {
+    const offset = idx - (totalInHand - 1) / 2;
+    const rotation = offset * angleStep;
+    const lift = Math.abs(offset) * 8;
+    img.dataset.fanTransform = `rotate(${rotation}deg) translateY(${lift}px)`;
+    img.style.transform = img.dataset.fanTransform;
+  });
+
+  // Animate each new card from draw pile to its position
+  for (let i = 0; i < imgs.length; i++) {
+    const img = imgs[i];
     const targetRect = img.getBoundingClientRect();
 
-    // Create flying card
     const flyer = document.createElement("img");
     flyer.src = "/card - back.svg";
     flyer.className = "card-anim";
@@ -87,7 +101,6 @@ async function animateDrawCards(hand) {
     flyer.style.pointerEvents = "none";
     document.body.appendChild(flyer);
 
-    // Force reflow then animate to target
     flyer.getBoundingClientRect();
     flyer.style.left = targetRect.left + "px";
     flyer.style.top = targetRect.top + "px";
@@ -95,11 +108,9 @@ async function animateDrawCards(hand) {
 
     await delay(200);
 
-    // Show the real card and remove flyer
     img.style.visibility = "";
     addDragListeners(img);
     flyer.addEventListener("transitionend", () => flyer.remove(), { once: true });
-    // In case transition already ended
     setTimeout(() => flyer.remove(), 400);
   }
 }
@@ -348,7 +359,7 @@ function startGame(gameId, name, existingPlayerId) {
       room.onMessage("cardsDrawn", async (data) => {
         if (animating) return;
         // On reconnect (hand already existed), just render without animation
-        if (!data.shuffledCount && data.shuffledCount !== 0) {
+        if (data.drawnBeforeShuffle === undefined) {
           renderHand(data.hand);
           updatePiles(data);
           return;
@@ -356,12 +367,27 @@ function startGame(gameId, name, existingPlayerId) {
         animating = true;
         document.getElementById("draw-btn").style.display = "none";
 
+        const before = data.drawnBeforeShuffle;
+        const firstBatch = data.hand.slice(0, before);
+        const secondBatch = data.hand.slice(before);
+
+        // Draw first batch (cards from draw pile before shuffle)
+        if (firstBatch.length > 0) {
+          await animateDrawCards(firstBatch);
+        }
+
+        // Shuffle animation if needed
         if (data.shuffledCount > 0) {
           await animateShuffle(data.shuffledCount);
+          updatePiles(data);
+        }
+
+        // Draw second batch (cards from draw pile after shuffle)
+        if (secondBatch.length > 0) {
+          await animateDrawCards(secondBatch, firstBatch.length);
         }
 
         updatePiles(data);
-        await animateDrawCards(data.hand);
         animating = false;
       });
 
