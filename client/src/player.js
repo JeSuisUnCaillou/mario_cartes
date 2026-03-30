@@ -16,8 +16,32 @@ async function joinWithRetry(client, gameId, options, maxAttempts = 30, delayMs 
 export function initPlayer(gameId) {
   document.getElementById("app").innerHTML = `
     <div class="player-container">
-      <h1>Player — Game ${gameId}</h1>
-      <p id="status">Waiting for game to start…</p>
+      <h1>Game ${gameId}</h1>
+      <form id="name-form">
+        <input id="name-input" type="text" maxlength="3" placeholder="AAA" autocomplete="off" />
+        <button type="submit">Join</button>
+      </form>
+    </div>
+  `;
+
+  const nameInput = document.getElementById("name-input");
+  nameInput.focus();
+  nameInput.addEventListener("input", () => {
+    nameInput.value = nameInput.value.toUpperCase().replace(/[^A-Z]/g, "");
+  });
+
+  document.getElementById("name-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = nameInput.value.trim() || "???";
+    startGame(gameId, name);
+  });
+}
+
+function startGame(gameId, name) {
+  document.getElementById("app").innerHTML = `
+    <div class="player-container">
+      <h1>Game ${gameId}</h1>
+      <p id="status">Joining as <strong>${name}</strong>…</p>
       <button id="ping-btn" disabled>Ping</button>
     </div>
   `;
@@ -28,7 +52,7 @@ export function initPlayer(gameId) {
 
   const client = new Client(serverUrl);
 
-  joinWithRetry(client, gameId, { type: "player" })
+  joinWithRetry(client, gameId, { type: "player", name })
     .then((room) => {
       document.getElementById("status").remove();
       const btn = document.getElementById("ping-btn");

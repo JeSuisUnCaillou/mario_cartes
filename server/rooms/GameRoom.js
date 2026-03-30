@@ -30,7 +30,10 @@ class GameRoom extends Room {
     }
     const type = options.type || "player";
     const info = { type };
-    if (type === "player") info.cellId = 1;
+    if (type === "player") {
+      info.cellId = 1;
+      info.name = (options.name || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
+    }
     this.clientsInfo.set(client.sessionId, info);
     this.broadcastPlayers();
   }
@@ -48,6 +51,7 @@ class GameRoom extends Room {
       sessionId: id,
       type: info.type,
       cellId: info.cellId,
+      name: info.name,
     }));
     this.broadcast("players", players);
   }
