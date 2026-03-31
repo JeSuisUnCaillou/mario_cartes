@@ -355,7 +355,7 @@ html, body, #app {
 }
 
 .board-rivers .river-cards {
-  --river-card-w: calc(6vh * 54 / 86);
+  --river-card-w: calc(6vh);
   gap: 0.4vh;
   min-height: 0;
 }
