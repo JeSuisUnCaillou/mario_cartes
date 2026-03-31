@@ -171,6 +171,7 @@ html, body, #app {
   font-size: 1.5vh;
   font-weight: bold;
   color: #fff;
+  margin-top: 10px;
 }
 
 .board-coin-icon {
@@ -726,8 +727,7 @@ input {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: 100%;
-  max-width: 400px;
+  width: fit-content;
 }
 
 .buy-modal-river {
