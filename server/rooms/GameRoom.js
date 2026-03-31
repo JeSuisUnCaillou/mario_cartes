@@ -327,21 +327,20 @@ class GameRoom extends Room {
       this.rivers = null;
       this.cellOccupants = {};
       for (const player of this.players.values()) {
-        player.cellId = 1;
-        player.hand = [];
-        player.drawPile = this._createDeck();
-        player.discardPile = [];
-        player.lapCount = 1;
-        player.coins = 0;
-        player.ready = false;
-        player.hasPlayedAllCards = false;
-        player.pendingBananaDiscards = 0;
+        Object.assign(player, this._initialPlayerState());
         this._addToCell(1, player.playerId);
       }
       this.broadcastPlayers();
       this.broadcastCellOccupants();
       this.broadcastGameState();
     });
+  }
+
+  _initialPlayerState() {
+    return {
+      cellId: 1, drawPile: this._createDeck(), hand: [], discardPile: [],
+      pendingBananaDiscards: 0, ready: false, hasPlayedAllCards: false, coins: 0, lapCount: 1,
+    };
   }
 
   _getPlayer(client) {
@@ -373,9 +372,8 @@ class GameRoom extends Room {
         const playerId = randomUUID();
         const name = (options.name || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
         this.players.set(playerId, {
-          playerId, name, cellId: 1, connected: true,
-          drawPile: this._createDeck(), hand: [], discardPile: [],
-          pendingBananaDiscards: 0, ready: false, hasPlayedAllCards: false, coins: 0, lapCount: 1,
+          playerId, name, connected: true,
+          ...this._initialPlayerState(),
         });
         this._addToCell(1, playerId);
         this.clientsInfo.set(client.sessionId, { type: "player", playerId });
