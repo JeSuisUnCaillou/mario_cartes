@@ -161,7 +161,6 @@ class GameRoom extends Room {
         this.broadcastCellOccupants();
         if (this._bananasOnCell(player.cellId) > 0) {
           this._removeFromCell(player.cellId, "banana");
-          this.broadcastCellOccupants();
           this.broadcast("bananaHitBoard", {
             playerId: player.playerId,
             cellId: player.cellId,

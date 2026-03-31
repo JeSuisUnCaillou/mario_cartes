@@ -437,19 +437,28 @@ export function initBoard(gameId) {
 
       const moveDelay = 400;
 
-      // Create a temp banana at the cell (the real one is already removed by updateCellOccupants)
-      const center = this.cellPixelPos(cellId);
-      const cellW = this.track.displayWidth / 5;
-      const helmetSlot = cellW / 4.5;
-      const size = helmetSlot * 0.9;
-      const banana = this.add.image(center.x, center.y, "banana");
-      banana.setScale(size / banana.width);
+      // Use the real banana sprite from the cell (server hasn't broadcast its removal yet)
+      const sprites = this.bananaSprites.get(cellId) || [];
+      const banana = sprites.pop();
+      if (sprites.length === 0) {
+        this.bananaSprites.delete(cellId);
+      }
+
+      if (!banana) return;
       banana.setDepth(10);
+
+      // Also remove the banana from latestCellOccupants so tweenCellLayout doesn't reposition it
+      const occupants = this.latestCellOccupants[cellId];
+      if (occupants) {
+        const idx = occupants.lastIndexOf("banana");
+        if (idx !== -1) occupants.splice(idx, 1);
+      }
 
       // After move completes, rearrange remaining occupants on the cell
       this.time.delayedCall(moveDelay, () => this.tweenCellLayout());
 
       // After move: helmet rotates twice, banana launches out
+      const center = this.cellPixelPos(cellId);
       this.tweens.add({
         targets: helmet,
         angle: -720,
