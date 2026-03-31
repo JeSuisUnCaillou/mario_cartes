@@ -103,6 +103,8 @@ class GameRoom extends Room {
     this.onMessage("drawCards", (client) => {
       const player = this._getPlayer(client);
       if (!player) return;
+      if (this.phase !== "playing") return;
+      if (player.playerId !== this.activePlayerId) return;
       if (player.hand.length > 0) return;
       if (player.pendingBananaDiscards > 0) return;
       client.send("cardsDrawn", this._drawCards(player));
@@ -112,10 +114,13 @@ class GameRoom extends Room {
     this.onMessage("playCard", (client, data) => {
       const player = this._getPlayer(client);
       if (!player) return;
+      if (this.phase !== "playing") return;
+      if (player.playerId !== this.activePlayerId) return;
       if (player.pendingBananaDiscards > 0) return;
       const cardIndex = player.hand.findIndex((c) => c.id === data.cardId);
       if (cardIndex === -1) return;
       const [card] = player.hand.splice(cardIndex, 1);
+      if (player.hand.length === 0) player.hasPlayedAllCards = true;
       let droppedBanana = null;
       if (card.type === "banana_move_forward_1") {
         droppedBanana = player.cellId;
@@ -164,11 +169,17 @@ class GameRoom extends Room {
           count: 1,
         });
       }
+
+      // Check if turn should end (no banana pending)
+      if (player.hasPlayedAllCards && player.pendingBananaDiscards === 0) {
+        this._endTurnAndAdvance(player);
+      }
     });
 
     this.onMessage("discardCard", (client, data) => {
       const player = this._getPlayer(client);
       if (!player) return;
+      if (this.phase !== "playing") return;
       if (player.pendingBananaDiscards <= 0) return;
       const cardIndex = player.hand.findIndex((c) => c.id === data.cardId);
       if (cardIndex === -1) return;
@@ -181,6 +192,11 @@ class GameRoom extends Room {
         ...this._cardState(player),
       });
       this.broadcastPlayers();
+
+      // Check if turn should end after banana discard resolved
+      if (player.hasPlayedAllCards && player.pendingBananaDiscards === 0 && player.playerId === this.activePlayerId) {
+        this._endTurnAndAdvance(player);
+      }
     });
   }
 
@@ -232,6 +248,9 @@ class GameRoom extends Room {
       const player = this.players.get(info.playerId);
       if (player) {
         player.connected = false;
+      }
+      if (this.phase === "playing" && info.playerId === this.activePlayerId) {
+        this._advanceTurn();
       }
     }
     this.clientsInfo.delete(client.sessionId);
@@ -295,6 +314,36 @@ class GameRoom extends Room {
       this._sendToPlayer(playerId, "cardsDrawn", drawResult);
     }
 
+    this.broadcastGameState();
+    this.broadcastPlayers();
+  }
+
+  _endTurnAndAdvance(player) {
+    if (player.hand.length === 0) {
+      const drawResult = this._drawCards(player);
+      this._sendToPlayer(player.playerId, "cardsDrawn", drawResult);
+      this.broadcastPlayers();
+    }
+    player.hasPlayedAllCards = false;
+    this._advanceTurn();
+  }
+
+  _advanceTurn() {
+    const playerIds = Array.from(this.players.keys());
+    let attempts = 0;
+    do {
+      this.turnIndex++;
+      if (this.turnIndex >= playerIds.length) {
+        this.turnIndex = 0;
+        this.currentRound++;
+      }
+      this.activePlayerId = playerIds[this.turnIndex];
+      attempts++;
+    } while (!this.players.get(this.activePlayerId).connected && attempts < playerIds.length);
+
+    if (attempts >= playerIds.length) return;
+
+    this.players.get(this.activePlayerId).hasPlayedAllCards = false;
     this.broadcastGameState();
     this.broadcastPlayers();
   }
