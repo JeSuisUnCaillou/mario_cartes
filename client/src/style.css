@@ -212,7 +212,120 @@ html, body, #app {
   margin: 15px;
 }
 
-/* Rivers in top bar: 3 rivers side by side */
+/* Shared river styles (used by board and buy modal) */
+.river-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #444;
+  border-radius: 8px;
+}
+
+.river-cost {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.river-cost-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.river-cards {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.river-deck {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.river-deck-img {
+  width: 80px;
+  aspect-ratio: 54 / 86;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.river-deck-empty {
+  width: 80px;
+  aspect-ratio: 54 / 86;
+  border: 2px dashed #555;
+  border-radius: 6px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.river-deck-empty span {
+  font-size: 0.7em;
+  color: #666;
+  text-align: center;
+}
+
+.river-deck-count {
+  font-size: 0.9em;
+  color: #888;
+  font-weight: bold;
+  text-align: center;
+}
+
+.river-slots {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.river-card {
+  width: 80px;
+  aspect-ratio: 54 / 86;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.river-card .card-bg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+}
+
+.river-card .card-item {
+  position: absolute;
+  width: 35%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.river-slot-empty {
+  border: 2px dashed #444;
+  background: transparent;
+}
+
+.river-card.unaffordable {
+  opacity: 0.35;
+  filter: grayscale(1);
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Rivers in top bar: compact overrides for board */
 .board-rivers {
   display: flex;
   gap: 1vh;
@@ -221,100 +334,69 @@ html, body, #app {
   justify-content: center;
 }
 
-.board-river {
-  display: flex;
-  align-items: center;
+.board-rivers .river-row {
   padding: 0.5vh;
-  border: 1px solid #333;
-  border-radius: 6px;
-  min-height: 0;
+  border-color: #333;
   gap: 0.4vh;
+  min-height: 0;
 }
 
-.board-river-cost {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
+.board-rivers .river-cost {
   font-size: 1.6vh;
-  font-weight: bold;
-  color: #fff;
-  flex-shrink: 0;
   padding: 15px;
 }
 
-.board-river-cost-icon {
+.board-rivers .river-cost-icon {
   width: 1.6vh;
   height: 1.6vh;
 }
 
-.board-river-cards {
+.board-rivers .river-cards {
   --river-card-h: 6vh;
-  flex: 1;
-  display: flex;
-  align-items: flex-start;
   gap: 0.4vh;
   min-height: 0;
 }
 
-.board-river-deck {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.board-rivers .river-deck {
   gap: 0.2vh;
-  flex-shrink: 0;
 }
 
-.board-river-deck-img {
+.board-rivers .river-deck-img {
+  width: auto;
   height: var(--river-card-h);
-  aspect-ratio: 54 / 86;
-  object-fit: cover;
   border-radius: 2px;
 }
 
-.board-river-deck-count {
-  font-size: 1.2vh;
-  color: #888;
-  font-weight: bold;
-  text-align: center;
+.board-rivers .river-deck-empty {
+  width: auto;
+  height: var(--river-card-h);
+  border-radius: 2px;
 }
 
-.board-river-slots {
-  flex: 1;
-  display: flex;
+.board-rivers .river-deck-empty span {
+  font-size: 0.5em;
+}
+
+.board-rivers .river-deck-count {
+  font-size: 1.2vh;
+}
+
+.board-rivers .river-slots {
   gap: 0.3vh;
-  justify-content: center;
   align-items: flex-start;
   min-width: 0;
 }
 
-.board-river-card {
-  aspect-ratio: 54 / 86;
+.board-rivers .river-card {
+  width: auto;
   height: var(--river-card-h);
   border-radius: 2px;
-  position: relative;
-  overflow: hidden;
   flex-shrink: 1;
   min-width: 0;
 }
 
-.board-river-card .card-bg {
-  width: 100%;
-  height: 100%;
-  display: block;
-  border-radius: inherit;
-}
-
-.board-river-card .card-item {
-  position: absolute;
-  width: 35%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-
-.board-river-empty {
-  border: 1px dashed #444;
-  background: transparent;
+.board-rivers .river-slot-empty {
+  border-width: 1px;
 }
 
 .board-game {
@@ -730,104 +812,18 @@ input {
   width: fit-content;
 }
 
-.buy-modal-river {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  border: 1px solid #444;
-  border-radius: 8px;
+/* Buy modal river overrides */
+.buy-modal-content .river-row {
   background: black;
 }
 
-.buy-modal-cost {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  font-size: 1.5em;
-  font-weight: bold;
-  color: #fff;
+.buy-modal-content .river-cost {
   width: 40px;
-  flex-shrink: 0;
 }
 
-.buy-modal-cost-icon {
-  width: 24px;
-  height: 24px;
-}
-
-.buy-modal-cards {
-  flex: 1;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-
-.buy-modal-deck {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.buy-modal-deck-img {
-  width: 80px;
-  aspect-ratio: 54 / 86;
-  object-fit: cover;
-  border-radius: 6px;
-}
-
-.buy-modal-slots {
-  flex: 1;
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-}
-
-.buy-modal-card {
-  width: 80px;
-  aspect-ratio: 54 / 86;
-  border-radius: 6px;
-  position: relative;
-  overflow: hidden;
+.buy-modal-content .river-card {
   cursor: pointer;
   margin: 0;
   transform: none;
   transition: none;
-}
-
-.buy-modal-card .card-bg {
-  width: 100%;
-  height: 100%;
-  display: block;
-  border-radius: inherit;
-}
-
-.buy-modal-card .card-item {
-  position: absolute;
-  width: 35%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-
-.buy-modal-card.unaffordable {
-  opacity: 0.35;
-  filter: grayscale(1);
-  cursor: default;
-  pointer-events: none;
-}
-
-.buy-modal-empty {
-  border: 2px dashed #444;
-  background: transparent;
-  cursor: default;
-}
-
-.buy-modal-deck-count {
-  font-size: 0.9em;
-  color: #888;
-  font-weight: bold;
-  text-align: center;
 }

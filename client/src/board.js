@@ -2,13 +2,7 @@ import Phaser from "phaser";
 import { Client } from "colyseus.js";
 import QRCode from "qrcode";
 import { bananaCounts } from "./board.functions.js";
-import { cardItemPositions } from "./player.functions.js";
-
-const ITEM_ICONS = {
-  coin: "/coin.svg",
-  banana: "/banana.svg",
-  mushroom: "/mushroom.svg",
-};
+import { renderRivers as renderRiverRows } from "./river.js";
 
 const CELL_POSITIONS = [
   null,           // index 0 unused (cells are 1-indexed)
@@ -198,74 +192,10 @@ function updateBoardGameState(data) {
   }
 }
 
-function createBoardRiverCard(card) {
-  const el = document.createElement("div");
-  el.className = "board-river-card";
-  el.dataset.cardId = card.id;
-  const bg = document.createElement("img");
-  bg.src = "/card - blank.svg";
-  bg.className = "card-bg";
-  bg.draggable = false;
-  el.appendChild(bg);
-  const positions = cardItemPositions(card.items.length);
-  card.items.forEach((item, i) => {
-    const icon = document.createElement("img");
-    icon.src = ITEM_ICONS[item];
-    icon.className = "card-item";
-    icon.style.left = positions[i].x;
-    icon.style.top = positions[i].y;
-    icon.draggable = false;
-    el.appendChild(icon);
-  });
-  return el;
-}
-
 function renderRivers(rivers) {
   const container = document.getElementById("board-rivers");
   if (!container) return;
-  container.innerHTML = "";
-  for (const river of rivers) {
-    const row = document.createElement("div");
-    row.className = "board-river";
-
-    const costLabel = document.createElement("div");
-    costLabel.className = "board-river-cost";
-    costLabel.innerHTML = `<span>${river.cost}</span><img src="/coin.svg" class="board-river-cost-icon" />`;
-    row.appendChild(costLabel);
-
-    const cardsRow = document.createElement("div");
-    cardsRow.className = "board-river-cards";
-
-    const deckPile = document.createElement("div");
-    deckPile.className = "board-river-deck";
-    const deckImg = document.createElement("img");
-    deckImg.src = "/card - back.svg";
-    deckImg.className = "board-river-deck-img";
-    deckImg.draggable = false;
-    if (river.deckCount === 0) deckImg.style.opacity = "0.2";
-    deckPile.appendChild(deckImg);
-    const deckCount = document.createElement("div");
-    deckCount.className = "board-river-deck-count";
-    deckCount.textContent = river.deckCount;
-    deckPile.appendChild(deckCount);
-    cardsRow.appendChild(deckPile);
-
-    const slotsContainer = document.createElement("div");
-    slotsContainer.className = "board-river-slots";
-    for (const card of river.slots) {
-      if (card) {
-        slotsContainer.appendChild(createBoardRiverCard(card));
-      } else {
-        const empty = document.createElement("div");
-        empty.className = "board-river-card board-river-empty";
-        slotsContainer.appendChild(empty);
-      }
-    }
-    cardsRow.appendChild(slotsContainer);
-
-    row.appendChild(cardsRow);
-    container.appendChild(row);
-  }
+  renderRiverRows(container, rivers);
 }
 
 export function initBoard(gameId) {

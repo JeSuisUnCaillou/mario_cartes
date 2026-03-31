@@ -1,5 +1,6 @@
 import { Client } from "colyseus.js";
 import { isPointInRect, splitDrawBatches, initialDrawPileCount, normalizeName, cardItemPositions } from "./player.functions.js";
+import { renderRivers } from "./river.js";
 
 const ITEM_ICONS = {
   coin: "/coin.svg",
@@ -451,62 +452,14 @@ function openBuyModal() {
 function renderBuyModal() {
   const content = document.querySelector(".buy-modal-content");
   if (!content || !latestRivers) return;
-  content.innerHTML = "";
-  for (const river of latestRivers) {
-    const row = document.createElement("div");
-    row.className = "buy-modal-river";
-
-    const costLabel = document.createElement("div");
-    costLabel.className = "buy-modal-cost";
-    costLabel.innerHTML = `<span>${river.cost}</span><img src="/coin.svg" class="buy-modal-cost-icon" />`;
-    row.appendChild(costLabel);
-
-    const cardsRow = document.createElement("div");
-    cardsRow.className = "buy-modal-cards";
-
-    const deckPile = document.createElement("div");
-    deckPile.className = "buy-modal-deck";
-    const deckImg = document.createElement("img");
-    deckImg.src = "/card - back.svg";
-    deckImg.className = "buy-modal-deck-img";
-    deckImg.draggable = false;
-    if (river.deckCount === 0) deckImg.style.opacity = "0.2";
-    deckPile.appendChild(deckImg);
-    const deckCount = document.createElement("div");
-    deckCount.className = "buy-modal-deck-count";
-    deckCount.textContent = river.deckCount;
-    deckPile.appendChild(deckCount);
-    cardsRow.appendChild(deckPile);
-
-    const slotsContainer = document.createElement("div");
-    slotsContainer.className = "buy-modal-slots";
-    for (const card of river.slots) {
-      if (card) {
-        const cardEl = createCardElement(card);
-        cardEl.className = "buy-modal-card";
-        cardEl.dataset.cardId = card.id;
-        if (currentCoins < river.cost) {
-          cardEl.classList.add("unaffordable");
-        } else {
-          cardEl.addEventListener("click", () => {
-            if (currentRoom) {
-              currentRoom.send("buyCard", { riverId: river.id, cardId: card.id });
-            }
-          });
-        }
-        slotsContainer.appendChild(cardEl);
-      } else {
-        const empty = document.createElement("div");
-        empty.className = "buy-modal-card buy-modal-empty";
-        slotsContainer.appendChild(empty);
+  renderRivers(content, latestRivers, {
+    onCardClick: (river, card) => {
+      if (currentRoom) {
+        currentRoom.send("buyCard", { riverId: river.id, cardId: card.id });
       }
-    }
-    cardsRow.appendChild(slotsContainer);
-
-    row.appendChild(cardsRow);
-
-    content.appendChild(row);
-  }
+    },
+    isAffordable: (river) => currentCoins >= river.cost,
+  });
 }
 
 function closeBuyModal() {
