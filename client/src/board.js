@@ -98,6 +98,10 @@ function updateInfoBarPlayers(players) {
       helmet.src = "/helmet.svg";
       el.appendChild(helmet);
 
+      const ready = document.createElement("div");
+      ready.className = "board-player-ready";
+      el.appendChild(ready);
+
       const cards = document.createElement("div");
       cards.className = "board-player-cards";
       el.appendChild(cards);
@@ -107,6 +111,7 @@ function updateInfoBarPlayers(players) {
 
     el.classList.toggle("disconnected", !p.connected);
     el.querySelector(".board-player-name").textContent = p.name || "???";
+    el.querySelector(".board-player-ready").textContent = p.ready ? "✅" : "";
 
     const cardsContainer = el.querySelector(".board-player-cards");
     const currentCount = cardsContainer.children.length;

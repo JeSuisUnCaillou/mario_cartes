@@ -118,6 +118,11 @@ html, body, #app {
   height: 36px;
 }
 
+.board-player-ready {
+  font-size: 1.2em;
+  height: 1.4em;
+}
+
 .board-player-cards {
   display: flex;
   justify-content: center;
