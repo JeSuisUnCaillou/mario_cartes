@@ -231,6 +231,7 @@ html, body, #app {
   font-weight: bold;
   color: #fff;
   flex-shrink: 0;
+  padding: 15px;
 }
 
 .river-cost-icon {
@@ -254,19 +255,22 @@ html, body, #app {
   flex-shrink: 0;
 }
 
-.river-deck-img {
-  width: var(--river-card-w);
-  aspect-ratio: 54 / 86;
-  object-fit: cover;
-  border-radius: 6px;
-}
-
+.river-deck-img,
 .river-deck-empty {
   width: var(--river-card-w);
   aspect-ratio: 54 / 86;
-  border: 2px dashed #555;
   border-radius: 6px;
   box-sizing: border-box;
+  border: 2px solid transparent;
+}
+
+.river-deck-img {
+  object-fit: cover;
+}
+
+.river-deck-empty {
+  border-color: #555;
+  border-style: dashed;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -298,6 +302,8 @@ html, body, #app {
   border-radius: 6px;
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
+  border: 2px solid transparent;
 }
 
 .river-card .card-bg {
@@ -315,7 +321,8 @@ html, body, #app {
 }
 
 .river-slot-empty {
-  border: 2px dashed #444;
+  border-color: #444;
+  border-style: dashed;
   background: transparent;
 }
 
@@ -344,7 +351,6 @@ html, body, #app {
 
 .board-rivers .river-cost {
   font-size: 1.6vh;
-  padding: 15px;
 }
 
 .board-rivers .river-cost-icon {
