@@ -185,7 +185,7 @@ html, body, #app {
 }
 
 .board-rivers {
-  width: 20%;
+  width: 20vh;
   display: flex;
   flex-direction: column;
   background: #111;
