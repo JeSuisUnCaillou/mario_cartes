@@ -656,7 +656,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           spawnThrowAnimation("/banana.svg", playZone);
         }
         for (let i = 0; i < data.coinGained; i++) {
-          setTimeout(() => spawnThrowAnimation("/coin.svg", playZone), i * 1000);
+          setTimeout(() => spawnThrowAnimation("/coin.svg", playZone), i * 400);
         }
 
         updateCoinDisplay(data.coins);
