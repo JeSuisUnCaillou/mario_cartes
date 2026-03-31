@@ -35,7 +35,7 @@ html, body, #app {
   text-align: center;
   flex-shrink: 0;
   border: 2px dashed #999;
-  padding: 15px 25px;
+  padding: 15px;
   width: 80px;
   box-sizing: border-box;
 }
@@ -53,10 +53,11 @@ html, body, #app {
 }
 
 .board-title-name {
-  font-size: 4em;
+  font-size: 3em;
   font-weight: bold;
   color: #fff;
   letter-spacing: 0.1em;
+  margin-bottom: 15px;
 }
 
 .board-info-players {
