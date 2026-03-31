@@ -147,6 +147,11 @@ function updateBoardGameState(data) {
       container.insertBefore(roundCard, container.firstChild);
     }
     roundCard.innerHTML = `<span>Round</span><span class="board-round-number">${data.currentRound}</span>`;
+
+    // Remove ready indicators
+    for (const el of container.querySelectorAll(".board-player-ready")) {
+      el.remove();
+    }
   }
 
   // Golden border on active player
