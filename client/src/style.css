@@ -178,9 +178,8 @@ html, body, #app {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-evenly;
   background: #111;
-  padding: 1vh;
   box-sizing: border-box;
 }
 
@@ -189,6 +188,7 @@ html, body, #app {
   font-weight: bold;
   color: #fff;
   letter-spacing: 0.1em;
+  margin: 15px;
 }
 
 /* Rivers in top bar: 3 rivers side by side */
@@ -196,10 +196,11 @@ html, body, #app {
   display: flex;
   gap: 1vh;
   width: 100%;
+  align-items: center;
+  justify-content: center;
 }
 
 .board-river {
-  flex: 1;
   display: flex;
   align-items: center;
   padding: 0.5vh;
@@ -218,6 +219,7 @@ html, body, #app {
   font-weight: bold;
   color: #fff;
   flex-shrink: 0;
+  padding: 15px;
 }
 
 .board-river-cost-icon {
