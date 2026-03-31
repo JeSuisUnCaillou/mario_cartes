@@ -27,6 +27,12 @@ let boardPhase = "lobby";
 let latestPlayersData = [];
 let latestGameState = null;
 
+function ordinalSuffix(n) {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
 function createSidebar(gameId) {
   const sidebar = document.createElement("div");
   sidebar.className = "board-sidebar";
@@ -159,8 +165,14 @@ function updateInfoBarPlayers(players) {
         lapEl.className = "board-player-lap";
         el.querySelector(".board-player-right").appendChild(lapEl);
       }
-      const lap = Math.min(p.lapCount, 3);
-      lapEl.textContent = p.finished ? "🏁" : `Lap ${lap}/3`;
+      if (p.finished && latestGameState && latestGameState.ranking) {
+        const entry = latestGameState.ranking.find((r) => r.playerId === p.playerId);
+        const ordinal = entry ? ordinalSuffix(entry.rank) : "🏁";
+        lapEl.textContent = ordinal;
+      } else {
+        const lap = Math.min(p.lapCount, 3);
+        lapEl.textContent = `Lap ${lap}/3`;
+      }
     } else if (lapEl) {
       lapEl.remove();
     }

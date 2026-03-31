@@ -69,7 +69,7 @@ describe("Joining a room", () => {
       handCount: 0,
       ready: false,
       coins: 0,
-      lapCount: 1,
+      lapCount: 0,
       finished: false,
     });
     room.leave();
@@ -1139,7 +1139,7 @@ describe("Win condition and laps", () => {
       list.some((p) => p.playerId === playerId),
     );
     const player = players.find((p) => p.playerId === playerId);
-    expect(player).toHaveProperty("lapCount", 1);
+    expect(player).toHaveProperty("lapCount", 0);
     expect(player).toHaveProperty("finished", false);
     room.leave();
   });
@@ -1205,11 +1205,11 @@ describe("Start over", () => {
 
     room1.send("startOver");
     const players = await waitForPlayers(board, (list) =>
-      list.every((p) => p.cellId === 1 && p.lapCount === 1 && !p.finished && !p.ready),
+      list.every((p) => p.cellId === 1 && p.lapCount === 0 && !p.finished && !p.ready),
     );
     const p1 = players.find((p) => p.playerId === id1);
     expect(p1.cellId).toBe(1);
-    expect(p1.lapCount).toBe(1);
+    expect(p1.lapCount).toBe(0);
     expect(p1.finished).toBe(false);
     expect(p1.ready).toBe(false);
     expect(p1.coins).toBe(0);

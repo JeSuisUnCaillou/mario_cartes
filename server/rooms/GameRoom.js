@@ -209,6 +209,7 @@ class GameRoom extends Room {
       // Move one cell at a time, checking for banana collisions and lap completion
       const bananaHits = [];
       let playerFinished = false;
+      if (player.lapCount === 0) player.lapCount = 1;
       for (let i = 0; i < moveCount; i++) {
         const oldCellId = player.cellId;
         player.cellId = this.cells.get(player.cellId).next_cell;
@@ -218,11 +219,10 @@ class GameRoom extends Room {
 
         // Lap detection
         if (this.cells.get(player.cellId).finish_line) {
-          if (player.lapCount >= 3) {
+          player.lapCount++;
+          if (player.lapCount > 3) {
             this.ranking.push(player.playerId);
             playerFinished = true;
-          } else {
-            player.lapCount++;
             break;
           }
         }
@@ -342,7 +342,7 @@ class GameRoom extends Room {
   _initialPlayerState() {
     return {
       cellId: 1, drawPile: this._createDeck(), hand: [], discardPile: [],
-      pendingBananaDiscards: 0, ready: false, hasPlayedAllCards: false, coins: 0, lapCount: 1,
+      pendingBananaDiscards: 0, ready: false, hasPlayedAllCards: false, coins: 0, lapCount: 0,
     };
   }
 
