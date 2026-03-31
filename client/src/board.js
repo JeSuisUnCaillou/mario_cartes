@@ -225,6 +225,23 @@ function renderRivers(rivers) {
     costLabel.innerHTML = `<span>${river.cost}</span><img src="/coin.svg" class="board-river-cost-icon" />`;
     row.appendChild(costLabel);
 
+    const cardsRow = document.createElement("div");
+    cardsRow.className = "board-river-cards";
+
+    const deckPile = document.createElement("div");
+    deckPile.className = "board-river-deck";
+    const deckImg = document.createElement("img");
+    deckImg.src = "/card - back.svg";
+    deckImg.className = "board-river-deck-img";
+    deckImg.draggable = false;
+    if (river.deckCount === 0) deckImg.style.opacity = "0.2";
+    deckPile.appendChild(deckImg);
+    const deckCount = document.createElement("div");
+    deckCount.className = "board-river-deck-count";
+    deckCount.textContent = river.deckCount;
+    deckPile.appendChild(deckCount);
+    cardsRow.appendChild(deckPile);
+
     const slotsContainer = document.createElement("div");
     slotsContainer.className = "board-river-slots";
     for (const card of river.slots) {
@@ -236,13 +253,9 @@ function renderRivers(rivers) {
         slotsContainer.appendChild(empty);
       }
     }
-    row.appendChild(slotsContainer);
+    cardsRow.appendChild(slotsContainer);
 
-    const deckCount = document.createElement("div");
-    deckCount.className = "board-river-deck-count";
-    deckCount.textContent = river.deckCount;
-    row.appendChild(deckCount);
-
+    row.appendChild(cardsRow);
     container.appendChild(row);
   }
 }

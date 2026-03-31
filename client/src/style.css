@@ -198,35 +198,64 @@ html, body, #app {
 .board-river {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1vh;
   padding: 0.5vh;
   border: 1px solid #333;
   border-radius: 6px;
   min-height: 0;
+  gap: 0.3vh;
 }
 
 .board-river-cost {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
-  font-size: 2.5vh;
+  gap: 0.3vh;
+  font-size: 1.6vh;
   font-weight: bold;
   color: #fff;
   flex-shrink: 0;
-  width: 3vh;
 }
 
 .board-river-cost-icon {
-  width: 2.5vh;
-  height: 2.5vh;
+  width: 1.6vh;
+  height: 1.6vh;
+}
+
+.board-river-cards {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.4vh;
+  min-height: 0;
+  width: 100%;
+}
+
+.board-river-deck {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2vh;
+  flex-shrink: 0;
+}
+
+.board-river-deck-img {
+  height: calc((80vh / 3 - 4vh) * 0.55);
+  width: auto;
+  border-radius: 2px;
+}
+
+.board-river-deck-count {
+  font-size: 1.2vh;
+  color: #888;
+  font-weight: bold;
+  text-align: center;
 }
 
 .board-river-slots {
   flex: 1;
   display: flex;
-  gap: 0.5vh;
+  gap: 0.3vh;
   justify-content: center;
   align-items: center;
   min-width: 0;
@@ -234,12 +263,12 @@ html, body, #app {
 
 .board-river-card {
   aspect-ratio: 54 / 86;
-  height: 80%;
-  max-height: 20vh;
-  border-radius: 4px;
+  height: calc((80vh / 3 - 4vh) * 0.55);
+  border-radius: 2px;
   position: relative;
   overflow: hidden;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .board-river-card .card-bg {
@@ -257,17 +286,8 @@ html, body, #app {
 }
 
 .board-river-empty {
-  border: 2px dashed #444;
+  border: 1px dashed #444;
   background: transparent;
-}
-
-.board-river-deck-count {
-  font-size: 1.5vh;
-  color: #888;
-  font-weight: bold;
-  flex-shrink: 0;
-  width: 2vh;
-  text-align: center;
 }
 
 .board-game {
