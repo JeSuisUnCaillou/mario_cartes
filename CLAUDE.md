@@ -37,6 +37,7 @@ Online multiplayer racing card game inspired by Mario Kart and Slay the Spire 2.
 - **Tests**: Write automated tests as much as possible to support a fast-growing codebase. Always run tests (`npm test -w server` and `npm test -w client`) before committing. When adding or modifying features, update or add corresponding tests to maintain coverage.
 - **Front-end unit tests**: Only test functions that represent or transform game state (e.g. draw pile counts, name normalization, hit detection). Do not test visual-only logic (layout positioning, fan transforms, coordinate conversions, scaling). Extract pure functions into `*.functions.js` files alongside the UI files, and test those.
 - **Game state**: Defined as a data structure on the backend (Colyseus schema).
+- **State over messages**: Always drive UI and logic from state (broadcasted via `broadcastPlayers`, `broadcastGameState`, etc.), never from one-off event messages. The client must be able to reconstruct the correct UI at any time from the current state alone — this is essential for handling page reloads. Do not introduce new message types when a state change already carries the information.
 
 ## Plans
 

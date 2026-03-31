@@ -130,6 +130,21 @@ class GameRoom extends Room {
     const cellsData = require(path.join(__dirname, "../../assets/racetrack_0_cells.json"));
     this.cells = new Map(cellsData.map((cell) => [cell.id, cell]));
     this.cellOccupants = {};
+    this.ranking = [];
+
+    this.onMessage("_testSetState", (client, data) => {
+      if (!this._testDeck) return;
+      const player = this._getPlayer(client);
+      if (!player) return;
+      if (data.cellId !== undefined) {
+        this._removeFromCell(player.cellId, player.playerId);
+        player.cellId = data.cellId;
+        this._addToCell(player.cellId, player.playerId);
+      }
+      if (data.lapCount !== undefined) player.lapCount = data.lapCount;
+      this.broadcastPlayers();
+      this.broadcastCellOccupants();
+    });
 
     this.onMessage("changeName", (client, newName) => {
       const player = this._getPlayer(client);
@@ -191,14 +206,26 @@ class GameRoom extends Room {
         }
       }
 
-      // Move one cell at a time, checking for banana collisions on each cell
+      // Move one cell at a time, checking for banana collisions and lap completion
       const bananaHits = [];
+      let playerFinished = false;
       for (let i = 0; i < moveCount; i++) {
         const oldCellId = player.cellId;
         player.cellId = this.cells.get(player.cellId).next_cell;
         this._removeFromCell(oldCellId, player.playerId);
         this._addToCell(player.cellId, player.playerId);
         this.broadcastCellOccupants();
+
+        // Lap detection
+        if (this.cells.get(player.cellId).finish_line) {
+          player.lapCount++;
+          if (player.lapCount > 3) {
+            this.ranking.push(player.playerId);
+            playerFinished = true;
+            break;
+          }
+        }
+
         if (this._bananasOnCell(player.cellId) > 0) {
           this._removeFromCell(player.cellId, "banana");
           this.broadcast("bananaHitBoard", {
@@ -213,6 +240,15 @@ class GameRoom extends Room {
       player.discardPile.push(card);
       client.send("cardPlayed", { cardId: card.id, droppedBanana, coinGained, ...this._cardState(player) });
       this.broadcastPlayers();
+
+      // Player just finished: auto-end turn
+      if (playerFinished) {
+        this._endTurnForFinishedPlayer(player);
+        if (this.ranking.length === this.players.size) {
+          this._endGame();
+        }
+        return;
+      }
 
       // Send banana hit events to the player (stacking discards)
       if (bananaHits.length > 0) {
@@ -313,7 +349,7 @@ class GameRoom extends Room {
         this.players.set(playerId, {
           playerId, name, cellId: 1, connected: true,
           drawPile: this._createDeck(), hand: [], discardPile: [],
-          pendingBananaDiscards: 0, ready: false, hasPlayedAllCards: false, coins: 0,
+          pendingBananaDiscards: 0, ready: false, hasPlayedAllCards: false, coins: 0, lapCount: 1,
         });
         this._addToCell(1, playerId);
         this.clientsInfo.set(client.sessionId, { type: "player", playerId });
@@ -365,6 +401,8 @@ class GameRoom extends Room {
       handCount: p.hand.length,
       ready: p.ready,
       coins: p.coins,
+      lapCount: p.lapCount,
+      finished: this.ranking.includes(p.playerId),
     }));
     this.broadcast("players", players);
   }
@@ -376,6 +414,13 @@ class GameRoom extends Room {
       activePlayerId: this.activePlayerId,
     };
     if (this.rivers) state.rivers = this._riverState();
+    if (this.ranking.length > 0) {
+      state.ranking = this.ranking.map((playerId, i) => ({
+        playerId,
+        name: this.players.get(playerId).name,
+        rank: i + 1,
+      }));
+    }
     this.broadcast("gameState", state);
   }
 
@@ -438,11 +483,30 @@ class GameRoom extends Room {
       }
       this.activePlayerId = playerIds[this.turnIndex];
       attempts++;
-    } while (!this.players.get(this.activePlayerId).connected && attempts < playerIds.length);
+    } while (
+      (!this.players.get(this.activePlayerId).connected || this.ranking.includes(this.activePlayerId))
+      && attempts < playerIds.length
+    );
 
     if (attempts >= playerIds.length) return;
 
     this.players.get(this.activePlayerId).hasPlayedAllCards = false;
+    this.broadcastGameState();
+    this.broadcastPlayers();
+  }
+
+  _endTurnForFinishedPlayer(player) {
+    player.coins = 0;
+    if (player.hand.length > 0) {
+      player.discardPile.push(...player.hand.splice(0));
+    }
+    player.hasPlayedAllCards = false;
+    this.broadcastPlayers();
+    this._advanceTurn();
+  }
+
+  _endGame() {
+    this.phase = "finished";
     this.broadcastGameState();
     this.broadcastPlayers();
   }

@@ -1,5 +1,5 @@
 [
-  { "id": 1,  "center_position": { "x": 12.585, "y": 39.043 }, "next_cell": 2  },
+  { "id": 1,  "center_position": { "x": 12.585, "y": 39.043 }, "next_cell": 2, "finish_line": true },
   { "id": 2,  "center_position": { "x": 12.585, "y": 12.585 }, "next_cell": 3  },
   { "id": 3,  "center_position": { "x": 39.043, "y": 12.585 }, "next_cell": 4  },
   { "id": 4,  "center_position": { "x": 65.501, "y": 12.585 }, "next_cell": 5  },

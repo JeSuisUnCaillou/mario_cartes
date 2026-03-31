@@ -69,6 +69,8 @@ describe("Joining a room", () => {
       handCount: 0,
       ready: false,
       coins: 0,
+      lapCount: 1,
+      finished: false,
     });
     room.leave();
   });
@@ -899,5 +901,177 @@ describe("Card buying (rivers)", () => {
     expect(updatedGs.rivers[0].deckCount).toBe(0);
     room.leave();
     board.leave();
+  });
+});
+
+describe("Win condition and laps", () => {
+  // Single-mushroom deck: 1 cell per card.
+  const singleDeck = Array.from({ length: 10 }, () => ["mushroom"]);
+
+  async function startGame(rooms) {
+    for (const r of rooms) r.send("setReady", true);
+    await waitForMessage(rooms[0], "gameState", (gs) => gs.phase === "playing");
+  }
+
+  it("crossing the finish line increments lapCount", async () => {
+    const roomId = await createRoom(baseUrl, { _testDeck: singleDeck });
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+
+    await startGame([room1, room2]);
+
+    // Place player 1 on cell 13 (2 cells from finish), lap 1
+    room1.send("_testSetState", { cellId: 13, lapCount: 1 });
+    await waitForPlayers(board, (list) =>
+      list.some((p) => p.playerId === id1 && p.cellId === 13),
+    );
+
+    // Play 2 cards: cell 13→14→1 (crosses finish line → lap 2)
+    const cards = await waitForMessage(room1, "cardsDrawn");
+    room1.send("playCard", { cardId: cards.hand[0].id });
+    await waitForMessage(room1, "cardPlayed");
+    room1.send("playCard", { cardId: cards.hand[1].id });
+    await waitForMessage(room1, "cardPlayed");
+
+    const players = await waitForPlayers(board, (list) =>
+      list.some((p) => p.playerId === id1 && p.lapCount === 2),
+    );
+    expect(players.find((p) => p.playerId === id1).lapCount).toBe(2);
+    expect(players.find((p) => p.playerId === id1).finished).toBe(false);
+
+    room1.leave();
+    room2.leave();
+    board.leave();
+  });
+
+  it("player completing 3 laps is marked finished", async () => {
+    const roomId = await createRoom(baseUrl, { _testDeck: singleDeck });
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+
+    await startGame([room1, room2]);
+
+    // Place player 1 on cell 13, lap 3 (last lap, 2 cells from finish)
+    room1.send("_testSetState", { cellId: 13, lapCount: 3 });
+    await waitForPlayers(board, (list) =>
+      list.some((p) => p.playerId === id1 && p.cellId === 13),
+    );
+
+    // Play 2 cards: cell 13→14→1 → lapCount becomes 4 > 3 → finished
+    const cards = await waitForMessage(room1, "cardsDrawn");
+    room1.send("playCard", { cardId: cards.hand[0].id });
+    await waitForMessage(room1, "cardPlayed");
+    room1.send("playCard", { cardId: cards.hand[1].id });
+    await waitForMessage(room1, "cardPlayed");
+
+    const players = await waitForPlayers(board, (list) =>
+      list.some((p) => p.playerId === id1 && p.finished),
+    );
+    expect(players.find((p) => p.playerId === id1).finished).toBe(true);
+
+    room1.leave();
+    room2.leave();
+    board.leave();
+  });
+
+  it("all players finishing sets phase to finished with ranking", async () => {
+    const roomId = await createRoom(baseUrl, { _testDeck: singleDeck });
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+
+    await startGame([room1, room2]);
+
+    // Both players on cell 13, lap 3
+    room1.send("_testSetState", { cellId: 13, lapCount: 3 });
+    room2.send("_testSetState", { cellId: 13, lapCount: 3 });
+    await waitForPlayers(board, (list) =>
+      list.every((p) => p.cellId === 13 && p.lapCount === 3),
+    );
+
+    // Player 1 finishes
+    const cards1 = await waitForMessage(room1, "cardsDrawn");
+    room1.send("playCard", { cardId: cards1.hand[0].id });
+    await waitForMessage(room1, "cardPlayed");
+    room1.send("playCard", { cardId: cards1.hand[1].id });
+    await waitForMessage(room1, "cardPlayed");
+
+    await waitForPlayers(board, (list) =>
+      list.some((p) => p.playerId === id1 && p.finished),
+    );
+
+    // Player 2 finishes (turn auto-advanced to them)
+    const cards2 = await waitForMessage(room2, "cardsDrawn");
+    room2.send("playCard", { cardId: cards2.hand[0].id });
+    await waitForMessage(room2, "cardPlayed");
+    room2.send("playCard", { cardId: cards2.hand[1].id });
+    await waitForMessage(room2, "cardPlayed");
+
+    const gs = await waitForMessage(board, "gameState", (g) => g.phase === "finished");
+    expect(gs.phase).toBe("finished");
+    expect(gs.ranking).toHaveLength(2);
+    expect(gs.ranking[0].playerId).toBe(id1);
+    expect(gs.ranking[0].rank).toBe(1);
+    expect(gs.ranking[1].playerId).toBe(id2);
+    expect(gs.ranking[1].rank).toBe(2);
+
+    room1.leave();
+    room2.leave();
+    board.leave();
+  });
+
+  it("finished player is skipped in turn order", async () => {
+    const roomId = await createRoom(baseUrl, { _testDeck: singleDeck });
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+    const { room: room3, playerId: id3 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+
+    await startGame([room1, room2, room3]);
+
+    // Player 1 near finish, others at start
+    room1.send("_testSetState", { cellId: 13, lapCount: 3 });
+    await waitForPlayers(board, (list) =>
+      list.some((p) => p.playerId === id1 && p.cellId === 13),
+    );
+
+    // Player 1 finishes
+    const cards1 = await waitForMessage(room1, "cardsDrawn");
+    room1.send("playCard", { cardId: cards1.hand[0].id });
+    await waitForMessage(room1, "cardPlayed");
+    room1.send("playCard", { cardId: cards1.hand[1].id });
+    await waitForMessage(room1, "cardPlayed");
+
+    // Turn should go to player 2 (skipping finished player 1)
+    const gs = await waitForMessage(board, "gameState", (g) => g.activePlayerId === id2);
+    expect(gs.activePlayerId).toBe(id2);
+
+    // Player 2 plays and ends turn — next should be player 3, not player 1
+    const cards2 = await waitForMessage(room2, "cardsDrawn");
+    room2.send("playCard", { cardId: cards2.hand[0].id });
+    await waitForMessage(room2, "cardPlayed");
+    room2.send("endTurn");
+
+    const gs2 = await waitForMessage(board, "gameState", (g) => g.activePlayerId === id3);
+    expect(gs2.activePlayerId).toBe(id3);
+
+    room1.leave();
+    room2.leave();
+    room3.leave();
+    board.leave();
+  });
+
+  it("broadcastPlayers includes lapCount and finished fields", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room, playerId } = await connectPlayer(baseUrl, roomId);
+    const players = await waitForPlayers(room, (list) =>
+      list.some((p) => p.playerId === playerId),
+    );
+    const player = players.find((p) => p.playerId === playerId);
+    expect(player).toHaveProperty("lapCount", 1);
+    expect(player).toHaveProperty("finished", false);
+    room.leave();
   });
 });
