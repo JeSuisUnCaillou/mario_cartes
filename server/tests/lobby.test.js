@@ -86,3 +86,102 @@ describe("Joining a room", () => {
     boardRoom.leave();
   });
 });
+
+describe("Reconnection (page reload)", () => {
+  it("player disconnect sets connected to false, reconnect restores it", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: observer } = await connectBoard(baseUrl, roomId);
+    const { room: playerRoom, playerId } = await connectPlayer(baseUrl, roomId);
+
+    await waitForPlayers(observer, (list) =>
+      list.some((p) => p.playerId === playerId && p.connected),
+    );
+
+    playerRoom.leave();
+
+    const disconnected = await waitForPlayers(observer, (list) =>
+      list.some((p) => p.playerId === playerId && !p.connected),
+    );
+    expect(disconnected.find((p) => p.playerId === playerId).connected).toBe(false);
+
+    const { room: reconnected } = await connectPlayer(baseUrl, roomId, { playerId });
+
+    const restored = await waitForPlayers(observer, (list) =>
+      list.some((p) => p.playerId === playerId && p.connected),
+    );
+    expect(restored.find((p) => p.playerId === playerId).connected).toBe(true);
+
+    reconnected.leave();
+    observer.leave();
+  });
+
+  it("reconnected player receives their card state", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: playerRoom, playerId } = await connectPlayer(baseUrl, roomId);
+
+    playerRoom.leave();
+
+    const { room: reconnected } = await connectPlayer(baseUrl, roomId, { playerId });
+    const cardState = await waitForMessage(reconnected, "cardsDrawn");
+    expect(cardState).toHaveProperty("hand");
+    expect(cardState).toHaveProperty("drawCount");
+    expect(cardState).toHaveProperty("discardCount");
+
+    reconnected.leave();
+  });
+
+  it("board reconnects and receives players, cellOccupants, and gameState", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: playerRoom } = await connectPlayer(baseUrl, roomId);
+
+    const { room: boardRoom } = await connectBoard(baseUrl, roomId);
+    const players = await waitForMessage(boardRoom, "players");
+    const cellOccupants = await waitForMessage(boardRoom, "cellOccupants");
+    const gameState = await waitForMessage(boardRoom, "gameState");
+
+    expect(Array.isArray(players)).toBe(true);
+    expect(players.length).toBe(1);
+    expect(typeof cellOccupants).toBe("object");
+    expect(gameState).toHaveProperty("phase", "lobby");
+
+    boardRoom.leave();
+
+    const { room: boardRoom2 } = await connectBoard(baseUrl, roomId);
+    const players2 = await waitForMessage(boardRoom2, "players");
+    const cellOccupants2 = await waitForMessage(boardRoom2, "cellOccupants");
+    const gameState2 = await waitForMessage(boardRoom2, "gameState");
+
+    expect(Array.isArray(players2)).toBe(true);
+    expect(players2.length).toBe(1);
+    expect(typeof cellOccupants2).toBe("object");
+    expect(gameState2).toHaveProperty("phase", "lobby");
+
+    boardRoom2.leave();
+    playerRoom.leave();
+  });
+
+  it("player reconnects during playing phase with full state", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+
+    await waitForMessage(room1, "gameState");
+    const cardsBeforeDisconnect = await waitForMessage(room1, "cardsDrawn");
+
+    room1.leave();
+
+    const { room: reconnected } = await connectPlayer(baseUrl, roomId, { playerId: id1 });
+    const restoredCards = await waitForMessage(reconnected, "cardsDrawn");
+    expect(restoredCards.hand).toEqual(cardsBeforeDisconnect.hand);
+    expect(restoredCards.drawCount).toBe(cardsBeforeDisconnect.drawCount);
+
+    const gameState = await waitForMessage(reconnected, "gameState");
+    expect(gameState.phase).toBe("playing");
+
+    reconnected.leave();
+    room2.leave();
+  });
+});
