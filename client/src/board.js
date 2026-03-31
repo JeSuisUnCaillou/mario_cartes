@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { Client } from "colyseus.js";
 import QRCode from "qrcode";
+import { bananaCounts } from "./board.functions.js";
 
 const CELL_POSITIONS = [
   null,           // index 0 unused (cells are 1-indexed)
@@ -330,23 +331,18 @@ export function initBoard(gameId) {
     updateCellOccupants(cellOccupants) {
       this.latestCellOccupants = cellOccupants;
 
-      // Count bananas per cell from occupant lists
-      const bananaCounts = {};
-      for (const [cellIdStr, occupants] of Object.entries(cellOccupants)) {
-        const count = occupants.filter((e) => e === "banana").length;
-        if (count > 0) bananaCounts[Number(cellIdStr)] = count;
-      }
+      const bananaCountsByCell = bananaCounts(cellOccupants);
 
       // Remove sprites for cells that no longer have bananas
       for (const [cellId, sprites] of this.bananaSprites) {
-        if (!bananaCounts[cellId]) {
+        if (!bananaCountsByCell[cellId]) {
           sprites.forEach((s) => s.destroy());
           this.bananaSprites.delete(cellId);
         }
       }
 
       // Create or destroy sprites to match counts
-      for (const [cellId, count] of Object.entries(bananaCounts)) {
+      for (const [cellId, count] of Object.entries(bananaCountsByCell)) {
         const existing = this.bananaSprites.get(Number(cellId)) || [];
         while (existing.length > count) {
           existing.pop().destroy();
