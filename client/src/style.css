@@ -471,17 +471,15 @@ input {
   transform: rotateY(180deg);
 }
 
-.banana-throw {
-  animation: banana-throw 0.6s ease-out forwards;
+.item-throw {
+  animation: item-throw 0.6s ease-out forwards;
 }
 
-@keyframes banana-throw {
+@keyframes item-throw {
   0% {
-    transform: translateY(0) scale(1);
-    opacity: 1;
+    transform: translateY(0) rotate(0deg);
   }
   100% {
-    transform: translateY(-200px) scale(0.6);
-    opacity: 0;
+    transform: translateY(-100vh) rotate(720deg);
   }
 }

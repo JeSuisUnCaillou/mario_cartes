@@ -4,6 +4,8 @@ import { isPointInRect, splitDrawBatches, initialDrawPileCount, normalizeName } 
 const CARD_ASSETS = {
   move_forward_1: "/card - move forward.svg",
   banana_move_forward_1: "/card - banana and move forward.svg",
+  coin_1: "/card - 1 coin.svg",
+  coin_2: "/card - 2 coins.svg",
 };
 
 let playing = false;
@@ -18,6 +20,22 @@ let activePlayerId = null;
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function spawnThrowAnimation(imageSrc, playZone) {
+  const zoneRect = playZone.getBoundingClientRect();
+  const el = document.createElement("img");
+  el.src = imageSrc;
+  el.className = "item-throw";
+  el.style.position = "fixed";
+  el.style.width = "60px";
+  el.style.height = "auto";
+  el.style.left = (zoneRect.left + zoneRect.width / 2 - 30) + "px";
+  el.style.top = (zoneRect.top + zoneRect.height / 2 - 30) + "px";
+  el.style.zIndex = "999";
+  el.style.pointerEvents = "none";
+  document.body.appendChild(el);
+  el.addEventListener("animationend", () => el.remove(), { once: true });
 }
 
 async function animateShuffle(count) {
@@ -607,22 +625,13 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         // Animate remaining cards from old positions to new fan positions
         recomputeFan(positions);
 
-        // Banana throw animation if server dropped a banana
+        // Throw animation for banana or coin
+        const playZone = document.getElementById("play-zone");
         if (data.droppedBanana !== null && data.droppedBanana !== undefined) {
-          const playZone = document.getElementById("play-zone");
-          const zoneRect = playZone.getBoundingClientRect();
-          const banana = document.createElement("img");
-          banana.src = "/banana.svg";
-          banana.className = "banana-throw";
-          banana.style.position = "fixed";
-          banana.style.width = "60px";
-          banana.style.height = "auto";
-          banana.style.left = (zoneRect.left + zoneRect.width / 2 - 30) + "px";
-          banana.style.top = (zoneRect.top + zoneRect.height / 2 - 30) + "px";
-          banana.style.zIndex = "999";
-          banana.style.pointerEvents = "none";
-          document.body.appendChild(banana);
-          banana.addEventListener("animationend", () => banana.remove(), { once: true });
+          spawnThrowAnimation("/banana.svg", playZone);
+        }
+        if (data.coinGained > 0) {
+          spawnThrowAnimation("/coin.svg", playZone);
         }
 
         // Animate drag clone from play zone to discard pile
