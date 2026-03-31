@@ -497,9 +497,8 @@ function startGame(gameId, name, existingPlayerId) {
           const lobbyZone = document.getElementById("lobby-zone");
           const gameZone = document.getElementById("game-zone");
           if (lobbyZone) lobbyZone.style.display = "none";
-          if (gameZone) {
+          if (gameZone && gameZone.style.display === "none") {
             gameZone.style.display = "";
-            updatePiles({ drawCount: 8, discardCount: 0 });
           }
         }
         updatePlayZone();
