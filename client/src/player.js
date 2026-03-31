@@ -367,20 +367,22 @@ function updatePiles({ drawCount, discardCount, discardTopType }) {
 
 function updatePlayZone() {
   const playZone = document.getElementById("play-zone");
+  const endTurnContainer = document.getElementById("end-turn-container");
   if (!playZone || playZone.classList.contains("banana-hit")) return;
   if (activePlayerId !== myPlayerId) {
     playZone.classList.add("waiting");
     playZone.innerHTML = `<span class="play-zone-label">Wait for your turn to play</span>`;
+    if (endTurnContainer) endTurnContainer.innerHTML = "";
   } else {
     playZone.classList.remove("waiting");
-    playZone.innerHTML = `
-      <span class="play-zone-label">Drag a card here to play it</span>
-      <button id="end-turn-btn" class="end-turn-btn">End turn</button>
-    `;
-    document.getElementById("end-turn-btn").addEventListener("click", () => {
-      if (playing || animating) return;
-      if (currentRoom) currentRoom.send("endTurn");
-    });
+    playZone.innerHTML = `<span class="play-zone-label">Drag a card here to play it</span>`;
+    if (endTurnContainer) {
+      endTurnContainer.innerHTML = `<button id="end-turn-btn" class="end-turn-btn">End turn</button>`;
+      document.getElementById("end-turn-btn").addEventListener("click", () => {
+        if (playing || animating) return;
+        if (currentRoom) currentRoom.send("endTurn");
+      });
+    }
   }
 }
 
@@ -534,6 +536,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
       </div>
       <div id="lobby-zone" class="lobby-zone"></div>
       <div id="game-zone" class="game-zone" style="display: none;">
+        <div id="end-turn-container" class="end-turn-container"></div>
         <div id="play-zone" class="play-zone">
           <span class="play-zone-label">Drag a card here to play it</span>
         </div>
