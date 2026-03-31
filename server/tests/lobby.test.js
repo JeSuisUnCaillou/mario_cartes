@@ -68,6 +68,7 @@ describe("Joining a room", () => {
       connected: true,
       handCount: 0,
       ready: false,
+      coins: 0,
     });
     room.leave();
   });
@@ -355,5 +356,51 @@ describe("Ready state and game start", () => {
 
     room1.leave();
     room2.leave();
+  });
+});
+
+describe("Deck and coins", () => {
+  it("deck has 9 cards (5 drawn, 4 remaining)", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    expect(cards.hand).toHaveLength(5);
+    expect(cards.drawCount).toBe(4);
+    room.leave();
+  });
+
+  it("playing a coin_1 card adds 1 coin without moving", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    const coinCard = cards.hand.find((c) => c.type === "coin_1");
+    if (!coinCard) return; // Skip if no coin_1 in hand (unlikely with 6/9)
+    room.send("playCard", { cardId: coinCard.id });
+    const result = await waitForMessage(room, "cardPlayed");
+    expect(result.coins).toBe(1);
+    expect(result.coinGained).toBe(1);
+    // Player should not have moved from cell 1
+    const players = await waitForPlayers(room, (list) => list[0].handCount === 4);
+    expect(players[0].cellId).toBe(1);
+    room.leave();
+  });
+
+  it("playing a coin_2 card adds 2 coins", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    const coinCard = cards.hand.find((c) => c.type === "coin_2");
+    if (!coinCard) return; // Skip if no coin_2 in hand
+    room.send("playCard", { cardId: coinCard.id });
+    const result = await waitForMessage(room, "cardPlayed");
+    expect(result.coins).toBe(2);
+    expect(result.coinGained).toBe(2);
+    room.leave();
   });
 });

@@ -7,8 +7,10 @@ const DISPOSE_DELAY_MS = 10 * 60 * 1000; // 10 minutes
 class GameRoom extends Room {
   _createDeck() {
     const cards = [
-      ...Array.from({ length: 8 }, () => ({ id: randomUUID(), type: "move_forward_1" })),
-      ...Array.from({ length: 2 }, () => ({ id: randomUUID(), type: "banana_move_forward_1" })),
+      ...Array.from({ length: 6 }, () => ({ id: randomUUID(), type: "coin_1" })),
+      ...Array.from({ length: 1 }, () => ({ id: randomUUID(), type: "coin_2" })),
+      ...Array.from({ length: 1 }, () => ({ id: randomUUID(), type: "move_forward_1" })),
+      ...Array.from({ length: 1 }, () => ({ id: randomUUID(), type: "banana_move_forward_1" })),
     ];
     return this._shuffle(cards);
   }
@@ -29,6 +31,7 @@ class GameRoom extends Room {
       discardCount: dp.length,
       discardTopType: dp.length > 0 ? dp[dp.length - 1].type : null,
       pendingBananaDiscards: player.pendingBananaDiscards,
+      coins: player.coins,
     };
   }
 
@@ -133,6 +136,14 @@ class GameRoom extends Room {
           occupants.push("banana");
         }
       }
+      let coinGained = 0;
+      if (card.type === "coin_1") {
+        player.coins += 1;
+        coinGained = 1;
+      } else if (card.type === "coin_2") {
+        player.coins += 2;
+        coinGained = 2;
+      }
       if (card.type === "move_forward_1" || card.type === "banana_move_forward_1") {
         const oldCellId = player.cellId;
         player.cellId = this.cells.get(player.cellId).next_cell;
@@ -140,7 +151,7 @@ class GameRoom extends Room {
         this._addToCell(player.cellId, player.playerId);
       }
       player.discardPile.push(card);
-      client.send("cardPlayed", { cardId: card.id, droppedBanana, ...this._cardState(player) });
+      client.send("cardPlayed", { cardId: card.id, droppedBanana, coinGained, ...this._cardState(player) });
       this.broadcastCellOccupants();
       this.broadcastPlayers();
 
@@ -227,7 +238,7 @@ class GameRoom extends Room {
         this.players.set(playerId, {
           playerId, name, cellId: 1, connected: true,
           drawPile: this._createDeck(), hand: [], discardPile: [],
-          pendingBananaDiscards: 0, ready: false, hasPlayedAllCards: false,
+          pendingBananaDiscards: 0, ready: false, hasPlayedAllCards: false, coins: 0,
         });
         this._addToCell(1, playerId);
         this.clientsInfo.set(client.sessionId, { type: "player", playerId });
@@ -274,6 +285,7 @@ class GameRoom extends Room {
       connected: p.connected,
       handCount: p.hand.length,
       ready: p.ready,
+      coins: p.coins,
     }));
     this.broadcast("players", players);
   }
