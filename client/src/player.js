@@ -416,7 +416,7 @@ function updateBuyButton() {
   const container = document.getElementById("buy-btn-container");
   if (!container) return;
   const isMyTurn = activePlayerId === myPlayerId;
-  if (isMyTurn && latestRivers) {
+  if (isMyTurn && latestRivers && pendingDiscards === 0) {
     if (!document.getElementById("buy-btn")) {
       container.innerHTML = `<button id="buy-btn" class="buy-btn">Buy cards</button>`;
       document.getElementById("buy-btn").addEventListener("click", openBuyModal);
@@ -839,6 +839,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
 
         // Enter banana discard mode
         pendingDiscards = data.mustDiscard;
+        closeBuyModal();
+        updateBuyButton();
         playZone.classList.add("banana-hit");
         playZone.innerHTML = `
           <img src="/banana.svg" class="play-zone-banana" />
@@ -883,6 +885,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           const playZone = document.getElementById("play-zone");
           playZone.classList.remove("banana-hit");
           updatePlayZone();
+          updateBuyButton();
         }
       });
 
