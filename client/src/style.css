@@ -60,8 +60,6 @@ html, body, #app {
 .board-player.active-player {
   border: 2px solid gold;
   border-radius: 6px;
-  box-sizing: border-box;
-  padding: 15px;
 }
 
 .board-info-right {
@@ -101,6 +99,8 @@ html, body, #app {
   transition: opacity 0.3s;
   width: 80px;
   flex-shrink: 0;
+  padding: 15px;
+  box-sizing: border-box;
 }
 
 .board-player.disconnected {
