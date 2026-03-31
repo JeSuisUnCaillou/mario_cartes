@@ -916,11 +916,8 @@ input {
 
 .finished-rank {
   font-size: 28px;
-}
-
-.finished-name {
   font-weight: bold;
-  letter-spacing: 0.15em;
+  color: black;
 }
 
 .start-over-btn {

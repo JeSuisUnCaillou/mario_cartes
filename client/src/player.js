@@ -660,7 +660,7 @@ function renderFinishedZone(container, ranking, room) {
       ${(ranking || []).map((entry) => {
         const medal = medals[entry.rank - 1] || "";
         const ordinal = ordinalSuffix(entry.rank);
-        return `<li class="finished-entry"><span class="finished-rank">${medal} ${ordinal}</span><span class="finished-name">${entry.name}</span></li>`;
+        return `<li class="finished-entry"><span class="finished-rank">${medal} ${ordinal}</span></li>`;
       }).join("")}
     </ol>
     <button id="start-over-btn" class="start-over-btn">Start Over</button>
@@ -738,6 +738,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         } else if (data.phase === "lobby") {
           if (gameZone) gameZone.style.display = "none";
           if (finishedZone) finishedZone.style.display = "none";
+          isReady = false;
           if (lobbyZone) {
             lobbyZone.style.display = "";
             renderLobby(room);
