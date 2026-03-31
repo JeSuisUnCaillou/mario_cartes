@@ -75,6 +75,10 @@ class GameRoom extends Room {
     this._disposeTimer = null;
     this.clientsInfo = new Map();
     this.players = new Map();
+    this.phase = "lobby";
+    this.currentRound = 0;
+    this.turnIndex = -1;
+    this.activePlayerId = null;
 
     const cellsData = require(path.join(__dirname, "../../assets/racetrack_0_cells.json"));
     this.cells = new Map(cellsData.map((cell) => [cell.id, cell]));
@@ -85,6 +89,15 @@ class GameRoom extends Room {
       if (!player) return;
       player.name = (newName || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
       this.broadcastPlayers();
+    });
+
+    this.onMessage("setReady", (client, ready) => {
+      const player = this._getPlayer(client);
+      if (!player) return;
+      if (this.phase !== "lobby") return;
+      player.ready = !!ready;
+      this.broadcastPlayers();
+      this._checkAllReady();
     });
 
     this.onMessage("drawCards", (client) => {
@@ -192,13 +205,13 @@ class GameRoom extends Room {
         player.connected = true;
         this.clientsInfo.set(client.sessionId, { type: "player", playerId: existingPlayerId });
         client.send("cardsDrawn", this._cardState(player));
-      } else {
+      } else if (this.phase === "lobby") {
         const playerId = randomUUID();
         const name = (options.name || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
         this.players.set(playerId, {
           playerId, name, cellId: 1, connected: true,
           drawPile: this._createDeck(), hand: [], discardPile: [],
-          pendingBananaDiscards: 0,
+          pendingBananaDiscards: 0, ready: false, hasPlayedAllCards: false,
         });
         this._addToCell(1, playerId);
         this.clientsInfo.set(client.sessionId, { type: "player", playerId });
@@ -210,6 +223,7 @@ class GameRoom extends Room {
 
     this.broadcastPlayers();
     this.broadcastCellOccupants();
+    this.broadcastGameState();
   }
 
   onLeave(client) {
@@ -238,8 +252,51 @@ class GameRoom extends Room {
       cellId: p.cellId,
       connected: p.connected,
       handCount: p.hand.length,
+      ready: p.ready,
     }));
     this.broadcast("players", players);
+  }
+
+  broadcastGameState() {
+    this.broadcast("gameState", {
+      phase: this.phase,
+      currentRound: this.currentRound,
+      activePlayerId: this.activePlayerId,
+    });
+  }
+
+  _sendToPlayer(playerId, type, data) {
+    for (const [sessionId, info] of this.clientsInfo) {
+      if (info.playerId === playerId) {
+        const client = this.clients.find((c) => c.sessionId === sessionId);
+        if (client) client.send(type, data);
+        return;
+      }
+    }
+  }
+
+  _checkAllReady() {
+    if (this.players.size === 0) return;
+    for (const player of this.players.values()) {
+      if (!player.ready) return;
+    }
+    this._startGame();
+  }
+
+  _startGame() {
+    this.phase = "playing";
+    this.currentRound = 1;
+    this.turnIndex = 0;
+    this.activePlayerId = Array.from(this.players.keys())[0];
+
+    // Deal initial hand to all players
+    for (const [playerId, player] of this.players) {
+      const drawResult = this._drawCards(player);
+      this._sendToPlayer(playerId, "cardsDrawn", drawResult);
+    }
+
+    this.broadcastGameState();
+    this.broadcastPlayers();
   }
 }
 
