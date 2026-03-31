@@ -224,7 +224,7 @@ html, body, #app {
 }
 
 .board-river-cards {
-  --river-card-h: calc((80vh / 3 - 4vh) * 0.55);
+  --river-card-h: 6vh;
   flex: 1;
   display: flex;
   align-items: center;
