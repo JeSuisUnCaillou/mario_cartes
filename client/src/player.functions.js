@@ -19,3 +19,10 @@ export function initialDrawPileCount(drawCount, handLength, shuffledCount, drawn
 export function normalizeName(raw) {
   return raw.toUpperCase().replace(/[^A-Z]/g, "");
 }
+
+export function cardItemPositions(itemCount) {
+  if (itemCount === 1) return [{ x: "50%", y: "50%" }];
+  if (itemCount === 2) return [{ x: "28%", y: "30%" }, { x: "72%", y: "70%" }];
+  if (itemCount === 3) return [{ x: "28%", y: "25%" }, { x: "72%", y: "50%" }, { x: "28%", y: "75%" }];
+  return [];
+}

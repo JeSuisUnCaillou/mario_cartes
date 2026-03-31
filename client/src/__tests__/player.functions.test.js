@@ -4,6 +4,7 @@ import {
   splitDrawBatches,
   initialDrawPileCount,
   normalizeName,
+  cardItemPositions,
 } from "../player.functions.js";
 
 describe("isPointInRect", () => {
@@ -96,5 +97,31 @@ describe("normalizeName", () => {
 
   it("returns empty string for all-digit input", () => {
     expect(normalizeName("123")).toBe("");
+  });
+});
+
+describe("cardItemPositions", () => {
+  it("returns empty array for 0 items", () => {
+    expect(cardItemPositions(0)).toEqual([]);
+  });
+
+  it("returns centered position for 1 item", () => {
+    const positions = cardItemPositions(1);
+    expect(positions).toEqual([{ x: "50%", y: "50%" }]);
+  });
+
+  it("returns top-left and bottom-right for 2 items", () => {
+    const positions = cardItemPositions(2);
+    expect(positions).toHaveLength(2);
+    expect(positions[0]).toEqual({ x: "28%", y: "30%" });
+    expect(positions[1]).toEqual({ x: "72%", y: "70%" });
+  });
+
+  it("returns top-left, middle-right, bottom-left for 3 items", () => {
+    const positions = cardItemPositions(3);
+    expect(positions).toHaveLength(3);
+    expect(positions[0]).toEqual({ x: "28%", y: "25%" });
+    expect(positions[1]).toEqual({ x: "72%", y: "50%" });
+    expect(positions[2]).toEqual({ x: "28%", y: "75%" });
   });
 });
