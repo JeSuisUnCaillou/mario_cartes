@@ -34,7 +34,7 @@ Online multiplayer racing card game inspired by Mario Kart and Slay the Spire 2.
 
 - **Commit style**: Small, focused commits — baby steps. Each commit should be understandable on its own.
 - **Always commit**: After completing a change, immediately create a git commit. Never leave changes uncommitted.
-- **Tests**: Write automated tests as much as possible to support a fast-growing codebase.
+- **Tests**: Write automated tests as much as possible to support a fast-growing codebase. Always run tests (`npm test -w server`) before committing. When adding or modifying features, update or add corresponding tests to maintain coverage.
 - **Game state**: Defined as a data structure on the backend (Colyseus schema).
 
 ## Plans
