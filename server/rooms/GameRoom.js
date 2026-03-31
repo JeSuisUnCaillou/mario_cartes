@@ -13,6 +13,7 @@ class GameRoom extends Room {
       { id: randomUUID(), items: ["mushroom"] },
       { id: randomUUID(), items: ["mushroom", "mushroom"] },
       ...Array.from({ length: 2 }, () => ({ id: randomUUID(), items: ["banana", "mushroom"] })),
+      { id: randomUUID(), items: ["mushroom", "banana", "coin"] },
     ];
     return this._shuffle(cards);
   }

@@ -334,8 +334,8 @@ describe("Ready state and game start", () => {
 
     const cards1 = await waitForMessage(room1, "cardsDrawn");
     const cards2 = await waitForMessage(room2, "cardsDrawn");
-    expect(cards1.hand).toHaveLength(4);
-    expect(cards2.hand).toHaveLength(4);
+    expect(cards1.hand).toHaveLength(5);
+    expect(cards2.hand).toHaveLength(5);
 
     room1.leave();
     room2.leave();
@@ -360,15 +360,15 @@ describe("Ready state and game start", () => {
 });
 
 describe("Deck and coins", () => {
-  it("deck has 4 cards (all drawn, 0 remaining)", async () => {
+  it("deck has 5 cards (all drawn, 0 remaining)", async () => {
     const roomId = await createRoom(baseUrl);
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
     await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
-    expect(cards.hand).toHaveLength(4);
+    expect(cards.hand).toHaveLength(5);
     expect(cards.drawCount).toBe(0);
-    expect(cards.deck).toHaveLength(4);
+    expect(cards.deck).toHaveLength(5);
     room.leave();
   });
 
