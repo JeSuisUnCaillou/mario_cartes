@@ -269,10 +269,16 @@ class GameRoom extends Room {
       player.coins -= river.cost;
       const card = river.slots[slotIndex];
       player.discardPile.push(card);
-      river.slots[slotIndex] = river.deck.length > 0 ? river.deck.shift() : null;
+      river.slots[slotIndex] = null;
       client.send("cardBought", { cardId: card.id, riverId: river.id, slotIndex, ...this._cardState(player) });
       this.broadcastGameState();
       this.broadcastPlayers();
+      if (river.deck.length > 0) {
+        this.clock.setTimeout(() => {
+          river.slots[slotIndex] = river.deck.shift();
+          this.broadcastGameState();
+        }, 400);
+      }
     });
   }
 

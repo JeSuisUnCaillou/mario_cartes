@@ -64,6 +64,73 @@ function createDeckPile(river) {
   return deckPile;
 }
 
+function animateCardFlip(deckEl, cardEl) {
+  const deckRect = deckEl.getBoundingClientRect();
+  const cardRect = cardEl.getBoundingClientRect();
+
+  cardEl.style.visibility = "hidden";
+
+  const flyer = document.createElement("div");
+  flyer.className = "card-flyer";
+  flyer.style.position = "fixed";
+  flyer.style.width = deckRect.width + "px";
+  flyer.style.aspectRatio = "54 / 86";
+  flyer.style.left = deckRect.left + "px";
+  flyer.style.top = deckRect.top + "px";
+  flyer.style.zIndex = "999";
+  flyer.style.pointerEvents = "none";
+  flyer.style.perspective = "600px";
+
+  const inner = document.createElement("div");
+  inner.className = "card-flyer-inner";
+  inner.style.transition = "transform 0.25s ease-in-out";
+  inner.style.transform = "rotateY(0deg)";
+
+  const backFace = document.createElement("img");
+  backFace.src = "/card - back.svg";
+  backFace.className = "card-flyer-face card-flyer-back";
+
+  const frontFace = cardEl.cloneNode(true);
+  frontFace.className = "card-flyer-face card-flyer-front";
+  frontFace.style.cssText = "";
+
+  inner.appendChild(backFace);
+  inner.appendChild(frontFace);
+  flyer.appendChild(inner);
+  document.body.appendChild(flyer);
+
+  flyer.getBoundingClientRect();
+  const flyDuration = 250;
+  flyer.style.transition = `left ${flyDuration}ms ease-out, top ${flyDuration}ms ease-out, width ${flyDuration}ms ease-out`;
+  flyer.style.left = cardRect.left + "px";
+  flyer.style.top = cardRect.top + "px";
+  flyer.style.width = cardRect.width + "px";
+  inner.style.transform = "rotateY(180deg)";
+
+  flyer.addEventListener("transitionend", () => {
+    cardEl.style.visibility = "";
+    flyer.remove();
+  }, { once: true });
+}
+
+/**
+ * Detect slots that changed from null to a card (refill).
+ */
+function detectRefills(prevRivers, newRivers) {
+  const refills = [];
+  if (!prevRivers) return refills;
+  for (const newRiver of newRivers) {
+    const prevRiver = prevRivers.find((r) => r.id === newRiver.id);
+    if (!prevRiver) continue;
+    for (let i = 0; i < newRiver.slots.length; i++) {
+      if (prevRiver.slots[i] === null && newRiver.slots[i] !== null) {
+        refills.push({ riverId: newRiver.id, slotIndex: i });
+      }
+    }
+  }
+  return refills;
+}
+
 /**
  * Render a full river row.
  * @param {object} river - { id, cost, slots, deckCount }
@@ -113,13 +180,30 @@ export function renderRiverRow(river, options = {}) {
 
 /**
  * Render all rivers into a container.
+ * Detects slot refills (null → card) and animates them with a card flip.
  * @param {HTMLElement} container
  * @param {Array} rivers
  * @param {object} options - passed to renderRiverRow
  */
 export function renderRivers(container, rivers, options = {}) {
+  const prevRivers = container._previousRivers || null;
+  const refills = detectRefills(prevRivers, rivers);
+
   container.innerHTML = "";
   for (const river of rivers) {
     container.appendChild(renderRiverRow(river, options));
+  }
+
+  container._previousRivers = rivers;
+
+  for (const { riverId, slotIndex } of refills) {
+    const row = container.querySelector(`[data-river-id="${riverId}"]`);
+    if (!row) continue;
+    const deckEl = row.querySelector(".river-deck-img") || row.querySelector(".river-deck-empty");
+    const slots = row.querySelectorAll(".river-slots > .river-card");
+    const cardEl = slots[slotIndex];
+    if (deckEl && cardEl && !cardEl.classList.contains("river-slot-empty")) {
+      animateCardFlip(deckEl, cardEl);
+    }
   }
 }
