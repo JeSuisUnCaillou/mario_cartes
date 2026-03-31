@@ -26,14 +26,14 @@ function createInfoBar(gameId) {
   const bar = document.createElement("div");
   bar.className = "board-info-bar";
 
-  const topRow = document.createElement("div");
-  topRow.className = "board-info-top";
-
   const qrContainer = document.createElement("div");
   qrContainer.className = "board-qr";
   const qrCanvas = document.createElement("canvas");
   qrContainer.appendChild(qrCanvas);
-  topRow.appendChild(qrContainer);
+  bar.appendChild(qrContainer);
+
+  const rightSide = document.createElement("div");
+  rightSide.className = "board-info-right";
 
   const titleContainer = document.createElement("div");
   titleContainer.className = "board-title";
@@ -41,14 +41,14 @@ function createInfoBar(gameId) {
   title.className = "board-title-name";
   title.textContent = "Mario Cartes";
   titleContainer.appendChild(title);
-  topRow.appendChild(titleContainer);
+  rightSide.appendChild(titleContainer);
 
-  bar.appendChild(topRow);
+  const playersRow = document.createElement("div");
+  playersRow.className = "board-info-players";
+  playersRow.id = "board-players-row";
+  rightSide.appendChild(playersRow);
 
-  const bottomRow = document.createElement("div");
-  bottomRow.className = "board-info-bottom";
-  bottomRow.id = "board-players-row";
-  bar.appendChild(bottomRow);
+  bar.appendChild(rightSide);
 
   const playerUrl = `${location.origin}/game/${gameId}/player`;
   QRCode.toCanvas(qrCanvas, playerUrl, {
