@@ -362,15 +362,15 @@ describe("Ready state and game start", () => {
 });
 
 describe("Deck and coins", () => {
-  it("deck has 5 cards (all drawn, 0 remaining)", async () => {
+  it("deck has 9 cards (5 drawn, 4 remaining)", async () => {
     const roomId = await createRoom(baseUrl);
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
     await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     expect(cards.hand).toHaveLength(5);
-    expect(cards.drawCount).toBe(0);
-    expect(cards.deck).toHaveLength(5);
+    expect(cards.drawCount).toBe(4);
+    expect(cards.deck).toHaveLength(9);
     room.leave();
   });
 

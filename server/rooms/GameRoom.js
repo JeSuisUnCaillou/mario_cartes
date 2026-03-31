@@ -10,10 +10,10 @@ class GameRoom extends Room {
       return this._testDeck.map((items) => ({ id: randomUUID(), items }));
     }
     const cards = [
+      ...Array.from({ length: 6 }, () => ({ id: randomUUID(), items: ["coin"] })),
+      { id: randomUUID(), items: ["coin", "coin"] },
       { id: randomUUID(), items: ["mushroom"] },
-      { id: randomUUID(), items: ["mushroom", "mushroom"] },
-      ...Array.from({ length: 2 }, () => ({ id: randomUUID(), items: ["banana", "mushroom"] })),
-      { id: randomUUID(), items: ["mushroom", "banana", "coin"] },
+      { id: randomUUID(), items: ["banana"] },
     ];
     return this._shuffle(cards);
   }
@@ -31,9 +31,29 @@ class GameRoom extends Room {
       });
     }
     const riverDefs = [
-      [["coin"], ["coin"], ["mushroom"], ["mushroom"], ["banana"], ["banana"]],
-      [["coin", "mushroom"], ["coin", "banana"], ["mushroom", "banana"], ["mushroom", "mushroom"], ["banana", "banana"], ["banana", "banana"]],
-      [["banana", "banana", "mushroom"], ["banana", "banana", "coin"], ["coin", "coin", "mushroom"], ["coin", "coin", "banana"]],
+      // River 1: 15 single-item cards
+      [
+        ...Array.from({ length: 5 }, () => ["coin"]),
+        ...Array.from({ length: 5 }, () => ["mushroom"]),
+        ...Array.from({ length: 5 }, () => ["banana"]),
+      ],
+      // River 2: 27 two-item cards
+      [
+        ["coin", "mushroom"],
+        ...Array.from({ length: 4 }, () => ["coin", "banana"]),
+        ...Array.from({ length: 3 }, () => ["mushroom", "banana"]),
+        ["mushroom", "mushroom"],
+        ...Array.from({ length: 18 }, () => ["banana", "banana"]),
+      ],
+      // River 3: 36 three-item cards
+      [
+        ...Array.from({ length: 28 }, () => ["banana", "banana", "banana"]),
+        ["banana", "banana", "mushroom"],
+        ["banana", "banana", "coin"],
+        ["coin", "coin", "mushroom"],
+        ...Array.from({ length: 4 }, () => ["coin", "coin", "banana"]),
+        ["coin", "banana", "banana"],
+      ],
     ];
     return riverDefs.map((def, i) => {
       const cards = this._shuffle(def.map((items) => ({ id: randomUUID(), items })));
