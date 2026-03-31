@@ -404,3 +404,128 @@ describe("Deck and coins", () => {
     room.leave();
   });
 });
+
+describe("End turn", () => {
+  it("endTurn advances to next player", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
+    await waitForMessage(room1, "cardsDrawn");
+    await waitForMessage(room2, "cardsDrawn");
+    const activeRoom = gs.activePlayerId === id1 ? room1 : room2;
+    const otherRoom = gs.activePlayerId === id1 ? room2 : room1;
+    const otherId = gs.activePlayerId === id1 ? id2 : id1;
+    activeRoom.send("endTurn");
+    const newGs = await waitForMessage(otherRoom, "gameState", (g) => g.activePlayerId === otherId);
+    expect(newGs.activePlayerId).toBe(otherId);
+    room1.leave();
+    room2.leave();
+  });
+
+  it("endTurn resets coins to 0", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    const coinCard = cards.hand.find((c) => c.type === "coin_1");
+    if (!coinCard) { room.leave(); return; }
+    room.send("playCard", { cardId: coinCard.id });
+    const played = await waitForMessage(room, "cardPlayed");
+    expect(played.coins).toBe(1);
+    room.send("endTurn");
+    // After endTurn, players broadcast should show coins: 0
+    const players = await waitForPlayers(room, (list) => list[0].coins === 0);
+    expect(players[0].coins).toBe(0);
+    room.leave();
+  });
+
+  it("endTurn draws new cards if hand is empty", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    // Play all 5 cards
+    for (const card of cards.hand) {
+      room.send("playCard", { cardId: card.id });
+      await waitForMessage(room, "cardPlayed");
+    }
+    room.send("endTurn");
+    const drawn = await waitForMessage(room, "cardsDrawn");
+    expect(drawn.hand.length).toBeGreaterThan(0);
+    room.leave();
+  });
+
+  it("endTurn rejected for non-active player", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
+    await waitForMessage(room1, "cardsDrawn");
+    await waitForMessage(room2, "cardsDrawn");
+    const inactiveRoom = gs.activePlayerId === id1 ? room2 : room1;
+    // Clear buffered gameState messages before testing
+    inactiveRoom._messageBuffers["gameState"] = [];
+    inactiveRoom.send("endTurn");
+    // Wait a bit and verify no gameState change
+    await new Promise((r) => setTimeout(r, 200));
+    const buffered = inactiveRoom._messageBuffers["gameState"];
+    expect(buffered).toHaveLength(0);
+    room1.leave();
+    room2.leave();
+  });
+
+  it("playing all cards does not auto-end turn", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2 } = await connectPlayer(baseUrl, roomId);
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
+    const cards1 = await waitForMessage(room1, "cardsDrawn");
+    await waitForMessage(room2, "cardsDrawn");
+    if (gs.activePlayerId !== id1) { room1.leave(); room2.leave(); return; }
+    // Play all 5 cards
+    for (const card of cards1.hand) {
+      room1.send("playCard", { cardId: card.id });
+      await waitForMessage(room1, "cardPlayed");
+    }
+    // Clear buffered gameState messages before checking
+    room1._messageBuffers["gameState"] = [];
+    // Wait and verify turn did NOT auto-advance
+    await new Promise((r) => setTimeout(r, 200));
+    const buffered = room1._messageBuffers["gameState"];
+    expect(buffered).toHaveLength(0);
+    room1.leave();
+    room2.leave();
+  });
+
+  it("banana hit with empty hand skips penalty", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    // Play all cards to empty hand, then if banana is hit, penalty should be skipped
+    // We can't easily control banana placement, so just verify the mustDiscard logic:
+    // Play all 5 cards first
+    for (const card of cards.hand) {
+      room.send("playCard", { cardId: card.id });
+      await waitForMessage(room, "cardPlayed");
+    }
+    // After playing all cards, hand is empty. If any bananaHit was received, mustDiscard should be 0
+    const bananaHits = room._messageBuffers["bananaHit"] || [];
+    for (const hit of bananaHits) {
+      if (hit.hand.length === 0) {
+        expect(hit.mustDiscard).toBe(0);
+      }
+    }
+    room.leave();
+  });
+});

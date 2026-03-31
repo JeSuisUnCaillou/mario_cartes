@@ -159,19 +159,12 @@ class GameRoom extends Room {
       if (this._bananasOnCell(player.cellId) > 0) {
         this._removeFromCell(player.cellId, "banana");
         this.broadcastCellOccupants();
-        player.pendingBananaDiscards = 1;
-        let autoDrawn = null;
-        if (player.hand.length === 0) {
-          const totalAvailable = player.drawPile.length + player.discardPile.length;
-          if (totalAvailable > 0) {
-            autoDrawn = this._drawCards(player);
-          }
-        }
+        const mustDiscard = player.hand.length > 0 ? 1 : 0;
+        player.pendingBananaDiscards = mustDiscard;
         client.send("bananaHit", {
           cellId: player.cellId,
           count: 1,
-          mustDiscard: 1,
-          autoDrawn,
+          mustDiscard,
           ...this._cardState(player),
         });
         this.broadcast("bananaHitBoard", {
@@ -181,10 +174,6 @@ class GameRoom extends Room {
         });
       }
 
-      // Check if turn should end (no banana pending)
-      if (player.hasPlayedAllCards && player.pendingBananaDiscards === 0) {
-        this._endTurnAndAdvance(player);
-      }
     });
 
     this.onMessage("discardCard", (client, data) => {
@@ -204,10 +193,15 @@ class GameRoom extends Room {
       });
       this.broadcastPlayers();
 
-      // Check if turn should end after banana discard resolved
-      if (player.hasPlayedAllCards && player.pendingBananaDiscards === 0 && player.playerId === this.activePlayerId) {
-        this._endTurnAndAdvance(player);
-      }
+    });
+
+    this.onMessage("endTurn", (client) => {
+      const player = this._getPlayer(client);
+      if (!player) return;
+      if (this.phase !== "playing") return;
+      if (player.playerId !== this.activePlayerId) return;
+      if (player.pendingBananaDiscards > 0) return;
+      this._endTurnAndAdvance(player);
     });
   }
 
@@ -333,6 +327,7 @@ class GameRoom extends Room {
   }
 
   _endTurnAndAdvance(player) {
+    player.coins = 0;
     if (player.hand.length === 0) {
       const drawResult = this._drawCards(player);
       this._sendToPlayer(player.playerId, "cardsDrawn", drawResult);
