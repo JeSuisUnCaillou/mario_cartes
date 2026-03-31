@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { startServer, createRoom } from "./helpers.js";
+import {
+  startServer,
+  createRoom,
+  connectPlayer,
+  connectBoard,
+  waitForMessage,
+  waitForPlayers,
+} from "./helpers.js";
 
 let baseUrl, cleanup;
 
@@ -33,5 +40,49 @@ describe("Game creation", () => {
     const res = await fetch(`${baseUrl}/find-or-create/${gameId}`);
     const body = await res.json();
     expect(body).toEqual({ id: gameId });
+  });
+});
+
+describe("Joining a room", () => {
+  it("player receives a playerId on join", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room, playerId } = await connectPlayer(baseUrl, roomId);
+    expect(typeof playerId).toBe("string");
+    expect(playerId.length).toBeGreaterThan(0);
+    room.leave();
+  });
+
+  it("player appears in players broadcast with default state", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room, playerId } = await connectPlayer(baseUrl, roomId);
+    const players = await waitForPlayers(
+      room,
+      (list) => list.some((p) => p.playerId === playerId),
+    );
+    const player = players.find((p) => p.playerId === playerId);
+    expect(player).toEqual({
+      playerId,
+      name: "???",
+      cellId: 1,
+      connected: true,
+      handCount: 0,
+      ready: false,
+    });
+    room.leave();
+  });
+
+  it("board client does not appear in players list", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: boardRoom } = await connectBoard(baseUrl, roomId);
+    const { room: playerRoom, playerId } = await connectPlayer(baseUrl, roomId);
+    const players = await waitForPlayers(
+      boardRoom,
+      (list) => list.some((p) => p.playerId === playerId),
+    );
+    const boardAsPlayer = players.find((p) => p.name === "board");
+    expect(boardAsPlayer).toBeUndefined();
+    expect(players).toHaveLength(1);
+    playerRoom.leave();
+    boardRoom.leave();
   });
 });

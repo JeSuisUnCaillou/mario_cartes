@@ -8,6 +8,18 @@ const { WebSocketTransport } = require("@colyseus/ws-transport");
 const { Client } = require("colyseus.js");
 const { GameRoom } = require("../rooms/GameRoom");
 
+const BUFFERED_TYPES = ["players", "cellOccupants", "gameState", "cardsDrawn", "gameAlreadyStarted"];
+
+function bufferMessages(room) {
+  room._messageBuffers = {};
+  for (const type of BUFFERED_TYPES) {
+    room._messageBuffers[type] = [];
+    room.onMessage(type, (data) => {
+      room._messageBuffers[type].push(data);
+    });
+  }
+}
+
 export async function startServer() {
   const app = express();
   app.use(express.json());
@@ -58,29 +70,46 @@ function wsUrl(baseUrl) {
 
 export async function connectPlayer(baseUrl, roomId, opts = {}) {
   const client = new Client(wsUrl(baseUrl));
-  const playersPromise = new Promise((resolve) => {
-    const originalJoinById = client.joinById.bind(client);
-    client.joinById = async function (id, options) {
-      const room = await originalJoinById(id, options);
-      room.onMessage("playerId", (playerId) => resolve({ room, playerId }));
-      return room;
-    };
-  });
+
+  let resolvePlayerId;
+  const playerIdPromise = new Promise((r) => { resolvePlayerId = r; });
+
+  const originalJoinById = client.joinById.bind(client);
+  client.joinById = async function (id, options) {
+    const room = await originalJoinById(id, options);
+    bufferMessages(room);
+    room.onMessage("playerId", (playerId) => resolvePlayerId(playerId));
+    return room;
+  };
+
   const room = await client.joinById(roomId, { type: "player", ...opts });
+
   if (opts.playerId) {
     return { room, playerId: opts.playerId };
   }
-  const result = await playersPromise;
-  return result;
+  const playerId = await playerIdPromise;
+  return { room, playerId };
 }
 
 export async function connectBoard(baseUrl, roomId) {
   const client = new Client(wsUrl(baseUrl));
+
+  const originalJoinById = client.joinById.bind(client);
+  client.joinById = async function (id, options) {
+    const room = await originalJoinById(id, options);
+    bufferMessages(room);
+    return room;
+  };
+
   const room = await client.joinById(roomId, { type: "board" });
   return { room };
 }
 
 export function waitForMessage(room, type, timeout = 5000) {
+  const buffer = room._messageBuffers && room._messageBuffers[type];
+  if (buffer && buffer.length > 0) {
+    return Promise.resolve(buffer.shift());
+  }
   return new Promise((resolve, reject) => {
     const timer = setTimeout(
       () => reject(new Error(`Timed out waiting for message "${type}"`)),
@@ -94,6 +123,16 @@ export function waitForMessage(room, type, timeout = 5000) {
 }
 
 export function waitForPlayers(room, predicate, timeout = 5000) {
+  const buffer = room._messageBuffers && room._messageBuffers["players"];
+  if (buffer) {
+    for (let i = 0; i < buffer.length; i++) {
+      if (predicate(buffer[i])) {
+        const match = buffer[i];
+        buffer.splice(0, i + 1);
+        return Promise.resolve(match);
+      }
+    }
+  }
   return new Promise((resolve, reject) => {
     const timer = setTimeout(
       () => reject(new Error("Timed out waiting for players match")),
