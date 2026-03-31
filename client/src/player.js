@@ -13,6 +13,7 @@ let pendingDiscards = 0;
 let gamePhase = "lobby";
 let isReady = false;
 let myPlayerId = null;
+let activePlayerId = null;
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -282,6 +283,7 @@ function addDragListeners(card) {
     const centerY = cloneRect.top + cloneRect.height / 2;
 
     const hit =
+      !playZone.classList.contains("waiting") &&
       centerX >= zoneRect.left &&
       centerX <= zoneRect.right &&
       centerY >= zoneRect.top &&
@@ -342,10 +344,15 @@ function updatePiles({ drawCount, discardCount, discardTopType }) {
   updatePileCount("discard-count", discardCount);
 }
 
-function autoDrawIfEmpty({ drawCount, discardCount }) {
-  const handArea = document.getElementById("hand-area");
-  if (handArea.children.length === 0 && (drawCount + discardCount) > 0 && currentRoom) {
-    currentRoom.send("drawCards");
+function updatePlayZone() {
+  const playZone = document.getElementById("play-zone");
+  if (!playZone || playZone.classList.contains("banana-hit")) return;
+  if (activePlayerId !== myPlayerId) {
+    playZone.classList.add("waiting");
+    playZone.innerHTML = `<span class="play-zone-label">Wait for your turn to play</span>`;
+  } else {
+    playZone.classList.remove("waiting");
+    playZone.innerHTML = `<span class="play-zone-label">Drag a card here to play it</span>`;
   }
 }
 
@@ -485,6 +492,7 @@ function startGame(gameId, name, existingPlayerId) {
 
       room.onMessage("gameState", (data) => {
         gamePhase = data.phase;
+        activePlayerId = data.activePlayerId;
         if (data.phase === "playing") {
           const lobbyZone = document.getElementById("lobby-zone");
           const gameZone = document.getElementById("game-zone");
@@ -494,6 +502,7 @@ function startGame(gameId, name, existingPlayerId) {
             updatePiles({ drawCount: 8, discardCount: 0 });
           }
         }
+        updatePlayZone();
       });
 
       room.onMessage("players", (players) => {
@@ -592,10 +601,6 @@ function startGame(gameId, name, existingPlayerId) {
         const discardEl = document.getElementById("discard-pile");
         const discardRect = discardEl.getBoundingClientRect();
         const clones = document.querySelectorAll("body > .card");
-        const afterDiscard = () => {
-          updatePiles(data);
-          autoDrawIfEmpty(data);
-        };
         clones.forEach((clone) => {
           clone.style.transition = "all 0.3s ease-in-out";
           clone.style.left = (discardRect.left + discardRect.width / 2 - 25) + "px";
@@ -606,11 +611,11 @@ function startGame(gameId, name, existingPlayerId) {
           clone.style.filter = "none";
           clone.addEventListener("transitionend", () => {
             clone.remove();
-            afterDiscard();
+            updatePiles(data);
           }, { once: true });
         });
         if (clones.length === 0) {
-          afterDiscard();
+          updatePiles(data);
         }
       });
 
@@ -680,10 +685,6 @@ function startGame(gameId, name, existingPlayerId) {
         const discardEl = document.getElementById("discard-pile");
         const discardRect = discardEl.getBoundingClientRect();
         const clones = document.querySelectorAll("body > .card");
-        const afterDiscard = () => {
-          updatePiles(data);
-          if (data.remaining <= 0) autoDrawIfEmpty(data);
-        };
         clones.forEach((clone) => {
           clone.style.transition = "all 0.3s ease-in-out";
           clone.style.left = (discardRect.left + discardRect.width / 2 - 25) + "px";
@@ -694,11 +695,11 @@ function startGame(gameId, name, existingPlayerId) {
           clone.style.filter = "none";
           clone.addEventListener("transitionend", () => {
             clone.remove();
-            afterDiscard();
+            updatePiles(data);
           }, { once: true });
         });
         if (clones.length === 0) {
-          afterDiscard();
+          updatePiles(data);
         }
 
         // Restore play zone when all discards are done
@@ -706,17 +707,9 @@ function startGame(gameId, name, existingPlayerId) {
           pendingDiscards = 0;
           const playZone = document.getElementById("play-zone");
           playZone.classList.remove("banana-hit");
-          playZone.innerHTML = `<span class="play-zone-label">Drag a card here to play it</span>`;
+          updatePlayZone();
         }
       });
-
-      // Auto-draw first hand after 2 seconds
-      setTimeout(() => {
-        const handArea = document.getElementById("hand-area");
-        if (handArea.children.length === 0 && !animating) {
-          room.send("drawCards");
-        }
-      }, 2000);
 
       nameInput.addEventListener("change", () => {
         const newName = nameInput.value.trim() || "???";

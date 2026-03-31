@@ -235,6 +235,14 @@ input {
   text-align: center;
 }
 
+.play-zone.waiting {
+  border-color: #333;
+}
+
+.play-zone.waiting .play-zone-label {
+  color: #555;
+}
+
 .play-zone.banana-hit {
   border-color: #e8a317;
   background: rgba(232, 163, 23, 0.1);
