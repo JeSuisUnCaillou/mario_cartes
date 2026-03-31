@@ -1,4 +1,5 @@
 import { Client } from "colyseus.js";
+import { isPointInRect, splitDrawBatches, initialDrawPileCount, normalizeName } from "./player.functions.js";
 
 const CARD_ASSETS = {
   move_forward_1: "/card - move forward.svg",
@@ -282,11 +283,7 @@ function addDragListeners(card) {
     const centerX = cloneRect.left + cloneRect.width / 2;
     const centerY = cloneRect.top + cloneRect.height / 2;
 
-    const inZone =
-      centerX >= zoneRect.left &&
-      centerX <= zoneRect.right &&
-      centerY >= zoneRect.top &&
-      centerY <= zoneRect.bottom;
+    const inZone = isPointInRect(centerX, centerY, zoneRect.left, zoneRect.top, zoneRect.right, zoneRect.bottom);
 
     if (inZone && playZone.classList.contains("waiting")) {
       playZone.classList.add("waiting-reject");
@@ -454,7 +451,7 @@ function showNameForm(gameId, room) {
   const nameInput = document.getElementById("name-input");
   nameInput.focus();
   nameInput.addEventListener("input", () => {
-    nameInput.value = nameInput.value.toUpperCase().replace(/[^A-Z]/g, "");
+    nameInput.value = normalizeName(nameInput.value);
   });
 
   document.getElementById("name-form").addEventListener("submit", (e) => {
@@ -520,7 +517,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
 
   const nameInput = document.getElementById("player-name");
   nameInput.addEventListener("input", () => {
-    nameInput.value = nameInput.value.toUpperCase().replace(/[^A-Z]/g, "");
+    nameInput.value = normalizeName(nameInput.value);
   });
   nameInput.addEventListener("focus", () => nameInput.select());
 
@@ -573,16 +570,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         }
         animating = true;
 
-        const before = data.drawnBeforeShuffle;
-        const firstBatch = data.hand.slice(0, before);
-        const secondBatch = data.hand.slice(before);
-
-        // Track draw pile count during animation
-        if (data.shuffledCount > 0) {
-          animDrawCount = before; // pile had exactly this many before drawing
-        } else {
-          animDrawCount = data.drawCount + data.hand.length;
-        }
+        const { firstBatch, secondBatch } = splitDrawBatches(data.hand, data.drawnBeforeShuffle);
+        animDrawCount = initialDrawPileCount(data.drawCount, data.hand.length, data.shuffledCount, data.drawnBeforeShuffle);
 
         // Draw first batch (cards from draw pile before shuffle)
         if (firstBatch.length > 0) {
@@ -686,10 +675,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         if (data.autoDrawn) {
           animating = true;
           const drawData = data.autoDrawn;
-          const before = drawData.drawnBeforeShuffle;
-          const firstBatch = drawData.hand.slice(0, before);
-          const secondBatch = drawData.hand.slice(before);
-          animDrawCount = drawData.shuffledCount > 0 ? before : drawData.drawCount + drawData.hand.length;
+          const { firstBatch, secondBatch } = splitDrawBatches(drawData.hand, drawData.drawnBeforeShuffle);
+          animDrawCount = initialDrawPileCount(drawData.drawCount, drawData.hand.length, drawData.shuffledCount, drawData.drawnBeforeShuffle);
           if (firstBatch.length > 0) await animateDrawCards(firstBatch);
           if (drawData.shuffledCount > 0) {
             await animateShuffle(drawData.shuffledCount);
