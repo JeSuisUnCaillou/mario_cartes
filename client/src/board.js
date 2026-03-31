@@ -112,7 +112,7 @@ function updateInfoBarPlayers(players) {
         card.className = "board-card-mini";
         const offset = i - (n - 1) / 2;
         const rotation = offset * 10;
-        const lift = Math.abs(offset) * 3;
+        const lift = Math.abs(offset) * 1.5;
         card.style.transform = `rotate(${rotation}deg) translateY(${lift}px)`;
         cardsContainer.appendChild(card);
       }
