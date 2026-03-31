@@ -499,6 +499,14 @@ function startGame(gameId, name, existingPlayerId) {
       room.onMessage("gameState", (data) => {
         gamePhase = data.phase;
         activePlayerId = data.activePlayerId;
+        if (data.phase === "playing" && !myPlayerId) {
+          const lobbyZone = document.getElementById("lobby-zone");
+          if (lobbyZone) {
+            lobbyZone.className = "lobby-zone game-rejected";
+            lobbyZone.innerHTML = `<span class="rejected-message">You can't join, the game has already started.</span>`;
+          }
+          return;
+        }
         if (data.phase === "playing") {
           const lobbyZone = document.getElementById("lobby-zone");
           const gameZone = document.getElementById("game-zone");
