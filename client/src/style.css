@@ -243,7 +243,8 @@ html, body, #app {
 
 .board-river-deck-img {
   height: var(--river-card-h);
-  width: auto;
+  aspect-ratio: 54 / 86;
+  object-fit: cover;
   border-radius: 2px;
 }
 
