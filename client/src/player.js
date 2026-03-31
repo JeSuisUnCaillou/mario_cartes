@@ -2,6 +2,12 @@ import { Client } from "colyseus.js";
 import { isPointInRect, splitDrawBatches, initialDrawPileCount, normalizeName, cardItemPositions } from "./player.functions.js";
 import { renderRivers } from "./river.js";
 
+function ordinalSuffix(n) {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
 const ITEM_ICONS = {
   coin: "/coin.svg",
   banana: "/banana.svg",
@@ -652,8 +658,9 @@ function renderFinishedZone(container, ranking, room) {
     <h2 class="finished-title">Race Complete!</h2>
     <ol class="finished-list">
       ${(ranking || []).map((entry) => {
-        const medal = medals[entry.rank - 1] || `#${entry.rank}`;
-        return `<li class="finished-entry"><span class="finished-rank">${medal}</span><span class="finished-name">${entry.name}</span></li>`;
+        const medal = medals[entry.rank - 1] || "";
+        const ordinal = ordinalSuffix(entry.rank);
+        return `<li class="finished-entry"><span class="finished-rank">${medal} ${ordinal}</span><span class="finished-name">${entry.name}</span></li>`;
       }).join("")}
     </ol>
     <button id="start-over-btn" class="start-over-btn">Start Over</button>
