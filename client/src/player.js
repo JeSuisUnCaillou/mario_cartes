@@ -690,7 +690,6 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         }
         updatePlayZone();
         updateBuyButton();
-        updateCoinDisplay(0);
         if (document.querySelector(".buy-modal")) renderBuyModal();
       });
 
