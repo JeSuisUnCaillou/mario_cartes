@@ -36,6 +36,11 @@ export async function startServer() {
     res.json({ id: room.roomId });
   });
 
+  app.post("/create", async (req, res) => {
+    const room = await matchMaker.createRoom("game", req.body || {});
+    res.json({ id: room.roomId });
+  });
+
   app.get("/find-or-create/:gameId", async (req, res) => {
     const { gameId } = req.params;
     const rooms = await matchMaker.query({ roomId: gameId });
@@ -58,8 +63,17 @@ export async function startServer() {
   return { baseUrl, cleanup };
 }
 
-export async function createRoom(baseUrl) {
-  const res = await fetch(`${baseUrl}/create`);
+export async function createRoom(baseUrl, options) {
+  let res;
+  if (options) {
+    res = await fetch(`${baseUrl}/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(options),
+    });
+  } else {
+    res = await fetch(`${baseUrl}/create`);
+  }
   const { id } = await res.json();
   return id;
 }

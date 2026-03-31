@@ -6,6 +6,9 @@ const DISPOSE_DELAY_MS = 10 * 60 * 1000; // 10 minutes
 
 class GameRoom extends Room {
   _createDeck() {
+    if (this._testDeck) {
+      return this._testDeck.map((items) => ({ id: randomUUID(), items }));
+    }
     const cards = [
       ...Array.from({ length: 3 }, () => ({ id: randomUUID(), items: ["coin"] })),
       { id: randomUUID(), items: ["coin", "mushroom"] },
@@ -77,6 +80,7 @@ class GameRoom extends Room {
     if (options._roomId) {
       this.roomId = options._roomId;
     }
+    this._testDeck = options._testDeck || null;
     this.autoDispose = false;
     this._disposeTimer = null;
     this.clientsInfo = new Map();

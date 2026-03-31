@@ -530,3 +530,146 @@ describe("End turn", () => {
     room.leave();
   });
 });
+
+describe("Mushroom movement and banana collision", () => {
+  it("mushroom card moves player forward 1 cell", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["mushroom"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    const mushroomCard = cards.hand.find((c) => c.items.length === 1 && c.items[0] === "mushroom");
+    expect(mushroomCard).toBeDefined();
+    room.send("playCard", { cardId: mushroomCard.id });
+    await waitForMessage(room, "cardPlayed");
+    const players = await waitForPlayers(room, (list) => list[0].cellId === 2);
+    expect(players[0].cellId).toBe(2);
+    room.leave();
+  });
+
+  it("multi-item card applies all effects (banana + coin + mushroom)", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["banana", "coin", "mushroom"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    const multiCard = cards.hand.find((c) => c.items.includes("banana") && c.items.includes("coin") && c.items.includes("mushroom"));
+    expect(multiCard).toBeDefined();
+    room.send("playCard", { cardId: multiCard.id });
+    const result = await waitForMessage(room, "cardPlayed");
+    expect(result.coinGained).toBe(1);
+    expect(result.droppedBanana).toBe(1); // banana dropped on starting cell
+    const players = await waitForPlayers(room, (list) => list[0].cellId === 2);
+    expect(players[0].cellId).toBe(2); // moved forward 1
+    room.leave();
+  });
+
+  it("player moving through a banana cell triggers discard", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["banana"], ["mushroom"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
+    const cards1 = await waitForMessage(room1, "cardsDrawn");
+    const cards2 = await waitForMessage(room2, "cardsDrawn");
+    const activeId = gs.activePlayerId;
+    const activeRoom = activeId === id1 ? room1 : room2;
+    const activeCards = activeId === id1 ? cards1 : cards2;
+    const passiveRoom = activeId === id1 ? room2 : room1;
+
+    // Active player plays mushroom to move to cell 2
+    const mushroomCard = activeCards.hand.find((c) => c.items.length === 1 && c.items[0] === "mushroom");
+    expect(mushroomCard).toBeDefined();
+    activeRoom.send("playCard", { cardId: mushroomCard.id });
+    await waitForMessage(activeRoom, "cardPlayed");
+
+    // Active player plays banana to drop banana on cell 2
+    const bananaCard = activeCards.hand.find((c) => c.items.length === 1 && c.items[0] === "banana");
+    expect(bananaCard).toBeDefined();
+    activeRoom.send("playCard", { cardId: bananaCard.id });
+    await waitForMessage(activeRoom, "cardPlayed");
+
+    // Active player ends turn
+    activeRoom.send("endTurn");
+    await waitForMessage(passiveRoom, "gameState", (g) => g.activePlayerId !== activeId);
+
+    // Passive player already has their hand from initial deal
+    const passiveCards = activeId === id1 ? cards2 : cards1;
+    // Passive player (on cell 1) plays mushroom → moves to cell 2 (hits banana!)
+    const passiveMushroomCard = passiveCards.hand.find((c) => c.items.length === 1 && c.items[0] === "mushroom");
+    expect(passiveMushroomCard).toBeDefined();
+    passiveRoom.send("playCard", { cardId: passiveMushroomCard.id });
+    await waitForMessage(passiveRoom, "cardPlayed");
+
+    // Should receive banana hit
+    const bananaHit = await waitForMessage(passiveRoom, "bananaHit");
+    expect(bananaHit.bananaHits).toHaveLength(1);
+    expect(bananaHit.bananaHits[0].cellId).toBe(2);
+    expect(bananaHit.mustDiscard).toBe(1);
+
+    room1.leave();
+    room2.leave();
+  });
+
+  it("double mushroom through two bananas stacks two discards", async () => {
+    // Each player gets: [mushroom, banana, mushroom, banana, mushroom+mushroom] in hand
+    // Active sets up bananas on cells 2 and 3, then passive hits both with double mushroom
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["mushroom"], ["banana"], ["mushroom"], ["banana"], ["mushroom", "mushroom"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
+    const cards1 = await waitForMessage(room1, "cardsDrawn");
+    const cards2 = await waitForMessage(room2, "cardsDrawn");
+    const activeId = gs.activePlayerId;
+    const activeRoom = activeId === id1 ? room1 : room2;
+    const activeCards = activeId === id1 ? cards1 : cards2;
+    const passiveRoom = activeId === id1 ? room2 : room1;
+
+    const mushrooms = activeCards.hand.filter((c) => c.items.length === 1 && c.items[0] === "mushroom");
+    const bananas = activeCards.hand.filter((c) => c.items.length === 1 && c.items[0] === "banana");
+
+    // Move to cell 2, drop banana on cell 2
+    activeRoom.send("playCard", { cardId: mushrooms[0].id });
+    await waitForMessage(activeRoom, "cardPlayed");
+    activeRoom.send("playCard", { cardId: bananas[0].id });
+    await waitForMessage(activeRoom, "cardPlayed");
+
+    // Move to cell 3, drop banana on cell 3
+    activeRoom.send("playCard", { cardId: mushrooms[1].id });
+    await waitForMessage(activeRoom, "cardPlayed");
+    activeRoom.send("playCard", { cardId: bananas[1].id });
+    await waitForMessage(activeRoom, "cardPlayed");
+
+    // End turn — bananas are on cells 2 and 3
+    activeRoom.send("endTurn");
+    await waitForMessage(passiveRoom, "gameState", (g) => g.activePlayerId !== activeId);
+
+    // Passive player already has their hand from initial deal
+    const passiveCards = activeId === id1 ? cards2 : cards1;
+    // Passive player (on cell 1) plays double mushroom: cell 1→2 (banana!) →3 (banana!)
+    const doubleMushroom = passiveCards.hand.find((c) => c.items.length === 2 && c.items.every((i) => i === "mushroom"));
+    expect(doubleMushroom).toBeDefined();
+    passiveRoom.send("playCard", { cardId: doubleMushroom.id });
+    await waitForMessage(passiveRoom, "cardPlayed");
+
+    const bananaHit = await waitForMessage(passiveRoom, "bananaHit");
+    expect(bananaHit.bananaHits).toHaveLength(2);
+    expect(bananaHit.bananaHits[0].cellId).toBe(2);
+    expect(bananaHit.bananaHits[1].cellId).toBe(3);
+    expect(bananaHit.mustDiscard).toBe(2);
+
+    room1.leave();
+    room2.leave();
+  });
+});
