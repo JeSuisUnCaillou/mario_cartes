@@ -331,9 +331,10 @@ function updatePileCount(countId, count) {
   document.getElementById(countId).textContent = count;
 }
 
-function updatePiles({ drawCount, discardCount }, lastDiscardSrc) {
+function updatePiles({ drawCount, discardCount, discardTopType }) {
   renderPileContent("draw-pile-content", drawCount, "Draw pile", "/card - back.svg");
-  renderPileContent("discard-pile-content", discardCount, "Discard pile", lastDiscardSrc || "/card - move forward.svg");
+  const discardIcon = discardTopType ? CARD_ASSETS[discardTopType] : "/card - move forward.svg";
+  renderPileContent("discard-pile-content", discardCount, "Discard pile", discardIcon);
   updatePileCount("draw-count", drawCount);
   updatePileCount("discard-count", discardCount);
 }
@@ -537,9 +538,8 @@ function startGame(gameId, name, existingPlayerId) {
         const discardEl = document.getElementById("discard-pile");
         const discardRect = discardEl.getBoundingClientRect();
         const clones = document.querySelectorAll("body > .card");
-        const lastCardSrc = clones.length > 0 ? clones[0].src : null;
         const afterDiscard = () => {
-          updatePiles(data, lastCardSrc);
+          updatePiles(data);
           autoDrawIfEmpty(data);
         };
         clones.forEach((clone) => {
@@ -626,9 +626,8 @@ function startGame(gameId, name, existingPlayerId) {
         const discardEl = document.getElementById("discard-pile");
         const discardRect = discardEl.getBoundingClientRect();
         const clones = document.querySelectorAll("body > .card");
-        const lastCardSrc = clones.length > 0 ? clones[0].src : null;
         const afterDiscard = () => {
-          updatePiles(data, lastCardSrc);
+          updatePiles(data);
           if (data.remaining <= 0) autoDrawIfEmpty(data);
         };
         clones.forEach((clone) => {

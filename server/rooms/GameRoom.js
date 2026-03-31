@@ -22,10 +22,12 @@ class GameRoom extends Room {
   }
 
   _cardState(player) {
+    const dp = player.discardPile;
     return {
       hand: player.hand,
       drawCount: player.drawPile.length,
-      discardCount: player.discardPile.length,
+      discardCount: dp.length,
+      discardTopType: dp.length > 0 ? dp[dp.length - 1].type : null,
       pendingBananaDiscards: player.pendingBananaDiscards,
     };
   }
