@@ -119,10 +119,27 @@ export async function connectBoard(baseUrl, roomId) {
   return { room };
 }
 
-export function waitForMessage(room, type, timeout = 5000) {
+export function waitForMessage(room, type, predicateOrTimeout, timeout = 5000) {
+  let predicate;
+  if (typeof predicateOrTimeout === "function") {
+    predicate = predicateOrTimeout;
+  } else if (typeof predicateOrTimeout === "number") {
+    timeout = predicateOrTimeout;
+  }
+
   const buffer = room._messageBuffers && room._messageBuffers[type];
-  if (buffer && buffer.length > 0) {
-    return Promise.resolve(buffer.shift());
+  if (buffer) {
+    if (predicate) {
+      for (let i = 0; i < buffer.length; i++) {
+        if (predicate(buffer[i])) {
+          const match = buffer[i];
+          buffer.splice(0, i + 1);
+          return Promise.resolve(match);
+        }
+      }
+    } else if (buffer.length > 0) {
+      return Promise.resolve(buffer.shift());
+    }
   }
   return new Promise((resolve, reject) => {
     const timer = setTimeout(
@@ -130,8 +147,10 @@ export function waitForMessage(room, type, timeout = 5000) {
       timeout,
     );
     room.onMessage(type, (data) => {
-      clearTimeout(timer);
-      resolve(data);
+      if (!predicate || predicate(data)) {
+        clearTimeout(timer);
+        resolve(data);
+      }
     });
   });
 }

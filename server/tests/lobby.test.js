@@ -265,3 +265,95 @@ describe("Player name", () => {
     room.leave();
   });
 });
+
+describe("Ready state and game start", () => {
+  it("setReady(true) sets player ready", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room, playerId } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    const players = await waitForPlayers(room, (list) =>
+      list.some((p) => p.playerId === playerId && p.ready),
+    );
+    expect(players.find((p) => p.playerId === playerId).ready).toBe(true);
+    room.leave();
+  });
+
+  it("setReady(false) unsets player ready", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room, playerId } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForPlayers(room, (list) =>
+      list.some((p) => p.playerId === playerId && p.ready),
+    );
+    room.send("setReady", false);
+    const players = await waitForPlayers(room, (list) =>
+      list.some((p) => p.playerId === playerId && !p.ready),
+    );
+    expect(players.find((p) => p.playerId === playerId).ready).toBe(false);
+    room.leave();
+  });
+
+  it("single player ready starts the game", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    const gameState = await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
+    expect(gameState.phase).toBe("playing");
+    room.leave();
+  });
+
+  it("two players, only one ready, game does not start", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2 } = await connectPlayer(baseUrl, roomId);
+
+    room1.send("setReady", true);
+    const players = await waitForPlayers(room2, (list) =>
+      list.some((p) => p.playerId === id1 && p.ready),
+    );
+    // Game state should still be lobby — check buffered gameState messages
+    const buffered = room2._messageBuffers["gameState"];
+    const playingState = buffered.find((gs) => gs.phase === "playing");
+    expect(playingState).toBeUndefined();
+
+    room1.leave();
+    room2.leave();
+  });
+
+  it("two players both ready starts the game", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: room1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2 } = await connectPlayer(baseUrl, roomId);
+
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+
+    const gameState = await waitForMessage(room1, "gameState", (gs) => gs.phase === "playing");
+    expect(gameState.phase).toBe("playing");
+
+    const cards1 = await waitForMessage(room1, "cardsDrawn");
+    const cards2 = await waitForMessage(room2, "cardsDrawn");
+    expect(cards1.hand).toHaveLength(5);
+    expect(cards2.hand).toHaveLength(5);
+
+    room1.leave();
+    room2.leave();
+  });
+
+  it("after game start, currentRound is 1 and activePlayerId is set", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+
+    const gameState = await waitForMessage(room1, "gameState", (gs) => gs.phase === "playing");
+    expect(gameState.phase).toBe("playing");
+    expect(gameState.currentRound).toBe(1);
+    expect([id1, id2]).toContain(gameState.activePlayerId);
+
+    room1.leave();
+    room2.leave();
+  });
+});
