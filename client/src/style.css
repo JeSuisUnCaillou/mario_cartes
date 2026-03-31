@@ -239,6 +239,7 @@ html, body, #app {
 }
 
 .river-cards {
+  --river-card-w: 80px;
   flex: 1;
   display: flex;
   align-items: flex-start;
@@ -254,14 +255,14 @@ html, body, #app {
 }
 
 .river-deck-img {
-  width: 80px;
+  width: var(--river-card-w);
   aspect-ratio: 54 / 86;
   object-fit: cover;
   border-radius: 6px;
 }
 
 .river-deck-empty {
-  width: 80px;
+  width: var(--river-card-w);
   aspect-ratio: 54 / 86;
   border: 2px dashed #555;
   border-radius: 6px;
@@ -292,7 +293,7 @@ html, body, #app {
 }
 
 .river-card {
-  width: 80px;
+  width: var(--river-card-w);
   aspect-ratio: 54 / 86;
   border-radius: 6px;
   position: relative;
@@ -352,7 +353,7 @@ html, body, #app {
 }
 
 .board-rivers .river-cards {
-  --river-card-h: 6vh;
+  --river-card-w: calc(6vh * 54 / 86);
   gap: 0.4vh;
   min-height: 0;
 }
@@ -361,15 +362,9 @@ html, body, #app {
   gap: 0.2vh;
 }
 
-.board-rivers .river-deck-img {
-  width: auto;
-  height: var(--river-card-h);
-  border-radius: 2px;
-}
-
-.board-rivers .river-deck-empty {
-  width: auto;
-  height: var(--river-card-h);
+.board-rivers .river-deck-img,
+.board-rivers .river-deck-empty,
+.board-rivers .river-card {
   border-radius: 2px;
 }
 
@@ -388,9 +383,6 @@ html, body, #app {
 }
 
 .board-rivers .river-card {
-  width: auto;
-  height: var(--river-card-h);
-  border-radius: 2px;
   flex-shrink: 1;
   min-width: 0;
 }
