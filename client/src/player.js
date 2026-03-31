@@ -427,9 +427,9 @@ function updateBuyButton() {
       container.innerHTML = `<button id="buy-btn" class="buy-btn">Buy cards</button>`;
       document.getElementById("buy-btn").addEventListener("click", openBuyModal);
     }
-    container.style.display = "";
+    container.style.visibility = "";
   } else {
-    container.style.display = "none";
+    container.style.visibility = "hidden";
   }
 }
 
@@ -685,7 +685,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           <span class="play-zone-label">Drag a card here to play it</span>
         </div>
         <div id="coin-display" class="coin-display"></div>
-        <div id="buy-btn-container" class="buy-btn-container" style="display:none"></div>
+        <div id="buy-btn-container" class="buy-btn-container" style="visibility:hidden"></div>
         <div class="cards-zone">
           <div id="draw-pile" class="draw-pile">
             <div id="draw-pile-content"></div>
