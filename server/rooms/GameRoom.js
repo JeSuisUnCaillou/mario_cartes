@@ -218,10 +218,11 @@ class GameRoom extends Room {
 
         // Lap detection
         if (this.cells.get(player.cellId).finish_line) {
-          player.lapCount++;
-          if (player.lapCount > 3) {
+          if (player.lapCount >= 3) {
             this.ranking.push(player.playerId);
             playerFinished = true;
+          } else {
+            player.lapCount++;
             break;
           }
         }

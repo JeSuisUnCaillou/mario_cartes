@@ -1028,7 +1028,7 @@ describe("Win condition and laps", () => {
       list.some((p) => p.playerId === id1 && p.cellId === 13),
     );
 
-    // Play 2 cards: cell 13→14→1 → lapCount becomes 4 > 3 → finished
+    // Play 2 cards: cell 13→14→1 → lapCount is 3 (already on last lap) → finished
     const cards = await waitForMessage(room1, "cardsDrawn");
     room1.send("playCard", { cardId: cards.hand[0].id });
     await waitForMessage(room1, "cardPlayed");
