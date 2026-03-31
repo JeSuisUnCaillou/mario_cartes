@@ -107,6 +107,10 @@ function updateInfoBarPlayers(players) {
       status.className = "board-player-status";
       el.appendChild(status);
 
+      const coins = document.createElement("div");
+      coins.className = "board-player-coins";
+      el.appendChild(coins);
+
       container.appendChild(el);
     }
 
@@ -135,6 +139,16 @@ function updateInfoBarPlayers(players) {
           statusEl.appendChild(card);
         }
       }
+    }
+
+    const coinsEl = el.querySelector(".board-player-coins");
+    if (boardPhase !== "lobby") {
+      const coinCount = p.coins || 0;
+      const zeroClass = coinCount === 0 ? " board-coin-zero" : "";
+      coinsEl.innerHTML = `<span class="board-coin-count${zeroClass}">${coinCount}</span><img src="/coin.svg" class="board-coin-icon${zeroClass}" />`;
+      coinsEl.style.display = "";
+    } else {
+      coinsEl.style.display = "none";
     }
   }
 }

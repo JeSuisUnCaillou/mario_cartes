@@ -81,7 +81,7 @@ html, body, #app {
 
 .board-title {
   text-align: center;
-  padding: 15px;
+  padding: 5px 15px;
 }
 
 .board-title-name {
@@ -98,7 +98,7 @@ html, body, #app {
   align-items: stretch;
   justify-content: center;
   gap: 2vh;
-  padding: 15px;
+  padding: 0 15px;
   min-height: 0;
 }
 
@@ -156,6 +156,26 @@ html, body, #app {
   margin-left: -0.5vh;
   transform-origin: bottom center;
   flex-shrink: 0;
+}
+
+.board-player-coins {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 1.5vh;
+  font-weight: bold;
+  color: #fff;
+}
+
+.board-coin-icon {
+  width: 2vh;
+  height: 2vh;
+}
+
+.board-coin-zero {
+  opacity: 0.3;
+  filter: grayscale(1);
 }
 
 .board-game {
