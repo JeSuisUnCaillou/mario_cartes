@@ -1,12 +1,55 @@
 import { Client } from "colyseus.js";
-import { isPointInRect, splitDrawBatches, initialDrawPileCount, normalizeName } from "./player.functions.js";
+import { isPointInRect, splitDrawBatches, initialDrawPileCount, normalizeName, cardItemPositions } from "./player.functions.js";
 
-const CARD_ASSETS = {
-  move_forward_1: "/card - move forward.svg",
-  banana_move_forward_1: "/card - banana and move forward.svg",
-  coin_1: "/card - 1 coin.svg",
-  coin_2: "/card - 2 coins.svg",
+const ITEM_ICONS = {
+  coin: "/coin.svg",
+  banana: "/banana.svg",
+  mushroom: "/mushroom.svg",
 };
+
+const cardElements = new Map();
+
+function createCardElement(card) {
+  const container = document.createElement("div");
+  container.className = "card";
+  container.dataset.cardId = card.id;
+  container.dataset.items = JSON.stringify(card.items);
+
+  const bg = document.createElement("img");
+  bg.src = "/card - blank.svg";
+  bg.className = "card-bg";
+  bg.draggable = false;
+  container.appendChild(bg);
+
+  const positions = cardItemPositions(card.items.length);
+  card.items.forEach((item, i) => {
+    const icon = document.createElement("img");
+    icon.src = ITEM_ICONS[item];
+    icon.className = "card-item";
+    icon.style.left = positions[i].x;
+    icon.style.top = positions[i].y;
+    icon.draggable = false;
+    container.appendChild(icon);
+  });
+
+  return container;
+}
+
+function ensureCardElements(deck) {
+  if (!deck) return;
+  for (const card of deck) {
+    if (!cardElements.has(card.id)) {
+      cardElements.set(card.id, createCardElement(card));
+    }
+  }
+}
+
+function getCardElement(card) {
+  if (!cardElements.has(card.id)) {
+    cardElements.set(card.id, createCardElement(card));
+  }
+  return cardElements.get(card.id);
+}
 
 let playing = false;
 let animating = false;
@@ -47,7 +90,7 @@ async function animateShuffle(count) {
 
   for (let i = 0; i < count; i++) {
     remaining--;
-    renderPileContent("discard-pile-content", remaining, "Discard pile", "/card - move forward.svg");
+    renderPileContent("discard-pile-content", remaining, "Discard pile", "/card - back.svg");
     updatePileCount("discard-count", remaining);
 
     const card = document.createElement("img");
@@ -88,32 +131,29 @@ async function animateDrawCards(cards, startIndex = 0) {
   // Animate each card one by one: add to DOM, recompute fan, fly in
   for (let i = 0; i < cards.length; i++) {
     const card = cards[i];
-    const img = document.createElement("img");
-    img.src = CARD_ASSETS[card.type];
-    img.className = "card";
-    img.dataset.cardId = card.id;
-    img.style.visibility = "hidden";
-    img.style.transform = "rotate(0deg) translateY(0px)";
-    handArea.appendChild(img);
+    const el = getCardElement(card);
+    el.style.visibility = "hidden";
+    el.style.transform = "rotate(0deg) translateY(0px)";
+    handArea.appendChild(el);
 
     // Recompute fan for all visible cards + this new one
     const allCards = Array.from(handArea.children);
     const visibleCount = allCards.length;
     const angleStep = 10;
-    allCards.forEach((el, idx) => {
+    allCards.forEach((c, idx) => {
       const offset = idx - (visibleCount - 1) / 2;
       const rotation = offset * angleStep;
       const lift = Math.abs(offset) * 8;
-      el.dataset.fanTransform = `rotate(${rotation}deg) translateY(${lift}px)`;
+      c.dataset.fanTransform = `rotate(${rotation}deg) translateY(${lift}px)`;
       // Existing visible cards animate via CSS transition
-      if (el !== img) {
-        el.style.transform = el.dataset.fanTransform;
+      if (c !== el) {
+        c.style.transform = c.dataset.fanTransform;
       }
     });
 
     // Set the new card's transform to get its target position
-    img.style.transform = img.dataset.fanTransform;
-    const targetRect = img.getBoundingClientRect();
+    el.style.transform = el.dataset.fanTransform;
+    const targetRect = el.getBoundingClientRect();
 
     // Update draw pile count
     animDrawCount--;
@@ -141,9 +181,9 @@ async function animateDrawCards(cards, startIndex = 0) {
     backFace.src = "/card - back.svg";
     backFace.className = "card-flyer-face card-flyer-back";
 
-    const frontFace = document.createElement("img");
-    frontFace.src = CARD_ASSETS[card.type];
+    const frontFace = el.cloneNode(true);
     frontFace.className = "card-flyer-face card-flyer-front";
+    frontFace.style.cssText = "";
 
     inner.appendChild(backFace);
     inner.appendChild(frontFace);
@@ -162,8 +202,8 @@ async function animateDrawCards(cards, startIndex = 0) {
     // Wait for fly+flip to fully complete, then swap instantly
     await new Promise((resolve) => {
       flyer.addEventListener("transitionend", () => {
-        img.style.visibility = "";
-        addDragListeners(img);
+        el.style.visibility = "";
+        addDragListeners(el);
         flyer.remove();
         resolve();
       }, { once: true });
@@ -224,17 +264,14 @@ function renderHand(hand) {
   const n = hand.length;
   const angleStep = 10;
   hand.forEach((card, i) => {
-    const img = document.createElement("img");
-    img.src = CARD_ASSETS[card.type];
-    img.className = "card";
-    img.dataset.cardId = card.id;
+    const el = getCardElement(card);
     const offset = i - (n - 1) / 2;
     const rotation = offset * angleStep;
     const lift = Math.abs(offset) * 8;
-    img.style.transform = `rotate(${rotation}deg) translateY(${lift}px)`;
-    img.dataset.fanTransform = img.style.transform;
-    addDragListeners(img);
-    handArea.appendChild(img);
+    el.style.transform = `rotate(${rotation}deg) translateY(${lift}px)`;
+    el.dataset.fanTransform = el.style.transform;
+    addDragListeners(el);
+    handArea.appendChild(el);
   });
 }
 
@@ -357,10 +394,17 @@ function updatePileCount(countId, count) {
   document.getElementById(countId).textContent = count;
 }
 
-function updatePiles({ drawCount, discardCount, discardTopType }) {
+function updatePiles({ drawCount, discardCount, discardTopCard }) {
   renderPileContent("draw-pile-content", drawCount, "Draw pile", "/card - back.svg");
-  const discardIcon = discardTopType ? CARD_ASSETS[discardTopType] : "/card - move forward.svg";
-  renderPileContent("discard-pile-content", discardCount, "Discard pile", discardIcon);
+  const discardContainer = document.getElementById("discard-pile-content");
+  if (discardCount === 0) {
+    discardContainer.innerHTML = `<div class="pile-empty"><span>Discard pile</span></div>`;
+  } else if (discardTopCard) {
+    const miniCard = createCardElement(discardTopCard);
+    miniCard.className = "card pile-card";
+    discardContainer.innerHTML = "";
+    discardContainer.appendChild(miniCard);
+  }
   updatePileCount("draw-count", drawCount);
   updatePileCount("discard-count", discardCount);
 }
@@ -595,6 +639,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
 
       room.onMessage("cardsDrawn", async (data) => {
         if (animating) return;
+        ensureCardElements(data.deck);
         // On reconnect (hand already existed), just render without animation
         if (data.drawnBeforeShuffle === undefined) {
           renderHand(data.hand);
@@ -641,6 +686,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
 
       room.onMessage("cardPlayed", (data) => {
         playing = false;
+        ensureCardElements(data.deck);
         // Capture positions BEFORE removing the card
         const positions = captureHandPositions();
         // Remove the played card from the hand
@@ -736,6 +782,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
 
       room.onMessage("cardDiscarded", (data) => {
         playing = false;
+        ensureCardElements(data.deck);
         // Remove the discarded card from hand
         const positions = captureHandPositions();
         const handArea = document.getElementById("hand-area");

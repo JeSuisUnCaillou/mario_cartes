@@ -465,7 +465,6 @@ input {
   --hand-width: calc(100vw - 136px - 24px);
   --card-overlap: 20px;
   width: min(calc((var(--hand-width) + 4 * var(--card-overlap)) / 5), 120px);
-  height: auto;
   aspect-ratio: 54 / 86;
   border-radius: 8px;
   transform-origin: bottom center;
@@ -474,10 +473,32 @@ input {
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+  position: relative;
+  overflow: hidden;
 }
 
 .card:first-child {
   margin-left: 0;
+}
+
+.card-bg {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  display: block;
+}
+
+.card-item {
+  position: absolute;
+  width: 35%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.pile-card {
+  width: 50px;
+  margin-left: 0;
+  opacity: 0.6;
 }
 
 .card-flyer-inner {
@@ -503,6 +524,7 @@ input {
 
 .card-flyer-front {
   transform: rotateY(180deg);
+  overflow: hidden;
 }
 
 .item-throw {
