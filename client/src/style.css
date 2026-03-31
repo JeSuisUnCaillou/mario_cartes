@@ -15,12 +15,16 @@ html, body, #app {
 }
 
 .board-info-bar {
-  height: 200px;
   flex-shrink: 0;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   background: #111;
   width: 100%;
+}
+
+.board-info-top {
+  display: flex;
+  align-items: center;
 }
 
 .board-qr {
@@ -33,7 +37,7 @@ html, body, #app {
 .board-title {
   flex: 1;
   text-align: center;
-  padding: 40px;
+  padding: 20px;
 }
 
 .board-title-name {
@@ -41,6 +45,51 @@ html, body, #app {
   font-weight: bold;
   color: #fff;
   letter-spacing: 0.1em;
+}
+
+.board-info-bottom {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 24px;
+  padding: 8px 16px 12px;
+  min-height: 48px;
+}
+
+.board-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  transition: opacity 0.3s;
+}
+
+.board-player.disconnected {
+  opacity: 0.5;
+}
+
+.board-player-name {
+  font-size: 0.85em;
+  font-weight: bold;
+  color: #fff;
+  letter-spacing: 0.1em;
+}
+
+.board-player-helmet {
+  width: 36px;
+  height: 36px;
+}
+
+.board-player-cards {
+  display: flex;
+  gap: 1px;
+  justify-content: center;
+}
+
+.board-player-cards img {
+  width: 14px;
+  height: auto;
+  opacity: 0.8;
 }
 
 .board-game {

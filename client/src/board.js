@@ -26,11 +26,14 @@ function createInfoBar(gameId) {
   const bar = document.createElement("div");
   bar.className = "board-info-bar";
 
+  const topRow = document.createElement("div");
+  topRow.className = "board-info-top";
+
   const qrContainer = document.createElement("div");
   qrContainer.className = "board-qr";
   const qrCanvas = document.createElement("canvas");
   qrContainer.appendChild(qrCanvas);
-  bar.appendChild(qrContainer);
+  topRow.appendChild(qrContainer);
 
   const titleContainer = document.createElement("div");
   titleContainer.className = "board-title";
@@ -38,7 +41,14 @@ function createInfoBar(gameId) {
   title.className = "board-title-name";
   title.textContent = "Mario Cartes";
   titleContainer.appendChild(title);
-  bar.appendChild(titleContainer);
+  topRow.appendChild(titleContainer);
+
+  bar.appendChild(topRow);
+
+  const bottomRow = document.createElement("div");
+  bottomRow.className = "board-info-bottom";
+  bottomRow.id = "board-players-row";
+  bar.appendChild(bottomRow);
 
   const playerUrl = `${location.origin}/game/${gameId}/player`;
   QRCode.toCanvas(qrCanvas, playerUrl, {
@@ -47,6 +57,62 @@ function createInfoBar(gameId) {
   });
 
   return bar;
+}
+
+function updateInfoBarPlayers(players) {
+  const container = document.getElementById("board-players-row");
+  if (!container) return;
+
+  const existingEls = new Map();
+  for (const el of container.querySelectorAll(".board-player")) {
+    existingEls.set(el.dataset.playerId, el);
+  }
+
+  const activeIds = new Set(players.map((p) => p.playerId));
+
+  // Remove players no longer present
+  for (const [id, el] of existingEls) {
+    if (!activeIds.has(id)) el.remove();
+  }
+
+  // Create or update each player
+  for (const p of players) {
+    let el = existingEls.get(p.playerId);
+    if (!el) {
+      el = document.createElement("div");
+      el.className = "board-player";
+      el.dataset.playerId = p.playerId;
+
+      const name = document.createElement("div");
+      name.className = "board-player-name";
+      el.appendChild(name);
+
+      const helmet = document.createElement("img");
+      helmet.className = "board-player-helmet";
+      helmet.src = "/helmet.svg";
+      el.appendChild(helmet);
+
+      const cards = document.createElement("div");
+      cards.className = "board-player-cards";
+      el.appendChild(cards);
+
+      container.appendChild(el);
+    }
+
+    el.classList.toggle("disconnected", !p.connected);
+    el.querySelector(".board-player-name").textContent = p.name || "???";
+
+    const cardsContainer = el.querySelector(".board-player-cards");
+    const currentCount = cardsContainer.children.length;
+    if (currentCount !== p.handCount) {
+      cardsContainer.innerHTML = "";
+      for (let i = 0; i < p.handCount; i++) {
+        const cardImg = document.createElement("img");
+        cardImg.src = "/card - back.svg";
+        cardsContainer.appendChild(cardImg);
+      }
+    }
+  }
 }
 
 export function initBoard(gameId) {
@@ -195,6 +261,7 @@ export function initBoard(gameId) {
       }
       const room = await colyseusClient.joinById(roomId, { type: "board" });
       room.onMessage("players", (players) => {
+        updateInfoBarPlayers(players);
         this.updatePlayers(players);
       });
       room.onMessage("cellOccupants", (cellOccupants) => {
