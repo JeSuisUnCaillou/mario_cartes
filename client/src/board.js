@@ -59,8 +59,9 @@ function createInfoBar(gameId) {
   bar.appendChild(rightSide);
 
   const playerUrl = `${location.origin}/game/${gameId}/player`;
+  const qrSize = Math.round(window.innerHeight * 0.18);
   QRCode.toCanvas(qrCanvas, playerUrl, {
-    width: 170,
+    width: qrSize,
     margin: 0,
   });
 
