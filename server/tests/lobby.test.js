@@ -3,6 +3,7 @@ import {
   startServer,
   createRoom,
   connectPlayer,
+  connectRaw,
   connectBoard,
   waitForMessage,
   waitForPlayers,
@@ -182,6 +183,29 @@ describe("Reconnection (page reload)", () => {
     expect(gameState.phase).toBe("playing");
 
     reconnected.leave();
+    room2.leave();
+  });
+});
+
+describe("Rejection after game started", () => {
+  it("new player joining a started game receives gameAlreadyStarted", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: room1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2 } = await connectPlayer(baseUrl, roomId);
+
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+
+    await waitForMessage(room1, "gameState");
+
+    const { room: lateRoom } = await connectRaw(baseUrl, roomId);
+    await waitForMessage(lateRoom, "gameAlreadyStarted");
+
+    const players = await waitForPlayers(room1, (list) => list.length === 2);
+    expect(players).toHaveLength(2);
+
+    lateRoom.leave();
+    room1.leave();
     room2.leave();
   });
 });

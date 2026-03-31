@@ -91,6 +91,20 @@ export async function connectPlayer(baseUrl, roomId, opts = {}) {
   return { room, playerId };
 }
 
+export async function connectRaw(baseUrl, roomId, opts = {}) {
+  const client = new Client(wsUrl(baseUrl));
+
+  const originalJoinById = client.joinById.bind(client);
+  client.joinById = async function (id, options) {
+    const room = await originalJoinById(id, options);
+    bufferMessages(room);
+    return room;
+  };
+
+  const room = await client.joinById(roomId, { type: "player", ...opts });
+  return { room };
+}
+
 export async function connectBoard(baseUrl, roomId) {
   const client = new Client(wsUrl(baseUrl));
 
