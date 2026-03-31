@@ -144,19 +144,21 @@ class GameRoom extends Room {
         player.coins += 2;
         coinGained = 2;
       }
+      let moved = false;
       if (card.type === "move_forward_1" || card.type === "banana_move_forward_1") {
         const oldCellId = player.cellId;
         player.cellId = this.cells.get(player.cellId).next_cell;
         this._removeFromCell(oldCellId, player.playerId);
         this._addToCell(player.cellId, player.playerId);
+        moved = true;
       }
       player.discardPile.push(card);
       client.send("cardPlayed", { cardId: card.id, droppedBanana, coinGained, ...this._cardState(player) });
       this.broadcastCellOccupants();
       this.broadcastPlayers();
 
-      // Check if player landed on a banana
-      if (this._bananasOnCell(player.cellId) > 0) {
+      // Check if player landed on a banana (only if they moved)
+      if (moved && this._bananasOnCell(player.cellId) > 0) {
         this._removeFromCell(player.cellId, "banana");
         this.broadcastCellOccupants();
         const mustDiscard = player.hand.length > 0 ? 1 : 0;
