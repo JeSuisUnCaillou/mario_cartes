@@ -49,7 +49,7 @@ function createInfoBar(gameId) {
   playersRow.id = "board-players-row";
 
   const scanLabel = document.createElement("div");
-  scanLabel.className = "board-scan-label";
+  scanLabel.className = "board-top-element board-scan-label";
   scanLabel.innerHTML = "Scan<br>to<br>join";
   playersRow.appendChild(scanLabel);
 
@@ -87,7 +87,7 @@ function updateInfoBarPlayers(players) {
     let el = existingEls.get(p.playerId);
     if (!el) {
       el = document.createElement("div");
-      el.className = "board-player";
+      el.className = "board-top-element board-player";
       el.dataset.playerId = p.playerId;
 
       const name = document.createElement("div");
@@ -147,7 +147,7 @@ function updateBoardGameState(data) {
     let roundCard = container.querySelector(".board-round-card");
     if (!roundCard) {
       roundCard = document.createElement("div");
-      roundCard.className = "board-round-card";
+      roundCard.className = "board-top-element board-round-card";
       container.insertBefore(roundCard, container.firstChild);
     }
     roundCard.innerHTML = `<span>Round</span><span class="board-round-number">${data.currentRound}</span>`;
