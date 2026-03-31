@@ -360,25 +360,26 @@ describe("Ready state and game start", () => {
 });
 
 describe("Deck and coins", () => {
-  it("deck has 9 cards (5 drawn, 4 remaining)", async () => {
+  it("deck has 8 cards (5 drawn, 3 remaining)", async () => {
     const roomId = await createRoom(baseUrl);
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
     await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     expect(cards.hand).toHaveLength(5);
-    expect(cards.drawCount).toBe(4);
+    expect(cards.drawCount).toBe(3);
+    expect(cards.deck).toHaveLength(8);
     room.leave();
   });
 
-  it("playing a coin_1 card adds 1 coin without moving", async () => {
+  it("playing a single-coin card adds 1 coin without moving", async () => {
     const roomId = await createRoom(baseUrl);
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
     await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
-    const coinCard = cards.hand.find((c) => c.type === "coin_1");
-    if (!coinCard) return; // Skip if no coin_1 in hand (unlikely with 6/9)
+    const coinCard = cards.hand.find((c) => c.items.length === 1 && c.items[0] === "coin");
+    if (!coinCard) return; // Skip if no single-coin card in hand (unlikely with 3/8)
     room.send("playCard", { cardId: coinCard.id });
     const result = await waitForMessage(room, "cardPlayed");
     expect(result.coins).toBe(1);
@@ -389,14 +390,14 @@ describe("Deck and coins", () => {
     room.leave();
   });
 
-  it("playing a coin_2 card adds 2 coins", async () => {
+  it("playing a double-coin card adds 2 coins", async () => {
     const roomId = await createRoom(baseUrl);
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
     await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
-    const coinCard = cards.hand.find((c) => c.type === "coin_2");
-    if (!coinCard) return; // Skip if no coin_2 in hand
+    const coinCard = cards.hand.find((c) => c.items.length === 2 && c.items.every((i) => i === "coin"));
+    if (!coinCard) return; // Skip if no double-coin card in hand
     room.send("playCard", { cardId: coinCard.id });
     const result = await waitForMessage(room, "cardPlayed");
     expect(result.coins).toBe(2);
@@ -431,7 +432,7 @@ describe("End turn", () => {
     room.send("setReady", true);
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
-    const coinCard = cards.hand.find((c) => c.type === "coin_1");
+    const coinCard = cards.hand.find((c) => c.items.length === 1 && c.items[0] === "coin");
     if (!coinCard) { room.leave(); return; }
     room.send("playCard", { cardId: coinCard.id });
     const played = await waitForMessage(room, "cardPlayed");

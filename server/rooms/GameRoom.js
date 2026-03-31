@@ -7,10 +7,12 @@ const DISPOSE_DELAY_MS = 10 * 60 * 1000; // 10 minutes
 class GameRoom extends Room {
   _createDeck() {
     const cards = [
-      ...Array.from({ length: 6 }, () => ({ id: randomUUID(), type: "coin_1" })),
-      ...Array.from({ length: 1 }, () => ({ id: randomUUID(), type: "coin_2" })),
-      ...Array.from({ length: 1 }, () => ({ id: randomUUID(), type: "move_forward_1" })),
-      ...Array.from({ length: 1 }, () => ({ id: randomUUID(), type: "banana_move_forward_1" })),
+      ...Array.from({ length: 3 }, () => ({ id: randomUUID(), items: ["coin"] })),
+      { id: randomUUID(), items: ["coin", "mushroom"] },
+      { id: randomUUID(), items: ["banana", "coin", "mushroom"] },
+      { id: randomUUID(), items: ["coin", "coin"] },
+      { id: randomUUID(), items: ["banana"] },
+      { id: randomUUID(), items: ["mushroom"] },
     ];
     return this._shuffle(cards);
   }
@@ -29,9 +31,10 @@ class GameRoom extends Room {
       hand: player.hand,
       drawCount: player.drawPile.length,
       discardCount: dp.length,
-      discardTopType: dp.length > 0 ? dp[dp.length - 1].type : null,
+      discardTopCard: dp.length > 0 ? dp[dp.length - 1] : null,
       pendingBananaDiscards: player.pendingBananaDiscards,
       coins: player.coins,
+      deck: [...player.hand, ...player.drawPile, ...player.discardPile],
     };
   }
 
@@ -124,56 +127,63 @@ class GameRoom extends Room {
       if (cardIndex === -1) return;
       const [card] = player.hand.splice(cardIndex, 1);
       if (player.hand.length === 0) player.hasPlayedAllCards = true;
+
+      // Process card items
       let droppedBanana = null;
-      if (card.type === "banana_move_forward_1") {
-        droppedBanana = player.cellId;
-        // Insert banana at the player's position in the cell
-        const occupants = this._cellOccupants(player.cellId);
-        const playerIdx = occupants.indexOf(player.playerId);
-        if (playerIdx !== -1) {
-          occupants.splice(playerIdx, 0, "banana");
-        } else {
-          occupants.push("banana");
+      let coinGained = 0;
+      let moveCount = 0;
+      for (const item of card.items) {
+        if (item === "banana") {
+          if (droppedBanana === null) droppedBanana = player.cellId;
+          const occupants = this._cellOccupants(player.cellId);
+          const playerIdx = occupants.indexOf(player.playerId);
+          if (playerIdx !== -1) {
+            occupants.splice(playerIdx, 0, "banana");
+          } else {
+            occupants.push("banana");
+          }
+        } else if (item === "coin") {
+          player.coins += 1;
+          coinGained += 1;
+        } else if (item === "mushroom") {
+          moveCount += 1;
         }
       }
-      let coinGained = 0;
-      if (card.type === "coin_1") {
-        player.coins += 1;
-        coinGained = 1;
-      } else if (card.type === "coin_2") {
-        player.coins += 2;
-        coinGained = 2;
-      }
-      let moved = false;
-      if (card.type === "move_forward_1" || card.type === "banana_move_forward_1") {
+
+      // Move one cell at a time, checking for banana collisions on each cell
+      const bananaHits = [];
+      for (let i = 0; i < moveCount; i++) {
         const oldCellId = player.cellId;
         player.cellId = this.cells.get(player.cellId).next_cell;
         this._removeFromCell(oldCellId, player.playerId);
         this._addToCell(player.cellId, player.playerId);
-        moved = true;
+        if (this._bananasOnCell(player.cellId) > 0) {
+          this._removeFromCell(player.cellId, "banana");
+          bananaHits.push({ cellId: player.cellId });
+        }
       }
+
       player.discardPile.push(card);
       client.send("cardPlayed", { cardId: card.id, droppedBanana, coinGained, ...this._cardState(player) });
       this.broadcastCellOccupants();
       this.broadcastPlayers();
 
-      // Check if player landed on a banana (only if they moved)
-      if (moved && this._bananasOnCell(player.cellId) > 0) {
-        this._removeFromCell(player.cellId, "banana");
-        this.broadcastCellOccupants();
-        const mustDiscard = player.hand.length > 0 ? 1 : 0;
+      // Send banana hit events (stacking discards)
+      if (bananaHits.length > 0) {
+        const mustDiscard = Math.min(bananaHits.length, player.hand.length);
         player.pendingBananaDiscards = mustDiscard;
         client.send("bananaHit", {
-          cellId: player.cellId,
-          count: 1,
+          bananaHits,
           mustDiscard,
           ...this._cardState(player),
         });
-        this.broadcast("bananaHitBoard", {
-          playerId: player.playerId,
-          cellId: player.cellId,
-          count: 1,
-        });
+        for (const hit of bananaHits) {
+          this.broadcast("bananaHitBoard", {
+            playerId: player.playerId,
+            cellId: hit.cellId,
+            count: 1,
+          });
+        }
       }
 
     });
