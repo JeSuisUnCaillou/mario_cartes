@@ -25,6 +25,7 @@ html, body, #app {
   gap: 1vh;
   padding: 1vh;
   box-sizing: border-box;
+  height: 100%;
 }
 
 .board-qr {
@@ -168,6 +169,7 @@ html, body, #app {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  height: 100%;
 }
 
 .board-top-bar {
