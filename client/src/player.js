@@ -385,6 +385,47 @@ export function initPlayer(gameId) {
     return;
   }
 
+  // Join room immediately to check if game is still joinable
+  document.getElementById("app").innerHTML = `
+    <div class="player-container">
+      <p>Joining…</p>
+    </div>
+  `;
+
+  const serverUrl = import.meta.env.DEV
+    ? "ws://localhost:2567"
+    : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
+  const client = new Client(serverUrl);
+
+  joinWithRetry(client, gameId, { type: "player", name: "???" })
+    .then((room) => {
+      room.onMessage("gameAlreadyStarted", () => {
+        document.getElementById("app").innerHTML = `
+          <div class="player-screen">
+            <div class="lobby-zone game-rejected">
+              <span class="rejected-message">You can't join, the game has already started.</span>
+            </div>
+          </div>
+        `;
+      });
+
+      room.onMessage("playerId", (id) => {
+        myPlayerId = id;
+        localStorage.setItem(playerIdKey, id);
+        showNameForm(gameId, room);
+      });
+    })
+    .catch(() => {
+      document.getElementById("app").innerHTML = `
+        <div class="player-container">
+          <p>Could not connect to the game.</p>
+        </div>
+      `;
+    });
+}
+
+function showNameForm(gameId, room) {
+  const existingName = localStorage.getItem("playerName");
   document.getElementById("app").innerHTML = `
     <div class="player-container">
       <h1>Game ${gameId}</h1>
@@ -408,7 +449,8 @@ export function initPlayer(gameId) {
     e.preventDefault();
     const name = nameInput.value.trim() || "???";
     localStorage.setItem("playerName", name);
-    startGame(gameId, name, null);
+    room.send("changeName", name);
+    startGame(gameId, name, myPlayerId, room);
   });
 }
 
@@ -437,12 +479,12 @@ function renderLobby(room) {
   }
 }
 
-function startGame(gameId, name, existingPlayerId) {
+function startGame(gameId, name, existingPlayerId, existingRoom) {
   document.getElementById("app").innerHTML = `
     <div class="player-screen">
       <div class="top-zone">
         <input id="player-name" class="name-edit-input" type="text" maxlength="3" value="${name}" autocomplete="off" />
-        <p id="status">Joining…</p>
+        ${existingRoom ? "" : '<p id="status">Joining…</p>'}
       </div>
       <div id="lobby-zone" class="lobby-zone"></div>
       <div id="game-zone" class="game-zone" style="display: none;">
@@ -470,41 +512,11 @@ function startGame(gameId, name, existingPlayerId) {
   });
   nameInput.addEventListener("focus", () => nameInput.select());
 
-  const serverUrl = import.meta.env.DEV
-    ? "ws://localhost:2567"
-    : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
-
-  const client = new Client(serverUrl);
-
-  const joinOptions = { type: "player", name };
-  if (existingPlayerId) {
-    joinOptions.playerId = existingPlayerId;
-  }
-
   const playerIdKey = `playerId:${gameId}`;
-  myPlayerId = existingPlayerId;
 
-  joinWithRetry(client, gameId, joinOptions)
-    .then((room) => {
-      document.getElementById("status").remove();
-      renderLobby(room);
-
-      room.onMessage("playerId", (id) => {
-        myPlayerId = id;
-        localStorage.setItem(playerIdKey, id);
-      });
-
-      room.onMessage("gameAlreadyStarted", () => {
-        document.getElementById("app").innerHTML = `
-          <div class="player-screen">
-            <div class="lobby-zone game-rejected">
-              <span class="rejected-message">You can't join, the game has already started.</span>
-            </div>
-          </div>
-        `;
-      });
-
-      currentRoom = room;
+  function setupRoom(room) {
+    renderLobby(room);
+    currentRoom = room;
 
       room.onMessage("gameState", (data) => {
         gamePhase = data.phase;
@@ -732,8 +744,35 @@ function startGame(gameId, name, existingPlayerId) {
         localStorage.setItem("playerName", newName);
         room.send("changeName", newName);
       });
-    })
-    .catch(() => {
-      document.getElementById("status").textContent = "Could not connect to the game.";
-    });
+  }
+
+  if (existingRoom) {
+    setupRoom(existingRoom);
+  } else {
+    const serverUrl = import.meta.env.DEV
+      ? "ws://localhost:2567"
+      : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
+    const client = new Client(serverUrl);
+    const joinOptions = { type: "player", name };
+    if (existingPlayerId) {
+      joinOptions.playerId = existingPlayerId;
+    }
+    myPlayerId = existingPlayerId;
+
+    joinWithRetry(client, gameId, joinOptions)
+      .then((room) => {
+        const statusEl = document.getElementById("status");
+        if (statusEl) statusEl.remove();
+
+        room.onMessage("playerId", (id) => {
+          myPlayerId = id;
+          localStorage.setItem(playerIdKey, id);
+        });
+
+        setupRoom(room);
+      })
+      .catch(() => {
+        document.getElementById("status").textContent = "Could not connect to the game.";
+      });
+  }
 }
