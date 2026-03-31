@@ -48,7 +48,7 @@ function createSidebar(gameId) {
 
   const scanLabel = document.createElement("div");
   scanLabel.className = "board-sidebar-element board-scan-label";
-  scanLabel.innerHTML = "Scan<br>to<br>join";
+  scanLabel.innerHTML = "Scan to join";
   playersCol.appendChild(scanLabel);
 
   sidebar.appendChild(playersCol);
