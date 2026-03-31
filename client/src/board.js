@@ -126,6 +126,30 @@ function updateInfoBarPlayers(players) {
   }
 }
 
+function updateBoardGameState(data) {
+  const container = document.getElementById("board-players-row");
+  if (!container) return;
+
+  if (data.phase === "playing") {
+    // Replace scan label with round card
+    const scanLabel = container.querySelector(".board-scan-label");
+    if (scanLabel) scanLabel.remove();
+
+    let roundCard = container.querySelector(".board-round-card");
+    if (!roundCard) {
+      roundCard = document.createElement("div");
+      roundCard.className = "board-round-card";
+      container.insertBefore(roundCard, container.firstChild);
+    }
+    roundCard.innerHTML = `<span>Round</span><span class="board-round-number">${data.currentRound}</span>`;
+  }
+
+  // Golden border on active player
+  for (const el of container.querySelectorAll(".board-player")) {
+    el.classList.toggle("active-player", el.dataset.playerId === data.activePlayerId);
+  }
+}
+
 export function initBoard(gameId) {
   const app = document.getElementById("app");
   app.style.width = "100%";
@@ -280,6 +304,9 @@ export function initBoard(gameId) {
       });
       room.onMessage("bananaHitBoard", (data) => {
         this.animateBananaHit(data.playerId, data.cellId);
+      });
+      room.onMessage("gameState", (data) => {
+        updateBoardGameState(data);
       });
     }
 
