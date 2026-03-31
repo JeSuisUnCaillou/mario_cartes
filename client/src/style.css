@@ -23,7 +23,7 @@ html, body, #app {
   align-items: center;
   background: #111;
   gap: 1vh;
-  padding: 1vh;
+  padding: 0 1vh;
   box-sizing: border-box;
   height: 100%;
 }
@@ -99,6 +99,7 @@ html, body, #app {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 15px;
 }
 
 .board-player-right {
@@ -191,7 +192,7 @@ html, body, #app {
 }
 
 .board-top-bar {
-  height: calc(20vh - 2vh);
+  height: calc(18vh + 30px + 1vh);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
