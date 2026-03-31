@@ -113,15 +113,15 @@ describe("cardItemPositions", () => {
   it("returns top-left and bottom-right for 2 items", () => {
     const positions = cardItemPositions(2);
     expect(positions).toHaveLength(2);
-    expect(positions[0]).toEqual({ x: "28%", y: "30%" });
-    expect(positions[1]).toEqual({ x: "72%", y: "70%" });
+    expect(positions[0]).toEqual({ x: "35%", y: "38%" });
+    expect(positions[1]).toEqual({ x: "65%", y: "62%" });
   });
 
   it("returns top-left, middle-right, bottom-left for 3 items", () => {
     const positions = cardItemPositions(3);
     expect(positions).toHaveLength(3);
-    expect(positions[0]).toEqual({ x: "28%", y: "25%" });
-    expect(positions[1]).toEqual({ x: "72%", y: "50%" });
-    expect(positions[2]).toEqual({ x: "28%", y: "75%" });
+    expect(positions[0]).toEqual({ x: "35%", y: "30%" });
+    expect(positions[1]).toEqual({ x: "65%", y: "50%" });
+    expect(positions[2]).toEqual({ x: "35%", y: "70%" });
   });
 });

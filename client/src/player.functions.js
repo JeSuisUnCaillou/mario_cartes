@@ -22,7 +22,7 @@ export function normalizeName(raw) {
 
 export function cardItemPositions(itemCount) {
   if (itemCount === 1) return [{ x: "50%", y: "50%" }];
-  if (itemCount === 2) return [{ x: "28%", y: "30%" }, { x: "72%", y: "70%" }];
-  if (itemCount === 3) return [{ x: "28%", y: "25%" }, { x: "72%", y: "50%" }, { x: "28%", y: "75%" }];
+  if (itemCount === 2) return [{ x: "35%", y: "38%" }, { x: "65%", y: "62%" }];
+  if (itemCount === 3) return [{ x: "35%", y: "30%" }, { x: "65%", y: "50%" }, { x: "35%", y: "70%" }];
   return [];
 }
