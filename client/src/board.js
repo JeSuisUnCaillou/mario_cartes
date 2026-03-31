@@ -22,6 +22,7 @@ const CELL_POSITIONS = [
 
 const SVG_ASPECT = 131.0025 / 104.54418;
 let boardPhase = "lobby";
+let latestPlayersData = [];
 
 function createInfoBar(gameId) {
   const bar = document.createElement("div");
@@ -67,6 +68,7 @@ function createInfoBar(gameId) {
 }
 
 function updateInfoBarPlayers(players) {
+  latestPlayersData = players;
   const container = document.getElementById("board-players-row");
   if (!container) return;
 
@@ -153,6 +155,9 @@ function updateBoardGameState(data) {
     roundCard.innerHTML = `<span>Round</span><span class="board-round-number">${data.currentRound}</span>`;
 
   }
+
+  // Re-render player info with correct phase
+  updateInfoBarPlayers(latestPlayersData);
 
   // Golden border on active player
   for (const el of container.querySelectorAll(".board-player")) {
