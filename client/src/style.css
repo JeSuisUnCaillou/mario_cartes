@@ -260,8 +260,6 @@ html, body, #app {
   width: var(--river-card-w);
   aspect-ratio: 54 / 86;
   border-radius: 6px;
-  box-sizing: border-box;
-  border: 2px solid transparent;
 }
 
 .river-deck-img {
@@ -269,8 +267,8 @@ html, body, #app {
 }
 
 .river-deck-empty {
-  border-color: #555;
-  border-style: dashed;
+  outline: 2px dashed #555;
+  outline-offset: -2px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -302,8 +300,6 @@ html, body, #app {
   border-radius: 6px;
   position: relative;
   overflow: hidden;
-  box-sizing: border-box;
-  border: 2px solid transparent;
 }
 
 .river-card .card-bg {
@@ -321,8 +317,8 @@ html, body, #app {
 }
 
 .river-slot-empty {
-  border-color: #444;
-  border-style: dashed;
+  outline: 2px dashed #444;
+  outline-offset: -2px;
   background: transparent;
 }
 
@@ -394,7 +390,7 @@ html, body, #app {
 }
 
 .board-rivers .river-slot-empty {
-  border-width: 1px;
+  outline-width: 1px;
 }
 
 .board-game {
