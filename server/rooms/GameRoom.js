@@ -342,7 +342,7 @@ class GameRoom extends Room {
           if (!player.connected && this.activePlayerId === info.playerId) {
             this._advanceTurn();
           }
-        }, 3000);
+        }, DISPOSE_DELAY_MS);
       }
     }
     this.clientsInfo.delete(client.sessionId);
