@@ -32,46 +32,50 @@ const SVG_ASPECT = 131.0025 / 104.54418;
 let boardPhase = "lobby";
 let latestPlayersData = [];
 
-function createInfoBar(gameId) {
-  const bar = document.createElement("div");
-  bar.className = "board-info-bar";
+function createSidebar(gameId) {
+  const sidebar = document.createElement("div");
+  sidebar.className = "board-sidebar";
 
   const qrContainer = document.createElement("div");
   qrContainer.className = "board-qr";
   const qrCanvas = document.createElement("canvas");
   qrContainer.appendChild(qrCanvas);
-  bar.appendChild(qrContainer);
+  sidebar.appendChild(qrContainer);
 
-  const rightSide = document.createElement("div");
-  rightSide.className = "board-info-right";
+  const playersCol = document.createElement("div");
+  playersCol.className = "board-sidebar-players";
+  playersCol.id = "board-players-row";
 
-  const titleContainer = document.createElement("div");
-  titleContainer.className = "board-title";
+  const scanLabel = document.createElement("div");
+  scanLabel.className = "board-sidebar-element board-scan-label";
+  scanLabel.innerHTML = "Scan<br>to<br>join";
+  playersCol.appendChild(scanLabel);
+
+  sidebar.appendChild(playersCol);
+
+  const playerUrl = `${location.origin}/game/${gameId}/player`;
+  const sidebarWidth = Math.round(window.innerHeight * 0.18);
+  QRCode.toCanvas(qrCanvas, playerUrl, {
+    width: sidebarWidth,
+    margin: 0,
+  });
+
+  return sidebar;
+}
+
+function createTopBar() {
+  const bar = document.createElement("div");
+  bar.className = "board-top-bar";
+
   const title = document.createElement("div");
   title.className = "board-title-name";
   title.textContent = "Mario Cartes";
-  titleContainer.appendChild(title);
-  rightSide.appendChild(titleContainer);
+  bar.appendChild(title);
 
-  const playersRow = document.createElement("div");
-  playersRow.className = "board-info-players";
-  playersRow.id = "board-players-row";
-
-  const scanLabel = document.createElement("div");
-  scanLabel.className = "board-top-element board-scan-label";
-  scanLabel.innerHTML = "Scan<br>to<br>join";
-  playersRow.appendChild(scanLabel);
-
-  rightSide.appendChild(playersRow);
-
-  bar.appendChild(rightSide);
-
-  const playerUrl = `${location.origin}/game/${gameId}/player`;
-  const qrSize = Math.round(window.innerHeight * 0.18);
-  QRCode.toCanvas(qrCanvas, playerUrl, {
-    width: qrSize,
-    margin: 0,
-  });
+  const riversContainer = document.createElement("div");
+  riversContainer.className = "board-rivers";
+  riversContainer.id = "board-rivers";
+  bar.appendChild(riversContainer);
 
   return bar;
 }
@@ -98,7 +102,7 @@ function updateInfoBarPlayers(players) {
     let el = existingEls.get(p.playerId);
     if (!el) {
       el = document.createElement("div");
-      el.className = "board-top-element board-player";
+      el.className = "board-sidebar-element board-player";
       el.dataset.playerId = p.playerId;
 
       const name = document.createElement("div");
@@ -174,7 +178,7 @@ function updateBoardGameState(data) {
     let roundCard = container.querySelector(".board-round-card");
     if (!roundCard) {
       roundCard = document.createElement("div");
-      roundCard.className = "board-top-element board-round-card";
+      roundCard.className = "board-sidebar-element board-round-card";
       container.insertBefore(roundCard, container.firstChild);
     }
     roundCard.innerHTML = `<span>Round</span><span class="board-round-number">${data.currentRound}</span>`;
@@ -266,21 +270,18 @@ export function initBoard(gameId) {
   app.style.height = "100%";
 
   app.classList.add("board-layout");
-  app.appendChild(createInfoBar(gameId));
+  app.appendChild(createSidebar(gameId));
 
-  const mainContainer = document.createElement("div");
-  mainContainer.className = "board-main";
+  const rightSide = document.createElement("div");
+  rightSide.className = "board-right";
 
-  const riversContainer = document.createElement("div");
-  riversContainer.className = "board-rivers";
-  riversContainer.id = "board-rivers";
-  mainContainer.appendChild(riversContainer);
+  rightSide.appendChild(createTopBar());
 
   const gameContainer = document.createElement("div");
   gameContainer.className = "board-game";
-  mainContainer.appendChild(gameContainer);
+  rightSide.appendChild(gameContainer);
 
-  app.appendChild(mainContainer);
+  app.appendChild(rightSide);
 
   const serverUrl = import.meta.env.DEV
     ? "ws://localhost:2567"
