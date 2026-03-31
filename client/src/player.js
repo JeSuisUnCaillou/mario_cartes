@@ -470,16 +470,24 @@ function closeBuyModal() {
 function updatePlayZone() {
   const playZone = document.getElementById("play-zone");
   const endTurnContainer = document.getElementById("end-turn-container");
-  if (!playZone || playZone.classList.contains("banana-hit")) return;
+  if (!playZone) return;
   // Ensure end-turn button exists (create once, toggle visibility)
   if (endTurnContainer && !document.getElementById("end-turn-btn")) {
     endTurnContainer.innerHTML = `<button id="end-turn-btn" class="end-turn-btn">End turn</button>`;
     document.getElementById("end-turn-btn").addEventListener("click", () => {
-      if (playing || animating) return;
+      if (playing || animating || pendingDiscards > 0) return;
       if (currentRoom) currentRoom.send("endTurn");
     });
   }
   const endTurnBtn = document.getElementById("end-turn-btn");
+  if (playZone.classList.contains("banana-hit")) {
+    if (endTurnBtn) {
+      endTurnBtn.style.visibility = "";
+      endTurnBtn.disabled = true;
+      endTurnBtn.classList.add("disabled");
+    }
+    return;
+  }
   if (activePlayerId !== myPlayerId) {
     playZone.classList.add("waiting");
     playZone.innerHTML = `<span class="play-zone-label">Wait for your turn to play</span>`;
@@ -487,7 +495,11 @@ function updatePlayZone() {
   } else {
     playZone.classList.remove("waiting");
     playZone.innerHTML = `<span class="play-zone-label">Drag a card here to play it</span>`;
-    if (endTurnBtn) endTurnBtn.style.visibility = "";
+    if (endTurnBtn) {
+      endTurnBtn.style.visibility = "";
+      endTurnBtn.disabled = false;
+      endTurnBtn.classList.remove("disabled");
+    }
   }
 }
 
@@ -756,6 +768,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
               <img src="/banana.svg" class="play-zone-banana" />
               <span class="play-zone-label">Banana! Drag a card here to discard it.</span>
             `;
+            updatePlayZone();
           }
           return;
         }
@@ -883,6 +896,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           <img src="/banana.svg" class="play-zone-banana" />
           <span class="play-zone-label"><h2>Banana!</h2><br />Drag a card here to discard it.</span>
         `;
+        updatePlayZone();
       });
 
       room.onMessage("cardDiscarded", (data) => {

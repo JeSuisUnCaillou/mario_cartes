@@ -582,6 +582,12 @@ input {
   color: #fff;
 }
 
+.end-turn-btn.disabled {
+  background: #666;
+  color: #999;
+  cursor: not-allowed;
+}
+
 .coin-display {
   display: flex;
   flex-wrap: wrap;
