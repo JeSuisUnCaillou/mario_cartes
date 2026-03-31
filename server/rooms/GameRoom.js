@@ -328,11 +328,13 @@ class GameRoom extends Room {
 
   _endTurnAndAdvance(player) {
     player.coins = 0;
-    if (player.hand.length === 0) {
-      const drawResult = this._drawCards(player);
-      this._sendToPlayer(player.playerId, "cardsDrawn", drawResult);
-      this.broadcastPlayers();
+    // Discard remaining hand cards
+    if (player.hand.length > 0) {
+      player.discardPile.push(...player.hand.splice(0));
     }
+    const drawResult = this._drawCards(player);
+    this._sendToPlayer(player.playerId, "cardsDrawn", drawResult);
+    this.broadcastPlayers();
     player.hasPlayedAllCards = false;
     this._advanceTurn();
   }
