@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="24.052025mm"
-   height="17.352823mm"
-   viewBox="0 0 24.052025 17.352823"
+   width="25.052mm"
+   height="18.353001mm"
+   viewBox="0 0 25.052 18.353"
    version="1.1"
    id="svg10322"
    inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
@@ -25,8 +25,8 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="5.5479427"
-     inkscape:cx="16.582723"
-     inkscape:cy="20.458034"
+     inkscape:cx="15.320995"
+     inkscape:cy="20.638281"
      inkscape:window-width="1854"
      inkscape:window-height="1131"
      inkscape:window-x="66"
@@ -119,14 +119,14 @@
        style="stroke-width:0.5;stroke-dasharray:none">
       <g
          id="g2359"
-         transform="matrix(2.0200822,0,0,2.0200822,-19.653094,-45.370792)">
+         transform="matrix(2.0200822,0,0,2.0200822,-19.153107,-44.870703)">
         <path
            id="rect1071"
-           style="fill:#928800;fill-opacity:1;stroke:#000000;stroke-width:0.518348;stroke-linecap:round;stroke-linejoin:round"
+           style="fill:#928800;fill-opacity:1;stroke:#000000;stroke-width:0.39602349;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
            d="M 26.307378,44.095002 H 14.919443 l 0.0021,1.881539 c -0.0029,1.150444 1.078825,2.157466 2.839103,2.703194 1.760392,0.545515 3.931244,0.546697 5.693709,0.0031 1.762459,-0.543374 2.848645,-1.54878 2.850989,-2.702677 z"
            sodipodi:nodetypes="ccccccc" />
         <ellipse
-           style="fill:#f6e500;fill-opacity:1;stroke:#000000;stroke-width:0.526456;stroke-linecap:round;stroke-linejoin:round"
+           style="fill:#f6e500;fill-opacity:1;stroke:#000000;stroke-width:0.39602349;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none"
            id="path1015"
            cx="20.613218"
            cy="44.06776"
