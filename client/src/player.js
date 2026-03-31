@@ -60,6 +60,8 @@ let gamePhase = "lobby";
 let isReady = false;
 let myPlayerId = null;
 let activePlayerId = null;
+let latestRivers = null;
+let currentCoins = 0;
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -409,6 +411,95 @@ function updatePiles({ drawCount, discardCount, discardTopCard }) {
   updatePileCount("discard-count", discardCount);
 }
 
+function updateBuyButton() {
+  const container = document.getElementById("buy-btn-container");
+  if (!container) return;
+  const isMyTurn = activePlayerId === myPlayerId;
+  if (isMyTurn && latestRivers) {
+    if (!document.getElementById("buy-btn")) {
+      container.innerHTML = `<button id="buy-btn" class="buy-btn">Buy cards</button>`;
+      document.getElementById("buy-btn").addEventListener("click", openBuyModal);
+    }
+    container.style.display = "";
+  } else {
+    container.style.display = "none";
+  }
+}
+
+function openBuyModal() {
+  if (document.querySelector(".buy-modal")) return;
+  const overlay = document.createElement("div");
+  overlay.className = "buy-modal";
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeBuyModal();
+  });
+
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "buy-modal-close";
+  closeBtn.textContent = "✕";
+  closeBtn.addEventListener("click", closeBuyModal);
+  overlay.appendChild(closeBtn);
+
+  const content = document.createElement("div");
+  content.className = "buy-modal-content";
+  overlay.appendChild(content);
+
+  document.body.appendChild(overlay);
+  renderBuyModal();
+}
+
+function renderBuyModal() {
+  const content = document.querySelector(".buy-modal-content");
+  if (!content || !latestRivers) return;
+  content.innerHTML = "";
+  for (const river of latestRivers) {
+    const row = document.createElement("div");
+    row.className = "buy-modal-river";
+
+    const costLabel = document.createElement("div");
+    costLabel.className = "buy-modal-cost";
+    costLabel.innerHTML = `<span>${river.cost}</span><img src="/coin.svg" class="buy-modal-cost-icon" />`;
+    row.appendChild(costLabel);
+
+    const slotsContainer = document.createElement("div");
+    slotsContainer.className = "buy-modal-slots";
+    for (const card of river.slots) {
+      if (card) {
+        const cardEl = createCardElement(card);
+        cardEl.className = "buy-modal-card";
+        cardEl.dataset.cardId = card.id;
+        if (currentCoins < river.cost) {
+          cardEl.classList.add("unaffordable");
+        } else {
+          cardEl.addEventListener("click", () => {
+            if (currentRoom) {
+              currentRoom.send("buyCard", { riverId: river.id, cardId: card.id });
+            }
+          });
+        }
+        slotsContainer.appendChild(cardEl);
+      } else {
+        const empty = document.createElement("div");
+        empty.className = "buy-modal-card buy-modal-empty";
+        slotsContainer.appendChild(empty);
+      }
+    }
+    row.appendChild(slotsContainer);
+
+    const deckCount = document.createElement("div");
+    deckCount.className = "buy-modal-deck-count";
+    deckCount.textContent = river.deckCount;
+    row.appendChild(deckCount);
+
+    content.appendChild(row);
+  }
+}
+
+function closeBuyModal() {
+  const modal = document.querySelector(".buy-modal");
+  if (modal) modal.remove();
+}
+
 function updatePlayZone() {
   const playZone = document.getElementById("play-zone");
   const endTurnContainer = document.getElementById("end-turn-container");
@@ -434,6 +525,7 @@ function updatePlayZone() {
 }
 
 function updateCoinDisplay(coins) {
+  currentCoins = coins;
   const coinDisplay = document.getElementById("coin-display");
   if (!coinDisplay) return;
   coinDisplay.innerHTML = "";
@@ -443,6 +535,7 @@ function updateCoinDisplay(coins) {
     img.className = "coin-icon";
     coinDisplay.appendChild(img);
   }
+  updateBuyButton();
 }
 
 async function joinWithRetry(client, gameId, options, maxAttempts = 30, delayMs = 2000) {
@@ -588,6 +681,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           <span class="play-zone-label">Drag a card here to play it</span>
         </div>
         <div id="coin-display" class="coin-display"></div>
+        <div id="buy-btn-container" class="buy-btn-container" style="display:none"></div>
         <div class="cards-zone">
           <div id="draw-pile" class="draw-pile">
             <div id="draw-pile-content"></div>
@@ -618,6 +712,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
       room.onMessage("gameState", (data) => {
         gamePhase = data.phase;
         activePlayerId = data.activePlayerId;
+        if (data.rivers) latestRivers = data.rivers;
         if (data.phase === "playing") {
           const lobbyZone = document.getElementById("lobby-zone");
           const gameZone = document.getElementById("game-zone");
@@ -627,7 +722,9 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           }
         }
         updatePlayZone();
+        updateBuyButton();
         updateCoinDisplay(0);
+        if (document.querySelector(".buy-modal")) renderBuyModal();
       });
 
       room.onMessage("players", (players) => {
@@ -820,6 +917,44 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           const playZone = document.getElementById("play-zone");
           playZone.classList.remove("banana-hit");
           updatePlayZone();
+        }
+      });
+
+      room.onMessage("cardBought", (data) => {
+        ensureCardElements(data.deck);
+        currentCoins = data.coins;
+        updateCoinDisplay(data.coins);
+        updatePiles(data);
+        updateBuyButton();
+
+        // Animate bought card from modal to discard pile
+        const modal = document.querySelector(".buy-modal");
+        const discardEl = document.getElementById("discard-pile");
+        if (modal && discardEl) {
+          const boughtEl = modal.querySelector(`[data-card-id="${data.cardId}"]`);
+          if (boughtEl) {
+            const srcRect = boughtEl.getBoundingClientRect();
+            const discardRect = discardEl.getBoundingClientRect();
+            const clone = boughtEl.cloneNode(true);
+            clone.style.position = "fixed";
+            clone.style.left = srcRect.left + "px";
+            clone.style.top = srcRect.top + "px";
+            clone.style.width = srcRect.width + "px";
+            clone.style.height = srcRect.height + "px";
+            clone.style.zIndex = "200";
+            clone.style.margin = "0";
+            clone.style.transition = "all 0.3s ease-in-out";
+            document.body.appendChild(clone);
+            requestAnimationFrame(() => {
+              clone.style.left = (discardRect.left + discardRect.width / 2 - 25) + "px";
+              clone.style.top = discardRect.top + "px";
+              clone.style.width = "50px";
+              clone.style.height = "auto";
+              clone.addEventListener("transitionend", () => clone.remove(), { once: true });
+            });
+          }
+          // Re-render modal with updated rivers and coins
+          if (latestRivers) renderBuyModal();
         }
       });
 
