@@ -30,10 +30,6 @@ function createInfoBar(gameId) {
   qrContainer.className = "board-qr";
   const qrCanvas = document.createElement("canvas");
   qrContainer.appendChild(qrCanvas);
-  const qrLabel = document.createElement("div");
-  qrLabel.className = "board-qr-label";
-  qrLabel.textContent = "Scan to join";
-  qrContainer.appendChild(qrLabel);
   bar.appendChild(qrContainer);
 
   const rightSide = document.createElement("div");
@@ -50,6 +46,12 @@ function createInfoBar(gameId) {
   const playersRow = document.createElement("div");
   playersRow.className = "board-info-players";
   playersRow.id = "board-players-row";
+
+  const scanLabel = document.createElement("div");
+  scanLabel.className = "board-scan-label";
+  scanLabel.innerHTML = "Scan<br>to<br>join";
+  playersRow.appendChild(scanLabel);
+
   rightSide.appendChild(playersRow);
 
   bar.appendChild(rightSide);
