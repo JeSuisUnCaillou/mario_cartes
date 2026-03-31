@@ -570,6 +570,28 @@ describe("Mushroom movement and banana collision", () => {
     room.leave();
   });
 
+  it("banana-only card broadcasts cellOccupants to board", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["banana"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    const bananaCard = cards.hand.find((c) => c.items.length === 1 && c.items[0] === "banana");
+    expect(bananaCard).toBeDefined();
+    room.send("playCard", { cardId: bananaCard.id });
+    await waitForMessage(room, "cardPlayed");
+    // Board should receive cellOccupants with a banana on cell 1
+    const occupants = await waitForMessage(board, "cellOccupants", (co) =>
+      co[1] && co[1].includes("banana"),
+    );
+    expect(occupants[1]).toContain("banana");
+    room.leave();
+    board.leave();
+  });
+
   it("player moving through a banana cell triggers discard", async () => {
     const roomId = await createRoom(baseUrl, {
       _testDeck: [["banana"], ["mushroom"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],

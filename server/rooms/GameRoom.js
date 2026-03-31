@@ -259,6 +259,7 @@ class GameRoom extends Room {
       }
 
       player.discardPile.push(card);
+      if (droppedBanana !== null) this.broadcastCellOccupants();
       client.send("cardPlayed", { cardId: card.id, droppedBanana, coinGained, ...this._cardState(player) });
       this.broadcastPlayers();
 
