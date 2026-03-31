@@ -91,6 +91,7 @@ class GameRoom extends Room {
       if (player.hand.length > 0) return;
       if (player.pendingBananaDiscards > 0) return;
       client.send("cardsDrawn", this._drawCards(player));
+      this.broadcastPlayers();
     });
 
     this.onMessage("playCard", (client, data) => {
@@ -164,6 +165,7 @@ class GameRoom extends Room {
         remaining: player.pendingBananaDiscards,
         ...this._cardState(player),
       });
+      this.broadcastPlayers();
     });
   }
 
