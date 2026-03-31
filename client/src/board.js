@@ -43,22 +43,16 @@ function createInfoBar(gameId) {
   titleContainer.appendChild(title);
   rightSide.appendChild(titleContainer);
 
-  const playersArea = document.createElement("div");
-  playersArea.className = "board-players-area";
-
-  const scanLabel = document.createElement("div");
-  scanLabel.className = "board-scan-label";
-  playersArea.appendChild(scanLabel);
-
   const playersRow = document.createElement("div");
   playersRow.className = "board-info-players";
   playersRow.id = "board-players-row";
-  playersArea.appendChild(playersRow);
 
-  // Set scan label text after layout so we can measure its width for the right margin
+  const scanLabel = document.createElement("div");
+  scanLabel.className = "board-scan-label";
   scanLabel.innerHTML = "Scan<br>to<br>join";
+  playersRow.appendChild(scanLabel);
 
-  rightSide.appendChild(playersArea);
+  rightSide.appendChild(playersRow);
 
   bar.appendChild(rightSide);
 
