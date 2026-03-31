@@ -232,6 +232,8 @@ class GameRoom extends Room {
         this._addToCell(1, playerId);
         this.clientsInfo.set(client.sessionId, { type: "player", playerId });
         client.send("playerId", playerId);
+      } else {
+        client.send("gameAlreadyStarted");
       }
     } else {
       this.clientsInfo.set(client.sessionId, { type });
