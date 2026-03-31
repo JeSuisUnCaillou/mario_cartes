@@ -105,22 +105,26 @@ function updateInfoBarPlayers(players) {
       el.className = "board-sidebar-element board-player";
       el.dataset.playerId = p.playerId;
 
+      const left = document.createElement("div");
+      left.className = "board-player-left";
       const name = document.createElement("div");
       name.className = "board-player-name";
-      el.appendChild(name);
-
+      left.appendChild(name);
       const helmet = document.createElement("img");
       helmet.className = "board-player-helmet";
       helmet.src = "/helmet.svg";
-      el.appendChild(helmet);
+      left.appendChild(helmet);
+      el.appendChild(left);
 
+      const right = document.createElement("div");
+      right.className = "board-player-right";
       const status = document.createElement("div");
       status.className = "board-player-status";
-      el.appendChild(status);
-
+      right.appendChild(status);
       const coins = document.createElement("div");
       coins.className = "board-player-coins";
-      el.appendChild(coins);
+      right.appendChild(coins);
+      el.appendChild(right);
 
       container.appendChild(el);
     }
