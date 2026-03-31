@@ -21,6 +21,7 @@ const CELL_POSITIONS = [
 ];
 
 const SVG_ASPECT = 131.0025 / 104.54418;
+let boardPhase = "lobby";
 
 function createInfoBar(gameId) {
   const bar = document.createElement("div");
@@ -111,7 +112,8 @@ function updateInfoBarPlayers(players) {
 
     el.classList.toggle("disconnected", !p.connected);
     el.querySelector(".board-player-name").textContent = p.name || "???";
-    el.querySelector(".board-player-ready").textContent = p.ready ? "✅" : "";
+    const readyEl = el.querySelector(".board-player-ready");
+    readyEl.textContent = (boardPhase === "lobby" && p.ready) ? "✅" : "";
 
     const cardsContainer = el.querySelector(".board-player-cards");
     const currentCount = cardsContainer.children.length;
@@ -135,6 +137,8 @@ function updateBoardGameState(data) {
   const container = document.getElementById("board-players-row");
   if (!container) return;
 
+  boardPhase = data.phase;
+
   if (data.phase === "playing") {
     // Replace scan label with round card
     const scanLabel = container.querySelector(".board-scan-label");
@@ -148,9 +152,9 @@ function updateBoardGameState(data) {
     }
     roundCard.innerHTML = `<span>Round</span><span class="board-round-number">${data.currentRound}</span>`;
 
-    // Remove ready indicators
+    // Clear ready indicators
     for (const el of container.querySelectorAll(".board-player-ready")) {
-      el.remove();
+      el.textContent = "";
     }
   }
 
