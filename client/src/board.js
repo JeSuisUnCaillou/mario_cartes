@@ -106,9 +106,14 @@ function updateInfoBarPlayers(players) {
     const currentCount = cardsContainer.children.length;
     if (currentCount !== p.handCount) {
       cardsContainer.innerHTML = "";
-      for (let i = 0; i < p.handCount; i++) {
+      const n = p.handCount;
+      for (let i = 0; i < n; i++) {
         const cardImg = document.createElement("img");
         cardImg.src = "/card - back.svg";
+        const offset = i - (n - 1) / 2;
+        const rotation = offset * 10;
+        const lift = Math.abs(offset) * 3;
+        cardImg.style.transform = `rotate(${rotation}deg) translateY(${lift}px)`;
         cardsContainer.appendChild(cardImg);
       }
     }

@@ -85,14 +85,17 @@ html, body, #app {
 
 .board-player-cards {
   display: flex;
-  gap: 1px;
   justify-content: center;
+  height: 28px;
+  align-items: flex-end;
 }
 
 .board-player-cards img {
   width: 14px;
   height: auto;
   opacity: 0.8;
+  margin-left: -4px;
+  transform-origin: bottom center;
 }
 
 .board-game {
