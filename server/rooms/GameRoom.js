@@ -18,6 +18,47 @@ class GameRoom extends Room {
     return this._shuffle(cards);
   }
 
+  _createRiverDecks() {
+    if (this._testRiverDecks) {
+      return this._testRiverDecks.map((river, i) => {
+        const cards = river.map((items) => ({ id: randomUUID(), items }));
+        return {
+          id: i,
+          cost: [1, 3, 5][i],
+          deck: cards.slice(3),
+          slots: cards.slice(0, 3),
+        };
+      });
+    }
+    const riverDefs = [
+      [["coin"], ["coin"], ["mushroom"], ["mushroom"], ["banana"], ["banana"]],
+      [["coin", "mushroom"], ["coin", "banana"], ["mushroom", "banana"], ["mushroom", "mushroom"], ["banana", "banana"], ["banana", "banana"]],
+      [["banana", "banana", "mushroom"], ["banana", "banana", "coin"], ["coin", "coin", "mushroom"], ["coin", "coin", "banana"]],
+    ];
+    return riverDefs.map((def, i) => {
+      const cards = this._shuffle(def.map((items) => ({ id: randomUUID(), items })));
+      return {
+        id: i,
+        cost: [1, 3, 5][i],
+        deck: cards.slice(3),
+        slots: cards.slice(0, 3),
+      };
+    });
+  }
+
+  _riverState() {
+    return this.rivers.map((r) => ({
+      id: r.id,
+      cost: r.cost,
+      slots: r.slots,
+      deckCount: r.deck.length,
+    }));
+  }
+
+  broadcastRivers() {
+    this.broadcast("rivers", this._riverState());
+  }
+
   _shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -79,6 +120,7 @@ class GameRoom extends Room {
       this.roomId = options._roomId;
     }
     this._testDeck = options._testDeck || null;
+    this._testRiverDecks = options._testRiverDecks || null;
     this.autoDispose = false;
     this._disposeTimer = null;
     this.clientsInfo = new Map();
@@ -215,6 +257,26 @@ class GameRoom extends Room {
       if (player.pendingBananaDiscards > 0) return;
       this._endTurnAndAdvance(player);
     });
+
+    this.onMessage("buyCard", (client, data) => {
+      const player = this._getPlayer(client);
+      if (!player) return;
+      if (this.phase !== "playing") return;
+      if (player.playerId !== this.activePlayerId) return;
+      if (player.pendingBananaDiscards > 0) return;
+      const river = this.rivers.find((r) => r.id === data.riverId);
+      if (!river) return;
+      const slotIndex = river.slots.findIndex((c) => c && c.id === data.cardId);
+      if (slotIndex === -1) return;
+      if (player.coins < river.cost) return;
+      player.coins -= river.cost;
+      const card = river.slots[slotIndex];
+      player.discardPile.push(card);
+      river.slots[slotIndex] = river.deck.length > 0 ? river.deck.shift() : null;
+      client.send("cardBought", { cardId: card.id, riverId: river.id, slotIndex, ...this._cardState(player) });
+      this.broadcastRivers();
+      this.broadcastPlayers();
+    });
   }
 
   _getPlayer(client) {
@@ -259,6 +321,7 @@ class GameRoom extends Room {
     this.broadcastPlayers();
     this.broadcastCellOccupants();
     this.broadcastGameState();
+    if (this.rivers) this.broadcastRivers();
   }
 
   onLeave(client) {
@@ -327,6 +390,7 @@ class GameRoom extends Room {
     this.currentRound = 1;
     this.turnIndex = 0;
     this.activePlayerId = Array.from(this.players.keys())[0];
+    this.rivers = this._createRiverDecks();
 
     // Deal initial hand to all players
     for (const [playerId, player] of this.players) {
@@ -336,6 +400,7 @@ class GameRoom extends Room {
 
     this.broadcastGameState();
     this.broadcastPlayers();
+    this.broadcastRivers();
   }
 
   _endTurnAndAdvance(player) {

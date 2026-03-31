@@ -673,3 +673,224 @@ describe("Mushroom movement and banana collision", () => {
     room2.leave();
   });
 });
+
+describe("Card buying (rivers)", () => {
+  it("rivers are broadcast on game start with correct structure", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
+    const rivers = await waitForMessage(board, "rivers");
+    expect(rivers).toHaveLength(3);
+    expect(rivers[0].cost).toBe(1);
+    expect(rivers[1].cost).toBe(3);
+    expect(rivers[2].cost).toBe(5);
+    for (const river of rivers) {
+      expect(river.slots).toHaveLength(3);
+      for (const card of river.slots) {
+        expect(card).toHaveProperty("id");
+        expect(card).toHaveProperty("items");
+      }
+      expect(river).toHaveProperty("deckCount");
+    }
+    room.leave();
+    board.leave();
+  });
+
+  it("rivers are broadcast on reconnect", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
+    await waitForMessage(board, "rivers");
+    board.leave();
+    const { room: board2 } = await connectBoard(baseUrl, roomId);
+    const rivers = await waitForMessage(board2, "rivers");
+    expect(rivers).toHaveLength(3);
+    room.leave();
+    board2.leave();
+  });
+
+  it("buyCard succeeds with enough coins", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+      _testRiverDecks: [
+        [["mushroom"], ["banana"], ["coin"], ["mushroom"], ["banana"], ["coin"]],
+        [["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"], ["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"]],
+        [["mushroom", "mushroom", "mushroom"], ["banana", "banana", "banana"], ["coin", "coin", "coin"], ["mushroom", "mushroom", "mushroom"]],
+      ],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    const rivers = await waitForMessage(board, "rivers");
+
+    // Play a coin card to earn 1 coin
+    room.send("playCard", { cardId: cards.hand[0].id });
+    await waitForMessage(room, "cardPlayed");
+
+    const river0Card = rivers[0].slots[0];
+    room.send("buyCard", { riverId: 0, cardId: river0Card.id });
+    const bought = await waitForMessage(room, "cardBought");
+    expect(bought.cardId).toBe(river0Card.id);
+    expect(bought.coins).toBe(0); // 1 coin earned - 1 spent
+    expect(bought.deck.some((c) => c.id === river0Card.id)).toBe(true);
+    room.leave();
+    board.leave();
+  });
+
+  it("buyCard deducts correct amount of coins", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+      _testRiverDecks: [
+        [["mushroom"], ["banana"], ["coin"], ["mushroom"], ["banana"], ["coin"]],
+        [["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"], ["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"]],
+        [["mushroom", "mushroom", "mushroom"], ["banana", "banana", "banana"], ["coin", "coin", "coin"], ["mushroom", "mushroom", "mushroom"]],
+      ],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    const rivers = await waitForMessage(board, "rivers");
+
+    // Play 3 coin cards to earn 3 coins
+    room.send("playCard", { cardId: cards.hand[0].id });
+    await waitForMessage(room, "cardPlayed");
+    room.send("playCard", { cardId: cards.hand[1].id });
+    await waitForMessage(room, "cardPlayed");
+    room.send("playCard", { cardId: cards.hand[2].id });
+    await waitForMessage(room, "cardPlayed");
+
+    const river0Card = rivers[0].slots[0];
+    room.send("buyCard", { riverId: 0, cardId: river0Card.id });
+    const bought = await waitForMessage(room, "cardBought");
+    expect(bought.coins).toBe(2); // 3 - 1 = 2
+    room.leave();
+    board.leave();
+  });
+
+  it("buyCard fails with insufficient coins", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+      _testRiverDecks: [
+        [["mushroom"], ["banana"], ["coin"], ["mushroom"], ["banana"], ["coin"]],
+        [["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"], ["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"]],
+        [["mushroom", "mushroom", "mushroom"], ["banana", "banana", "banana"], ["coin", "coin", "coin"], ["mushroom", "mushroom", "mushroom"]],
+      ],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
+    await waitForMessage(room, "cardsDrawn");
+    const rivers = await waitForMessage(board, "rivers");
+
+    // Try to buy from river 1 (cost 3) with 0 coins
+    room.send("buyCard", { riverId: 1, cardId: rivers[1].slots[0].id });
+    // Should not receive cardBought — wait briefly and check buffer is empty
+    await new Promise((r) => setTimeout(r, 200));
+    const buffer = room._messageBuffers["cardBought"];
+    expect(buffer).toHaveLength(0);
+    room.leave();
+    board.leave();
+  });
+
+  it("buyCard fails when not player's turn", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+      _testRiverDecks: [
+        [["mushroom"], ["banana"], ["coin"], ["mushroom"], ["banana"], ["coin"]],
+        [["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"], ["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"]],
+        [["mushroom", "mushroom", "mushroom"], ["banana", "banana", "banana"], ["coin", "coin", "coin"], ["mushroom", "mushroom", "mushroom"]],
+      ],
+    });
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
+    await waitForMessage(room1, "cardsDrawn");
+    await waitForMessage(room2, "cardsDrawn");
+    const rivers = await waitForMessage(board, "rivers");
+
+    // Non-active player tries to buy
+    const inactiveRoom = gs.activePlayerId === id1 ? room2 : room1;
+    inactiveRoom.send("buyCard", { riverId: 0, cardId: rivers[0].slots[0].id });
+    await new Promise((r) => setTimeout(r, 200));
+    const buffer = inactiveRoom._messageBuffers["cardBought"];
+    expect(buffer).toHaveLength(0);
+    room1.leave();
+    room2.leave();
+    board.leave();
+  });
+
+  it("buyCard refills slot from deck", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+      _testRiverDecks: [
+        [["mushroom"], ["banana"], ["coin"], ["mushroom"], ["banana"], ["coin"]],
+        [["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"], ["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"]],
+        [["mushroom", "mushroom", "mushroom"], ["banana", "banana", "banana"], ["coin", "coin", "coin"], ["mushroom", "mushroom", "mushroom"]],
+      ],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    const initialRivers = await waitForMessage(board, "rivers");
+    expect(initialRivers[0].deckCount).toBe(3);
+
+    // Earn a coin and buy
+    room.send("playCard", { cardId: cards.hand[0].id });
+    await waitForMessage(room, "cardPlayed");
+    const boughtCardId = initialRivers[0].slots[0].id;
+    room.send("buyCard", { riverId: 0, cardId: boughtCardId });
+    await waitForMessage(room, "cardBought");
+
+    const updatedRivers = await waitForMessage(board, "rivers");
+    expect(updatedRivers[0].deckCount).toBe(2);
+    // The bought card should be replaced by a new one
+    expect(updatedRivers[0].slots[0]).not.toBeNull();
+    expect(updatedRivers[0].slots[0].id).not.toBe(boughtCardId);
+    room.leave();
+    board.leave();
+  });
+
+  it("buyCard leaves slot null when deck is empty", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+      _testRiverDecks: [
+        [["mushroom"], ["banana"], ["coin"]], // Only 3 cards, no deck reserve
+        [["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"]],
+        [["mushroom", "mushroom", "mushroom"], ["banana", "banana", "banana"], ["coin", "coin", "coin"]],
+      ],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    const initialRivers = await waitForMessage(board, "rivers");
+    expect(initialRivers[0].deckCount).toBe(0);
+
+    // Earn a coin and buy
+    room.send("playCard", { cardId: cards.hand[0].id });
+    await waitForMessage(room, "cardPlayed");
+    room.send("buyCard", { riverId: 0, cardId: initialRivers[0].slots[0].id });
+    await waitForMessage(room, "cardBought");
+
+    const updatedRivers = await waitForMessage(board, "rivers");
+    expect(updatedRivers[0].slots[0]).toBeNull();
+    expect(updatedRivers[0].deckCount).toBe(0);
+    room.leave();
+    board.leave();
+  });
+});
