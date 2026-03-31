@@ -233,6 +233,7 @@ class GameRoom extends Room {
       name: p.name,
       cellId: p.cellId,
       connected: p.connected,
+      handCount: p.hand.length,
     }));
     this.broadcast("players", players);
   }
