@@ -181,6 +181,38 @@ input {
   flex-shrink: 0;
 }
 
+.lobby-zone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.ready-btn {
+  font-size: 2em;
+  padding: 20px 40px;
+  font-weight: bold;
+}
+
+.ready-message {
+  font-size: 2em;
+  font-weight: bold;
+  color: #4CAF50;
+}
+
+.cancel-btn {
+  padding: 10px 20px;
+}
+
+.game-zone {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .play-zone {
   display: flex;
   align-items: center;

@@ -10,6 +10,9 @@ let animating = false;
 let animDrawCount = 0;
 let currentRoom = null;
 let pendingDiscards = 0;
+let gamePhase = "lobby";
+let isReady = false;
+let myPlayerId = null;
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -396,6 +399,31 @@ export function initPlayer(gameId) {
   });
 }
 
+function renderLobby(room) {
+  const lobbyZone = document.getElementById("lobby-zone");
+  if (!lobbyZone) return;
+  if (isReady) {
+    lobbyZone.innerHTML = `
+      <div class="ready-message">You are ready</div>
+      <button id="cancel-btn" class="cancel-btn">Cancel</button>
+    `;
+    document.getElementById("cancel-btn").addEventListener("click", () => {
+      isReady = false;
+      room.send("setReady", false);
+      renderLobby(room);
+    });
+  } else {
+    lobbyZone.innerHTML = `
+      <button id="ready-btn" class="ready-btn">READY</button>
+    `;
+    document.getElementById("ready-btn").addEventListener("click", () => {
+      isReady = true;
+      room.send("setReady", true);
+      renderLobby(room);
+    });
+  }
+}
+
 function startGame(gameId, name, existingPlayerId) {
   document.getElementById("app").innerHTML = `
     <div class="player-screen">
@@ -403,18 +431,21 @@ function startGame(gameId, name, existingPlayerId) {
         <input id="player-name" class="name-edit-input" type="text" maxlength="3" value="${name}" autocomplete="off" />
         <p id="status">Joining…</p>
       </div>
-      <div id="play-zone" class="play-zone">
-        <span class="play-zone-label">Drag a card here to play it</span>
-      </div>
-      <div class="cards-zone">
-        <div id="draw-pile" class="draw-pile">
-          <div id="draw-pile-content"></div>
-          <div class="pile-count" id="draw-count">8</div>
+      <div id="lobby-zone" class="lobby-zone"></div>
+      <div id="game-zone" class="game-zone" style="display: none;">
+        <div id="play-zone" class="play-zone">
+          <span class="play-zone-label">Drag a card here to play it</span>
         </div>
-        <div id="hand-area" class="hand-area"></div>
-        <div id="discard-pile" class="discard-pile">
-          <div id="discard-pile-content"></div>
-          <div class="pile-count" id="discard-count">0</div>
+        <div class="cards-zone">
+          <div id="draw-pile" class="draw-pile">
+            <div id="draw-pile-content"></div>
+            <div class="pile-count" id="draw-count">8</div>
+          </div>
+          <div id="hand-area" class="hand-area"></div>
+          <div id="discard-pile" class="discard-pile">
+            <div id="discard-pile-content"></div>
+            <div class="pile-count" id="discard-count">0</div>
+          </div>
         </div>
       </div>
     </div>
@@ -438,12 +469,12 @@ function startGame(gameId, name, existingPlayerId) {
   }
 
   const playerIdKey = `playerId:${gameId}`;
-  let myPlayerId = existingPlayerId;
+  myPlayerId = existingPlayerId;
 
   joinWithRetry(client, gameId, joinOptions)
     .then((room) => {
       document.getElementById("status").remove();
-      updatePiles({ drawCount: 8, discardCount: 0 });
+      renderLobby(room);
 
       room.onMessage("playerId", (id) => {
         myPlayerId = id;
@@ -451,6 +482,29 @@ function startGame(gameId, name, existingPlayerId) {
       });
 
       currentRoom = room;
+
+      room.onMessage("gameState", (data) => {
+        gamePhase = data.phase;
+        if (data.phase === "playing") {
+          const lobbyZone = document.getElementById("lobby-zone");
+          const gameZone = document.getElementById("game-zone");
+          if (lobbyZone) lobbyZone.style.display = "none";
+          if (gameZone) {
+            gameZone.style.display = "";
+            updatePiles({ drawCount: 8, discardCount: 0 });
+          }
+        }
+      });
+
+      room.onMessage("players", (players) => {
+        if (gamePhase === "lobby" && myPlayerId) {
+          const me = players.find((p) => p.playerId === myPlayerId);
+          if (me && me.ready !== isReady) {
+            isReady = me.ready;
+            renderLobby(room);
+          }
+        }
+      });
 
       room.onMessage("cardsDrawn", async (data) => {
         if (animating) return;
