@@ -162,6 +162,11 @@ class GameRoom extends Room {
         if (this._bananasOnCell(player.cellId) > 0) {
           this._removeFromCell(player.cellId, "banana");
           this.broadcastCellOccupants();
+          this.broadcast("bananaHitBoard", {
+            playerId: player.playerId,
+            cellId: player.cellId,
+            count: 1,
+          });
           bananaHits.push({ cellId: player.cellId });
         }
       }
@@ -170,7 +175,7 @@ class GameRoom extends Room {
       client.send("cardPlayed", { cardId: card.id, droppedBanana, coinGained, ...this._cardState(player) });
       this.broadcastPlayers();
 
-      // Send banana hit events (stacking discards)
+      // Send banana hit events to the player (stacking discards)
       if (bananaHits.length > 0) {
         const mustDiscard = Math.min(bananaHits.length, player.hand.length);
         player.pendingBananaDiscards = mustDiscard;
@@ -179,13 +184,6 @@ class GameRoom extends Room {
           mustDiscard,
           ...this._cardState(player),
         });
-        for (const hit of bananaHits) {
-          this.broadcast("bananaHitBoard", {
-            playerId: player.playerId,
-            cellId: hit.cellId,
-            count: 1,
-          });
-        }
       }
 
     });

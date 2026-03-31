@@ -338,7 +338,10 @@ export function initBoard(gameId) {
         this.enqueueCellOccupants(cellOccupants);
       });
       room.onMessage("bananaHitBoard", (data) => {
-        this.animateBananaHit(data.playerId, data.cellId);
+        this._cellOccupantsQueue.push({ _bananaHit: data });
+        if (!this._processingQueue) {
+          this._processNextCellOccupants();
+        }
       });
       room.onMessage("gameState", (data) => {
         updateBoardGameState(data);
@@ -358,9 +361,14 @@ export function initBoard(gameId) {
         return;
       }
       this._processingQueue = true;
-      const cellOccupants = this._cellOccupantsQueue.shift();
-      this.updateCellOccupants(cellOccupants);
-      this.time.delayedCall(350, () => this._processNextCellOccupants());
+      const entry = this._cellOccupantsQueue.shift();
+      if (entry._bananaHit) {
+        this.animateBananaHit(entry._bananaHit.playerId, entry._bananaHit.cellId);
+        this.time.delayedCall(1400, () => this._processNextCellOccupants());
+      } else {
+        this.updateCellOccupants(entry);
+        this.time.delayedCall(350, () => this._processNextCellOccupants());
+      }
     }
 
     updateCellOccupants(cellOccupants) {
