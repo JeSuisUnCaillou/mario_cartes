@@ -108,13 +108,13 @@ function updateInfoBarPlayers(players) {
       cardsContainer.innerHTML = "";
       const n = p.handCount;
       for (let i = 0; i < n; i++) {
-        const cardImg = document.createElement("img");
-        cardImg.src = "/card - back.svg";
+        const card = document.createElement("div");
+        card.className = "board-card-mini";
         const offset = i - (n - 1) / 2;
         const rotation = offset * 10;
         const lift = Math.abs(offset) * 3;
-        cardImg.style.transform = `rotate(${rotation}deg) translateY(${lift}px)`;
-        cardsContainer.appendChild(cardImg);
+        card.style.transform = `rotate(${rotation}deg) translateY(${lift}px)`;
+        cardsContainer.appendChild(card);
       }
     }
   }
