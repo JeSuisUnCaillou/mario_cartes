@@ -634,6 +634,23 @@ function renderLobby(room) {
   }
 }
 
+function renderFinishedZone(container, ranking, room) {
+  const medals = ["🥇", "🥈", "🥉"];
+  container.innerHTML = `
+    <h2 class="finished-title">Race Complete!</h2>
+    <ol class="finished-list">
+      ${(ranking || []).map((entry) => {
+        const medal = medals[entry.rank - 1] || `#${entry.rank}`;
+        return `<li class="finished-entry"><span class="finished-rank">${medal}</span><span class="finished-name">${entry.name}</span></li>`;
+      }).join("")}
+    </ol>
+    <button id="start-over-btn" class="start-over-btn">Start Over</button>
+  `;
+  document.getElementById("start-over-btn").addEventListener("click", () => {
+    room.send("startOver");
+  });
+}
+
 function startGame(gameId, name, existingPlayerId, existingRoom) {
   document.getElementById("app").innerHTML = `
     <div class="player-screen">
@@ -642,6 +659,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         ${existingRoom ? "" : '<p id="status">Joining…</p>'}
       </div>
       <div id="lobby-zone" class="lobby-zone"></div>
+      <div id="finished-zone" class="finished-zone" style="display: none;"></div>
       <div id="game-zone" class="game-zone" style="display: none;">
         <div id="end-turn-container" class="end-turn-container"></div>
         <div id="play-zone" class="play-zone">
@@ -680,14 +698,33 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         gamePhase = data.phase;
         activePlayerId = data.activePlayerId;
         if (data.rivers) latestRivers = data.rivers;
+
+        const lobbyZone = document.getElementById("lobby-zone");
+        const gameZone = document.getElementById("game-zone");
+        const finishedZone = document.getElementById("finished-zone");
+
         if (data.phase === "playing") {
-          const lobbyZone = document.getElementById("lobby-zone");
-          const gameZone = document.getElementById("game-zone");
           if (lobbyZone) lobbyZone.style.display = "none";
+          if (finishedZone) finishedZone.style.display = "none";
           if (gameZone && gameZone.style.display === "none") {
             gameZone.style.display = "";
           }
+        } else if (data.phase === "finished") {
+          if (lobbyZone) lobbyZone.style.display = "none";
+          if (gameZone) gameZone.style.display = "none";
+          if (finishedZone) {
+            finishedZone.style.display = "";
+            renderFinishedZone(finishedZone, data.ranking, room);
+          }
+        } else if (data.phase === "lobby") {
+          if (gameZone) gameZone.style.display = "none";
+          if (finishedZone) finishedZone.style.display = "none";
+          if (lobbyZone) {
+            lobbyZone.style.display = "";
+            renderLobby(room);
+          }
         }
+
         updatePlayZone();
         updateBuyButton();
         if (document.querySelector(".buy-modal")) renderBuyModal();

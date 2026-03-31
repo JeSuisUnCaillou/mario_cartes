@@ -874,3 +874,61 @@ input {
   font-weight: bold;
   letter-spacing: 0.2em;
 }
+
+/* Player screen — finished zone */
+.finished-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  flex: 1;
+}
+
+.finished-title {
+  font-size: 28px;
+  color: #fff;
+  margin: 0;
+}
+
+.finished-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.finished-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 22px;
+  color: #fff;
+}
+
+.finished-rank {
+  font-size: 28px;
+}
+
+.finished-name {
+  font-weight: bold;
+  letter-spacing: 0.15em;
+}
+
+.start-over-btn {
+  margin-top: 20px;
+  padding: 12px 32px;
+  font-size: 20px;
+  font-weight: bold;
+  background: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.start-over-btn:active {
+  background: #388E3C;
+}
