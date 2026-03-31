@@ -93,7 +93,7 @@ html, body, #app {
 .board-card-mini {
   width: 14px;
   aspect-ratio: 54 / 86;
-  background: #fff;
+  background: #ccc;
   border: 1px solid #000;
   border-radius: 2px;
   margin-left: -4px;
