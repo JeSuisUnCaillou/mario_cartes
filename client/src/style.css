@@ -357,14 +357,15 @@ input {
 }
 
 .end-turn-btn {
-  padding: 8px 16px;
-  font-size: 0.9em;
+  padding: 14px 28px;
+  margin: 8px;
+  font-size: 1.2em;
   font-weight: bold;
   cursor: pointer;
-  border: 2px solid #555;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #aaa;
+  border: none;
+  border-radius: 8px;
+  background: #cc3333;
+  color: #fff;
 }
 
 .coin-display {
