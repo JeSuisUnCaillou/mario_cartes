@@ -246,6 +246,11 @@ input {
   border: 3px solid #993333;
   border-radius: 8px;
   margin: 16px;
+  max-width: 300px;
+  max-height: 480px;
+  aspect-ratio: 54 / 86;
+  align-self: center;
+  padding: 24px;
 }
 
 .rejected-message {
