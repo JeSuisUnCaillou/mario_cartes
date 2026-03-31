@@ -1075,3 +1075,118 @@ describe("Win condition and laps", () => {
     room.leave();
   });
 });
+
+describe("Start over", () => {
+  const singleDeck = Array.from({ length: 10 }, () => ["mushroom"]);
+
+  async function finishGame(baseUrl) {
+    const roomId = await createRoom(baseUrl, { _testDeck: singleDeck });
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    await waitForMessage(room1, "gameState", (gs) => gs.phase === "playing");
+
+    // Place both players near finish on last lap
+    room1.send("_testSetState", { cellId: 13, lapCount: 3 });
+    room2.send("_testSetState", { cellId: 13, lapCount: 3 });
+    await waitForPlayers(board, (list) =>
+      list.every((p) => p.cellId === 13 && p.lapCount === 3),
+    );
+
+    // Player 1 finishes
+    const cards1 = await waitForMessage(room1, "cardsDrawn");
+    room1.send("playCard", { cardId: cards1.hand[0].id });
+    await waitForMessage(room1, "cardPlayed");
+    room1.send("playCard", { cardId: cards1.hand[1].id });
+    await waitForMessage(room1, "cardPlayed");
+
+    await waitForPlayers(board, (list) =>
+      list.some((p) => p.playerId === id1 && p.finished),
+    );
+
+    // Player 2 finishes
+    const cards2 = await waitForMessage(room2, "cardsDrawn");
+    room2.send("playCard", { cardId: cards2.hand[0].id });
+    await waitForMessage(room2, "cardPlayed");
+    room2.send("playCard", { cardId: cards2.hand[1].id });
+    await waitForMessage(room2, "cardPlayed");
+
+    await waitForMessage(board, "gameState", (g) => g.phase === "finished");
+    return { room1, room2, board, id1, id2, roomId };
+  }
+
+  it("startOver resets phase to lobby", async () => {
+    const { room1, room2, board } = await finishGame(baseUrl);
+
+    room1.send("startOver");
+    const gs = await waitForMessage(board, "gameState", (g) => g.phase === "lobby");
+    expect(gs.phase).toBe("lobby");
+    expect(gs.ranking).toBeUndefined();
+
+    room1.leave();
+    room2.leave();
+    board.leave();
+  });
+
+  it("startOver resets all player state", async () => {
+    const { room1, room2, board, id1 } = await finishGame(baseUrl);
+
+    room1.send("startOver");
+    const players = await waitForPlayers(board, (list) =>
+      list.every((p) => p.cellId === 1 && p.lapCount === 1 && !p.finished && !p.ready),
+    );
+    const p1 = players.find((p) => p.playerId === id1);
+    expect(p1.cellId).toBe(1);
+    expect(p1.lapCount).toBe(1);
+    expect(p1.finished).toBe(false);
+    expect(p1.ready).toBe(false);
+    expect(p1.coins).toBe(0);
+
+    room1.leave();
+    room2.leave();
+    board.leave();
+  });
+
+  it("startOver resets cell occupants", async () => {
+    const { room1, room2, board } = await finishGame(baseUrl);
+
+    room1.send("startOver");
+    const occupants = await waitForMessage(board, "cellOccupants", (occ) =>
+      occ[1] && occ[1].length === 2,
+    );
+    expect(occupants[1]).toHaveLength(2);
+
+    room1.leave();
+    room2.leave();
+    board.leave();
+  });
+
+  it("startOver is ignored when phase is not finished", async () => {
+    const roomId = await createRoom(baseUrl, { _testDeck: singleDeck });
+    const { room: room1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    await waitForMessage(board, "gameState", (gs) => gs.phase === "playing");
+
+    // Drain buffer so we can check nothing new arrives
+    board._messageBuffers["gameState"] = [];
+
+    room1.send("startOver");
+    // Give server time to process the ignored message
+    await new Promise((r) => setTimeout(r, 100));
+
+    const buffered = board._messageBuffers["gameState"];
+    const lobbyState = buffered.find((gs) => gs.phase === "lobby");
+    expect(lobbyState).toBeUndefined();
+
+    room1.leave();
+    room2.leave();
+    board.leave();
+  });
+});

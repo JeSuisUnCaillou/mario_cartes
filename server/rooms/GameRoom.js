@@ -316,6 +316,32 @@ class GameRoom extends Room {
         }, 400);
       }
     });
+
+    this.onMessage("startOver", () => {
+      if (this.phase !== "finished") return;
+      this.phase = "lobby";
+      this.ranking = [];
+      this.currentRound = 0;
+      this.turnIndex = -1;
+      this.activePlayerId = null;
+      this.rivers = null;
+      this.cellOccupants = {};
+      for (const player of this.players.values()) {
+        player.cellId = 1;
+        player.hand = [];
+        player.drawPile = this._createDeck();
+        player.discardPile = [];
+        player.lapCount = 1;
+        player.coins = 0;
+        player.ready = false;
+        player.hasPlayedAllCards = false;
+        player.pendingBananaDiscards = 0;
+        this._addToCell(1, player.playerId);
+      }
+      this.broadcastPlayers();
+      this.broadcastCellOccupants();
+      this.broadcastGameState();
+    });
   }
 
   _getPlayer(client) {
