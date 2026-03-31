@@ -461,6 +461,23 @@ function renderBuyModal() {
     costLabel.innerHTML = `<span>${river.cost}</span><img src="/coin.svg" class="buy-modal-cost-icon" />`;
     row.appendChild(costLabel);
 
+    const cardsRow = document.createElement("div");
+    cardsRow.className = "buy-modal-cards";
+
+    const deckPile = document.createElement("div");
+    deckPile.className = "buy-modal-deck";
+    const deckImg = document.createElement("img");
+    deckImg.src = "/card - back.svg";
+    deckImg.className = "buy-modal-deck-img";
+    deckImg.draggable = false;
+    if (river.deckCount === 0) deckImg.style.opacity = "0.2";
+    deckPile.appendChild(deckImg);
+    const deckCount = document.createElement("div");
+    deckCount.className = "buy-modal-deck-count";
+    deckCount.textContent = river.deckCount;
+    deckPile.appendChild(deckCount);
+    cardsRow.appendChild(deckPile);
+
     const slotsContainer = document.createElement("div");
     slotsContainer.className = "buy-modal-slots";
     for (const card of river.slots) {
@@ -484,12 +501,9 @@ function renderBuyModal() {
         slotsContainer.appendChild(empty);
       }
     }
-    row.appendChild(slotsContainer);
+    cardsRow.appendChild(slotsContainer);
 
-    const deckCount = document.createElement("div");
-    deckCount.className = "buy-modal-deck-count";
-    deckCount.textContent = river.deckCount;
-    row.appendChild(deckCount);
+    row.appendChild(cardsRow);
 
     content.appendChild(row);
   }
