@@ -282,14 +282,20 @@ function addDragListeners(card) {
     const centerX = cloneRect.left + cloneRect.width / 2;
     const centerY = cloneRect.top + cloneRect.height / 2;
 
-    const hit =
-      !playZone.classList.contains("waiting") &&
+    const inZone =
       centerX >= zoneRect.left &&
       centerX <= zoneRect.right &&
       centerY >= zoneRect.top &&
       centerY <= zoneRect.bottom;
 
-    if (hit) {
+    if (inZone && playZone.classList.contains("waiting")) {
+      playZone.classList.add("waiting-reject");
+      playZone.addEventListener("animationend", () => {
+        playZone.classList.remove("waiting-reject");
+      }, { once: true });
+    }
+
+    if (inZone && !playZone.classList.contains("waiting")) {
       playing = true;
       dragClone.style.transition = "all 0.3s ease";
       dragClone.style.left = (zoneRect.left + zoneRect.width / 2 - cloneRect.width / 2) + "px";
