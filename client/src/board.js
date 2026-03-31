@@ -99,35 +99,35 @@ function updateInfoBarPlayers(players) {
       helmet.src = "/helmet.svg";
       el.appendChild(helmet);
 
-      const ready = document.createElement("div");
-      ready.className = "board-player-ready";
-      el.appendChild(ready);
-
-      const cards = document.createElement("div");
-      cards.className = "board-player-cards";
-      el.appendChild(cards);
+      const status = document.createElement("div");
+      status.className = "board-player-status";
+      el.appendChild(status);
 
       container.appendChild(el);
     }
 
     el.classList.toggle("disconnected", !p.connected);
     el.querySelector(".board-player-name").textContent = p.name || "???";
-    const readyEl = el.querySelector(".board-player-ready");
-    readyEl.textContent = (boardPhase === "lobby" && p.ready) ? "✅" : "";
 
-    const cardsContainer = el.querySelector(".board-player-cards");
-    const currentCount = cardsContainer.children.length;
-    if (currentCount !== p.handCount) {
-      cardsContainer.innerHTML = "";
-      const n = p.handCount;
-      for (let i = 0; i < n; i++) {
-        const card = document.createElement("div");
-        card.className = "board-card-mini";
-        const offset = i - (n - 1) / 2;
-        const rotation = offset * 10;
-        const lift = Math.abs(offset) * 1.5;
-        card.style.transform = `rotate(${rotation}deg) translateY(${lift}px)`;
-        cardsContainer.appendChild(card);
+    const statusEl = el.querySelector(".board-player-status");
+    if (boardPhase === "lobby") {
+      statusEl.className = "board-player-status board-player-ready";
+      statusEl.textContent = p.ready ? "✅" : "";
+    } else {
+      statusEl.className = "board-player-status board-player-cards";
+      const currentCount = statusEl.querySelectorAll(".board-card-mini").length;
+      if (currentCount !== p.handCount) {
+        statusEl.innerHTML = "";
+        const n = p.handCount;
+        for (let i = 0; i < n; i++) {
+          const card = document.createElement("div");
+          card.className = "board-card-mini";
+          const offset = i - (n - 1) / 2;
+          const rotation = offset * 10;
+          const lift = Math.abs(offset) * 1.5;
+          card.style.transform = `rotate(${rotation}deg) translateY(${lift}px)`;
+          statusEl.appendChild(card);
+        }
       }
     }
   }
@@ -152,10 +152,6 @@ function updateBoardGameState(data) {
     }
     roundCard.innerHTML = `<span>Round</span><span class="board-round-number">${data.currentRound}</span>`;
 
-    // Clear ready indicators
-    for (const el of container.querySelectorAll(".board-player-ready")) {
-      el.textContent = "";
-    }
   }
 
   // Golden border on active player
