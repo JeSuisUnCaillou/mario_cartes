@@ -55,9 +55,6 @@ class GameRoom extends Room {
     }));
   }
 
-  broadcastRivers() {
-    this.broadcast("rivers", this._riverState());
-  }
 
   _shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -274,7 +271,7 @@ class GameRoom extends Room {
       player.discardPile.push(card);
       river.slots[slotIndex] = river.deck.length > 0 ? river.deck.shift() : null;
       client.send("cardBought", { cardId: card.id, riverId: river.id, slotIndex, ...this._cardState(player) });
-      this.broadcastRivers();
+      this.broadcastGameState();
       this.broadcastPlayers();
     });
   }
@@ -321,7 +318,6 @@ class GameRoom extends Room {
     this.broadcastPlayers();
     this.broadcastCellOccupants();
     this.broadcastGameState();
-    if (this.rivers) this.broadcastRivers();
   }
 
   onLeave(client) {
@@ -360,11 +356,13 @@ class GameRoom extends Room {
   }
 
   broadcastGameState() {
-    this.broadcast("gameState", {
+    const state = {
       phase: this.phase,
       currentRound: this.currentRound,
       activePlayerId: this.activePlayerId,
-    });
+    };
+    if (this.rivers) state.rivers = this._riverState();
+    this.broadcast("gameState", state);
   }
 
   _sendToPlayer(playerId, type, data) {
@@ -400,7 +398,6 @@ class GameRoom extends Room {
 
     this.broadcastGameState();
     this.broadcastPlayers();
-    this.broadcastRivers();
   }
 
   _endTurnAndAdvance(player) {
