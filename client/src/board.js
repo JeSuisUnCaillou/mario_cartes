@@ -25,6 +25,7 @@ const CELL_POSITIONS = [
 const SVG_ASPECT = 131.0025 / 104.54418;
 let boardPhase = "lobby";
 let latestPlayersData = [];
+let latestGameState = null;
 
 function createSidebar(gameId) {
   const sidebar = document.createElement("div");
@@ -150,6 +151,20 @@ function updateInfoBarPlayers(players) {
       }
     }
 
+    // Lap counter
+    let lapEl = el.querySelector(".board-player-lap");
+    if (boardPhase !== "lobby") {
+      if (!lapEl) {
+        lapEl = document.createElement("div");
+        lapEl.className = "board-player-lap";
+        el.querySelector(".board-player-right").appendChild(lapEl);
+      }
+      const lap = Math.min(p.lapCount, 3);
+      lapEl.textContent = p.finished ? "🏁" : `Lap ${lap}/3`;
+    } else if (lapEl) {
+      lapEl.remove();
+    }
+
     const coinsEl = el.querySelector(".board-player-coins");
     if (boardPhase !== "lobby") {
       const coinCount = p.coins || 0;
@@ -167,6 +182,7 @@ function updateBoardGameState(data) {
   if (!container) return;
 
   boardPhase = data.phase;
+  latestGameState = data;
 
   if (data.phase === "playing") {
     // Replace scan label with round card
@@ -181,6 +197,16 @@ function updateBoardGameState(data) {
     }
     roundCard.innerHTML = `<span>Round</span><span class="board-round-number">${data.currentRound}</span>`;
 
+    // Remove leaderboard if present (after start over → playing again)
+    removeLeaderboard();
+  }
+
+  if (data.phase === "finished" && data.ranking) {
+    showLeaderboard(data.ranking);
+  }
+
+  if (data.phase === "lobby") {
+    removeLeaderboard();
   }
 
   // Re-render player info with correct phase
@@ -190,6 +216,38 @@ function updateBoardGameState(data) {
   for (const el of container.querySelectorAll(".board-player")) {
     el.classList.toggle("active-player", el.dataset.playerId === data.activePlayerId);
   }
+}
+
+function showLeaderboard(ranking) {
+  let overlay = document.querySelector(".board-leaderboard");
+  if (overlay) overlay.remove();
+
+  overlay = document.createElement("div");
+  overlay.className = "board-leaderboard";
+
+  const title = document.createElement("h1");
+  title.className = "board-leaderboard-title";
+  title.textContent = "Race Complete!";
+  overlay.appendChild(title);
+
+  const list = document.createElement("ol");
+  list.className = "board-leaderboard-list";
+  const medals = ["🥇", "🥈", "🥉"];
+  for (const entry of ranking) {
+    const li = document.createElement("li");
+    li.className = "board-leaderboard-entry";
+    const medal = medals[entry.rank - 1] || `#${entry.rank}`;
+    li.innerHTML = `<span class="board-leaderboard-rank">${medal}</span><span class="board-leaderboard-name">${entry.name}</span>`;
+    list.appendChild(li);
+  }
+  overlay.appendChild(list);
+
+  document.body.appendChild(overlay);
+}
+
+function removeLeaderboard() {
+  const overlay = document.querySelector(".board-leaderboard");
+  if (overlay) overlay.remove();
 }
 
 function renderRivers(rivers) {
