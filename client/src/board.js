@@ -210,6 +210,8 @@ export function initBoard(gameId) {
       this.latestPlayers = [];
       this.bananaSprites = new Map();
       this.latestCellOccupants = {};
+      this._cellOccupantsQueue = [];
+      this._processingQueue = false;
     }
 
     preload() {
@@ -333,7 +335,7 @@ export function initBoard(gameId) {
         this.updatePlayers(players);
       });
       room.onMessage("cellOccupants", (cellOccupants) => {
-        this.updateCellOccupants(cellOccupants);
+        this.enqueueCellOccupants(cellOccupants);
       });
       room.onMessage("bananaHitBoard", (data) => {
         this.animateBananaHit(data.playerId, data.cellId);
@@ -341,6 +343,24 @@ export function initBoard(gameId) {
       room.onMessage("gameState", (data) => {
         updateBoardGameState(data);
       });
+    }
+
+    enqueueCellOccupants(cellOccupants) {
+      this._cellOccupantsQueue.push(cellOccupants);
+      if (!this._processingQueue) {
+        this._processNextCellOccupants();
+      }
+    }
+
+    _processNextCellOccupants() {
+      if (this._cellOccupantsQueue.length === 0) {
+        this._processingQueue = false;
+        return;
+      }
+      this._processingQueue = true;
+      const cellOccupants = this._cellOccupantsQueue.shift();
+      this.updateCellOccupants(cellOccupants);
+      this.time.delayedCall(350, () => this._processNextCellOccupants());
     }
 
     updateCellOccupants(cellOccupants) {

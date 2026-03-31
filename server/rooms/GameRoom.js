@@ -158,15 +158,16 @@ class GameRoom extends Room {
         player.cellId = this.cells.get(player.cellId).next_cell;
         this._removeFromCell(oldCellId, player.playerId);
         this._addToCell(player.cellId, player.playerId);
+        this.broadcastCellOccupants();
         if (this._bananasOnCell(player.cellId) > 0) {
           this._removeFromCell(player.cellId, "banana");
+          this.broadcastCellOccupants();
           bananaHits.push({ cellId: player.cellId });
         }
       }
 
       player.discardPile.push(card);
       client.send("cardPlayed", { cardId: card.id, droppedBanana, coinGained, ...this._cardState(player) });
-      this.broadcastCellOccupants();
       this.broadcastPlayers();
 
       // Send banana hit events (stacking discards)
