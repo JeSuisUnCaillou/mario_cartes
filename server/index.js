@@ -34,6 +34,14 @@ app.get("/find-or-create/:gameId", async (req, res) => {
   res.json({ id: room.roomId });
 });
 
+app.get("/game-phase/:gameId", async (req, res) => {
+  const { gameId } = req.params;
+  const rooms = await matchMaker.query({ roomId: gameId });
+  if (rooms.length === 0) return res.json({ phase: "lobby" });
+  const room = matchMaker.getRoomById(gameId);
+  res.json({ phase: room ? room.phase : "lobby" });
+});
+
 app.get("*", (req, res) => {
   res.sendFile(path.join(clientDist, "index.html"));
 });

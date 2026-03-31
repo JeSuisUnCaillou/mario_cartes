@@ -7,6 +7,7 @@ export default defineConfig({
     proxy: {
       "/create": "http://localhost:2567",
       "/find-or-create": "http://localhost:2567",
+      "/game-phase": "http://localhost:2567",
     },
   },
 });

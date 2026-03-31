@@ -375,7 +375,7 @@ async function joinWithRetry(client, gameId, options, maxAttempts = 30, delayMs 
   throw new Error("Could not join room after multiple attempts");
 }
 
-export function initPlayer(gameId) {
+export async function initPlayer(gameId) {
   const playerIdKey = `playerId:${gameId}`;
   const existingPlayerId = localStorage.getItem(playerIdKey);
   const existingName = localStorage.getItem("playerName");
@@ -384,6 +384,22 @@ export function initPlayer(gameId) {
     startGame(gameId, existingName, existingPlayerId);
     return;
   }
+
+  // Check if game is already in progress before showing name form
+  try {
+    const res = await fetch(`/game-phase/${gameId}`);
+    const { phase } = await res.json();
+    if (phase === "playing") {
+      document.getElementById("app").innerHTML = `
+        <div class="player-screen">
+          <div class="lobby-zone game-rejected">
+            <span class="rejected-message">You can't join, the game has already started.</span>
+          </div>
+        </div>
+      `;
+      return;
+    }
+  } catch {}
 
   document.getElementById("app").innerHTML = `
     <div class="player-container">
@@ -499,14 +515,6 @@ function startGame(gameId, name, existingPlayerId) {
       room.onMessage("gameState", (data) => {
         gamePhase = data.phase;
         activePlayerId = data.activePlayerId;
-        if (data.phase === "playing" && !myPlayerId) {
-          const lobbyZone = document.getElementById("lobby-zone");
-          if (lobbyZone) {
-            lobbyZone.className = "lobby-zone game-rejected";
-            lobbyZone.innerHTML = `<span class="rejected-message">You can't join, the game has already started.</span>`;
-          }
-          return;
-        }
         if (data.phase === "playing") {
           const lobbyZone = document.getElementById("lobby-zone");
           const gameZone = document.getElementById("game-zone");
