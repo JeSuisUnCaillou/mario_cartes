@@ -373,7 +373,26 @@ function updatePlayZone() {
     playZone.innerHTML = `<span class="play-zone-label">Wait for your turn to play</span>`;
   } else {
     playZone.classList.remove("waiting");
-    playZone.innerHTML = `<span class="play-zone-label">Drag a card here to play it</span>`;
+    playZone.innerHTML = `
+      <span class="play-zone-label">Drag a card here to play it</span>
+      <button id="end-turn-btn" class="end-turn-btn">End turn</button>
+    `;
+    document.getElementById("end-turn-btn").addEventListener("click", () => {
+      if (playing || animating) return;
+      if (currentRoom) currentRoom.send("endTurn");
+    });
+  }
+}
+
+function updateCoinDisplay(coins) {
+  const coinDisplay = document.getElementById("coin-display");
+  if (!coinDisplay) return;
+  coinDisplay.innerHTML = "";
+  for (let i = 0; i < coins; i++) {
+    const img = document.createElement("img");
+    img.src = "/coin.svg";
+    img.className = "coin-icon";
+    coinDisplay.appendChild(img);
   }
 }
 
@@ -518,6 +537,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         <div id="play-zone" class="play-zone">
           <span class="play-zone-label">Drag a card here to play it</span>
         </div>
+        <div id="coin-display" class="coin-display"></div>
         <div class="cards-zone">
           <div id="draw-pile" class="draw-pile">
             <div id="draw-pile-content"></div>
@@ -557,6 +577,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           }
         }
         updatePlayZone();
+        updateCoinDisplay(0);
       });
 
       room.onMessage("players", (players) => {
@@ -575,6 +596,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         if (data.drawnBeforeShuffle === undefined) {
           renderHand(data.hand);
           updatePiles(data);
+          updateCoinDisplay(data.coins || 0);
           if (data.pendingBananaDiscards > 0) {
             pendingDiscards = data.pendingBananaDiscards;
             const playZone = document.getElementById("play-zone");
@@ -633,6 +655,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         if (data.coinGained > 0) {
           spawnThrowAnimation("/coin.svg", playZone);
         }
+
+        updateCoinDisplay(data.coins);
 
         // Animate drag clone from play zone to discard pile
         const discardEl = document.getElementById("discard-pile");
