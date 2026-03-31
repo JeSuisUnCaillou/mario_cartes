@@ -10,13 +10,9 @@ class GameRoom extends Room {
       return this._testDeck.map((items) => ({ id: randomUUID(), items }));
     }
     const cards = [
-      ...Array.from({ length: 3 }, () => ({ id: randomUUID(), items: ["coin"] })),
-      { id: randomUUID(), items: ["coin", "mushroom"] },
-      { id: randomUUID(), items: ["banana", "coin", "mushroom"] },
-      { id: randomUUID(), items: ["mushroom", "mushroom"] },
-      { id: randomUUID(), items: ["coin", "coin"] },
-      { id: randomUUID(), items: ["banana"] },
       { id: randomUUID(), items: ["mushroom"] },
+      { id: randomUUID(), items: ["mushroom", "mushroom"] },
+      ...Array.from({ length: 2 }, () => ({ id: randomUUID(), items: ["banana", "mushroom"] })),
     ];
     return this._shuffle(cards);
   }
