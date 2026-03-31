@@ -332,7 +332,10 @@ export function initBoard(gameId) {
       const room = await colyseusClient.joinById(roomId, { type: "board" });
       room.onMessage("players", (players) => {
         updateInfoBarPlayers(players);
-        this.updatePlayers(players);
+        this._cellOccupantsQueue.push({ _players: players });
+        if (!this._processingQueue) {
+          this._processNextCellOccupants();
+        }
       });
       room.onMessage("cellOccupants", (cellOccupants) => {
         this.enqueueCellOccupants(cellOccupants);
@@ -365,6 +368,9 @@ export function initBoard(gameId) {
       if (entry._bananaHit) {
         this.animateBananaHit(entry._bananaHit.playerId, entry._bananaHit.cellId);
         this.time.delayedCall(1400, () => this._processNextCellOccupants());
+      } else if (entry._players) {
+        this.updatePlayers(entry._players);
+        this.time.delayedCall(350, () => this._processNextCellOccupants());
       } else {
         this.updateCellOccupants(entry);
         this.time.delayedCall(350, () => this._processNextCellOccupants());
