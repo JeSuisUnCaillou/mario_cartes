@@ -209,3 +209,59 @@ describe("Rejection after game started", () => {
     room2.leave();
   });
 });
+
+describe("Player name", () => {
+  it("default name is ???", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room, playerId } = await connectPlayer(baseUrl, roomId);
+    const players = await waitForPlayers(room, (list) =>
+      list.some((p) => p.playerId === playerId),
+    );
+    expect(players.find((p) => p.playerId === playerId).name).toBe("???");
+    room.leave();
+  });
+
+  it("changeName converts to uppercase", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room, playerId } = await connectPlayer(baseUrl, roomId);
+    room.send("changeName", "abc");
+    const players = await waitForPlayers(room, (list) =>
+      list.some((p) => p.playerId === playerId && p.name === "ABC"),
+    );
+    expect(players.find((p) => p.playerId === playerId).name).toBe("ABC");
+    room.leave();
+  });
+
+  it("changeName strips non-alpha characters", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room, playerId } = await connectPlayer(baseUrl, roomId);
+    room.send("changeName", "a1b");
+    const players = await waitForPlayers(room, (list) =>
+      list.some((p) => p.playerId === playerId && p.name === "AB"),
+    );
+    expect(players.find((p) => p.playerId === playerId).name).toBe("AB");
+    room.leave();
+  });
+
+  it("changeName truncates to 3 characters", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room, playerId } = await connectPlayer(baseUrl, roomId);
+    room.send("changeName", "ABCDEF");
+    const players = await waitForPlayers(room, (list) =>
+      list.some((p) => p.playerId === playerId && p.name === "ABC"),
+    );
+    expect(players.find((p) => p.playerId === playerId).name).toBe("ABC");
+    room.leave();
+  });
+
+  it("changeName with empty string keeps ???", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room, playerId } = await connectPlayer(baseUrl, roomId);
+    room.send("changeName", "");
+    const players = await waitForPlayers(room, (list) =>
+      list.some((p) => p.playerId === playerId && p.name === "???"),
+    );
+    expect(players.find((p) => p.playerId === playerId).name).toBe("???");
+    room.leave();
+  });
+});
