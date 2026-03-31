@@ -674,6 +674,75 @@ describe("Mushroom movement and banana collision", () => {
     room1.leave();
     room2.leave();
   });
+
+  it("hitting a banana with empty hand skips the discard", async () => {
+    // Player gets: [mushroom, banana, mushroom, mushroom, mushroom] — 5 cards
+    // Play all 5 to empty hand: drop banana on cell 1, move 4 cells to cell 5
+    // Then end turn → draw 5 new cards, plays mushroom to hit the banana on cell 1...
+    // Actually simpler: use _testSetState to place player near a banana.
+    // Setup: active player drops banana on cell 2, ends turn.
+    // Passive player has only 1 card (mushroom). Plays it → moves to cell 2 (banana!).
+    // But hand is now empty (played last card). mustDiscard should be 0, no bananaHit sent.
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["banana"], ["mushroom"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
+    const cards1 = await waitForMessage(room1, "cardsDrawn");
+    const cards2 = await waitForMessage(room2, "cardsDrawn");
+    const activeId = gs.activePlayerId;
+    const activeRoom = activeId === id1 ? room1 : room2;
+    const activeCards = activeId === id1 ? cards1 : cards2;
+    const passiveRoom = activeId === id1 ? room2 : room1;
+    const passiveCards = activeId === id1 ? cards2 : cards1;
+
+    // Active player moves to cell 2 and drops banana
+    const mushroomCard = activeCards.hand.find((c) => c.items.length === 1 && c.items[0] === "mushroom");
+    activeRoom.send("playCard", { cardId: mushroomCard.id });
+    await waitForMessage(activeRoom, "cardPlayed");
+    const bananaCard = activeCards.hand.find((c) => c.items.length === 1 && c.items[0] === "banana");
+    activeRoom.send("playCard", { cardId: bananaCard.id });
+    await waitForMessage(activeRoom, "cardPlayed");
+    activeRoom.send("endTurn");
+    await waitForMessage(passiveRoom, "gameState", (g) => g.activePlayerId !== activeId);
+
+    // Passive player plays all 5 cards (4 coins + 1 mushroom) to empty hand
+    // Play coins first (they don't move), then the mushroom last to hit the banana
+    const coins = passiveCards.hand.filter((c) => c.items[0] === "coin");
+    const mushroom = passiveCards.hand.find((c) => c.items[0] === "mushroom");
+    for (const coin of coins) {
+      passiveRoom.send("playCard", { cardId: coin.id });
+      await waitForMessage(passiveRoom, "cardPlayed");
+    }
+    // Play the banana card (drops banana but doesn't move)
+    const passiveBanana = passiveCards.hand.find((c) => c.items[0] === "banana");
+    if (passiveBanana) {
+      passiveRoom.send("playCard", { cardId: passiveBanana.id });
+      await waitForMessage(passiveRoom, "cardPlayed");
+    }
+    // Last card: mushroom → moves to cell 2 (banana!), but hand is now empty
+    passiveRoom.send("playCard", { cardId: mushroom.id });
+    const played = await waitForMessage(passiveRoom, "cardPlayed");
+
+    // No bananaHit should be sent — player can end turn normally
+    // Give server time to process, then check no bananaHit was received
+    await new Promise((r) => setTimeout(r, 100));
+    const buffered = passiveRoom._messageBuffers["bananaHit"];
+    expect(buffered).toHaveLength(0);
+
+    // Player should be able to end turn (pendingBananaDiscards is 0)
+    passiveRoom.send("endTurn");
+    const nextGs = await waitForMessage(board, "gameState", (g) => g.activePlayerId === activeId);
+    expect(nextGs.activePlayerId).toBe(activeId);
+
+    room1.leave();
+    room2.leave();
+    board.leave();
+  });
 });
 
 describe("Card buying (rivers)", () => {

@@ -253,12 +253,14 @@ class GameRoom extends Room {
       // Send banana hit events to the player (stacking discards)
       if (bananaHits.length > 0) {
         const mustDiscard = Math.min(bananaHits.length, player.hand.length);
-        player.pendingBananaDiscards = mustDiscard;
-        client.send("bananaHit", {
-          bananaHits,
-          mustDiscard,
-          ...this._cardState(player),
-        });
+        if (mustDiscard > 0) {
+          player.pendingBananaDiscards = mustDiscard;
+          client.send("bananaHit", {
+            bananaHits,
+            mustDiscard,
+            ...this._cardState(player),
+          });
+        }
       }
 
     });
