@@ -116,8 +116,9 @@ function updateInfoBarPlayers(players) {
     const statusEl = el.querySelector(".board-player-status");
     if (boardPhase === "lobby") {
       statusEl.className = "board-player-status board-player-ready";
-      statusEl.textContent = "✅";
-      statusEl.style.visibility = p.ready ? "visible" : "hidden";
+      statusEl.textContent = p.ready ? "✅" : "⏳";
+      statusEl.classList.toggle("board-player-waiting", !p.ready);
+      statusEl.style.visibility = "visible";
     } else {
       statusEl.className = "board-player-status board-player-cards";
       const currentCount = statusEl.querySelectorAll(".board-card-mini").length;
