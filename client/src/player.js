@@ -655,8 +655,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         if (data.droppedBanana !== null && data.droppedBanana !== undefined) {
           spawnThrowAnimation("/banana.svg", playZone);
         }
-        if (data.coinGained > 0) {
-          spawnThrowAnimation("/coin.svg", playZone);
+        for (let i = 0; i < data.coinGained; i++) {
+          setTimeout(() => spawnThrowAnimation("/coin.svg", playZone), i * 1000);
         }
 
         updateCoinDisplay(data.coins);
