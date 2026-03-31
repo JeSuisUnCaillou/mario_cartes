@@ -386,6 +386,7 @@ export function initPlayer(gameId) {
   }
 
   // Join room immediately to check if game is still joinable
+  // If we have an existing playerId (reload during name form), reuse it
   document.getElementById("app").innerHTML = `
     <div class="player-container">
       <p>Joining…</p>
@@ -397,7 +398,12 @@ export function initPlayer(gameId) {
     : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
   const client = new Client(serverUrl);
 
-  joinWithRetry(client, gameId, { type: "player", name: "???" })
+  const joinOptions = { type: "player", name: "???" };
+  if (existingPlayerId) {
+    joinOptions.playerId = existingPlayerId;
+  }
+
+  joinWithRetry(client, gameId, joinOptions)
     .then((room) => {
       room.onMessage("gameAlreadyStarted", () => {
         document.getElementById("app").innerHTML = `
@@ -414,6 +420,12 @@ export function initPlayer(gameId) {
         localStorage.setItem(playerIdKey, id);
         showNameForm(gameId, room);
       });
+
+      // Reconnecting existing player without a name — show name form
+      if (existingPlayerId) {
+        myPlayerId = existingPlayerId;
+        showNameForm(gameId, room);
+      }
     })
     .catch(() => {
       document.getElementById("app").innerHTML = `
