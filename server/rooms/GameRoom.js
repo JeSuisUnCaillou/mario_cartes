@@ -734,28 +734,28 @@ class GameRoom extends Room {
         : null;
 
     if (hitType) {
-      // Defer hit so the move patch is sent before the hit patch
-      this.clock.setTimeout(() => {
-        this._removeFromCell(player.cellId, hitType);
-        this.broadcast("itemHitBoard", {
-          type: hitType,
-          playerId: player.playerId,
-          cellId: player.cellId,
+      this._removeFromCell(player.cellId, hitType);
+      // Send itemHitBoard BEFORE _syncState so the message arrives before the patch.
+      // The board's animateItemHit has a built-in moveDelay (400ms) that waits for
+      // the helmet tween to finish before playing the hit effects.
+      this.broadcast("itemHitBoard", {
+        type: hitType,
+        playerId: player.playerId,
+        cellId: player.cellId,
+      });
+      const mustDiscard = Math.min(1, player.hand.length);
+      if (mustDiscard > 0) {
+        player.pendingDiscard = mustDiscard;
+        this._sendToPlayer(player.playerId, "discardHit", {
+          source: hitType,
+          mustDiscard,
+          ...this._cardState(player),
         });
-        this._syncState();
-        const mustDiscard = Math.min(1, player.hand.length);
-        if (mustDiscard > 0) {
-          player.pendingDiscard = mustDiscard;
-          this._sendToPlayer(player.playerId, "discardHit", {
-            source: hitType,
-            mustDiscard,
-            ...this._cardState(player),
-          });
-        }
-        if (player.pendingDiscard === 0) {
-          this.clock.setTimeout(() => this._processNextItem(player), PATCH_DELAY_MS);
-        }
-      }, PATCH_DELAY_MS);
+      }
+      this._syncState();
+      if (player.pendingDiscard === 0) {
+        this.clock.setTimeout(() => this._processNextItem(player), PATCH_DELAY_MS);
+      }
     } else {
       // No hit — continue to next item in next tick
       this.clock.setTimeout(() => this._processNextItem(player), PATCH_DELAY_MS);
