@@ -91,7 +91,7 @@ class GameRoom extends Room {
       drawCount: player.drawPile.length,
       discardCount: dp.length,
       discardTopCard: dp.length > 0 ? dp[dp.length - 1] : null,
-      pendingBananaDiscards: player.pendingBananaDiscards,
+      pendingDiscard: player.pendingDiscard,
       coins: player.coins,
       deck: [...player.hand, ...player.drawPile, ...player.discardPile],
     };
@@ -228,7 +228,7 @@ class GameRoom extends Room {
       if (this.phase !== "playing") return;
       if (player.playerId !== this.activePlayerId) return;
       if (player.hand.length > 0) return;
-      if (player.pendingBananaDiscards > 0) return;
+      if (player.pendingDiscard > 0) return;
       client.send("cardsDrawn", this._drawCards(player));
       this.broadcastPlayers();
     });
@@ -238,7 +238,7 @@ class GameRoom extends Room {
       if (!player) return;
       if (this.phase !== "playing") return;
       if (player.playerId !== this.activePlayerId) return;
-      if (player.pendingBananaDiscards > 0) return;
+      if (player.pendingDiscard > 0) return;
       const cardIndex = player.hand.findIndex((c) => c.id === data.cardId);
       if (cardIndex === -1) return;
       const [card] = player.hand.splice(cardIndex, 1);
@@ -289,7 +289,8 @@ class GameRoom extends Room {
 
         if (this._bananasOnCell(player.cellId) > 0) {
           this._removeFromCell(player.cellId, "banana");
-          this.broadcast("bananaHitBoard", {
+          this.broadcast("itemHitBoard", {
+            type: "banana",
             playerId: player.playerId,
             cellId: player.cellId,
             count: 1,
@@ -316,8 +317,9 @@ class GameRoom extends Room {
       if (bananaHits.length > 0) {
         const mustDiscard = Math.min(bananaHits.length, player.hand.length);
         if (mustDiscard > 0) {
-          player.pendingBananaDiscards = mustDiscard;
-          client.send("bananaHit", {
+          player.pendingDiscard = mustDiscard;
+          client.send("discardHit", {
+            source: "banana",
             bananaHits,
             mustDiscard,
             ...this._cardState(player),
@@ -331,15 +333,15 @@ class GameRoom extends Room {
       const player = this._getPlayer(client);
       if (!player) return;
       if (this.phase !== "playing") return;
-      if (player.pendingBananaDiscards <= 0) return;
+      if (player.pendingDiscard <= 0) return;
       const cardIndex = player.hand.findIndex((c) => c.id === data.cardId);
       if (cardIndex === -1) return;
       const [card] = player.hand.splice(cardIndex, 1);
       player.discardPile.push(card);
-      player.pendingBananaDiscards--;
+      player.pendingDiscard--;
       client.send("cardDiscarded", {
         cardId: card.id,
-        remaining: player.pendingBananaDiscards,
+        remaining: player.pendingDiscard,
         ...this._cardState(player),
       });
       this.broadcastPlayers();
@@ -351,7 +353,7 @@ class GameRoom extends Room {
       if (!player) return;
       if (this.phase !== "playing") return;
       if (player.playerId !== this.activePlayerId) return;
-      if (player.pendingBananaDiscards > 0) return;
+      if (player.pendingDiscard > 0) return;
       this._endTurnAndAdvance(player);
     });
 
@@ -360,7 +362,7 @@ class GameRoom extends Room {
       if (!player) return;
       if (this.phase !== "playing") return;
       if (player.playerId !== this.activePlayerId) return;
-      if (player.pendingBananaDiscards > 0) return;
+      if (player.pendingDiscard > 0) return;
       const river = this.rivers.find((r) => r.id === data.riverId);
       if (!river) return;
       const slotIndex = river.slots.findIndex((c) => c && c.id === data.cardId);
@@ -408,7 +410,7 @@ class GameRoom extends Room {
     }
     if (data.lapCount !== undefined) player.lapCount = data.lapCount;
     if (data.coins !== undefined) player.coins = data.coins;
-    if (data.pendingBananaDiscards !== undefined) player.pendingBananaDiscards = data.pendingBananaDiscards;
+    if (data.pendingDiscard !== undefined) player.pendingDiscard = data.pendingDiscard;
     if (data.setHandCard) {
       const { index, items } = data.setHandCard;
       if (index >= 0 && index < player.hand.length) {
@@ -438,7 +440,7 @@ class GameRoom extends Room {
       ready: p.ready,
       coins: p.coins,
       lapCount: p.lapCount,
-      pendingBananaDiscards: p.pendingBananaDiscards,
+      pendingDiscard: p.pendingDiscard,
       handCount: p.hand.length,
       drawCount: p.drawPile.length,
       discardCount: p.discardPile.length,
@@ -474,7 +476,7 @@ class GameRoom extends Room {
   _initialPlayerState() {
     return {
       cellId: 1, drawPile: this._createDeck(), hand: [], discardPile: [],
-      pendingBananaDiscards: 0, ready: false, hasPlayedAllCards: false, coins: 0, lapCount: 0,
+      pendingDiscard: 0, ready: false, hasPlayedAllCards: false, coins: 0, lapCount: 0,
     };
   }
 

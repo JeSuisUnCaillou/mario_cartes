@@ -550,7 +550,7 @@ input {
   50% { background: rgba(153, 51, 51, 0.3); }
 }
 
-.play-zone.banana-hit {
+.play-zone.discard-hit {
   border-color: #e8a317;
   background: rgba(232, 163, 23, 0.1);
   flex-direction: column;

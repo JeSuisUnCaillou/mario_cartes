@@ -138,7 +138,7 @@ function renderDebugModal(state) {
     pForm.appendChild(labeledField("Lap", lapInput));
     const coinsInput = numInput(p.coins, 0);
     pForm.appendChild(labeledField("Coins", coinsInput));
-    const bananaDiscInput = numInput(p.pendingBananaDiscards, 0);
+    const bananaDiscInput = numInput(p.pendingDiscard, 0);
     pForm.appendChild(labeledField("Pending discards", bananaDiscInput));
     const drawInput = numInput(p.drawCount);
     drawInput.readOnly = true;
@@ -156,7 +156,7 @@ function renderDebugModal(state) {
         cellId: Number(cellInput.value),
         lapCount: Number(lapInput.value),
         coins: Number(coinsInput.value),
-        pendingBananaDiscards: Number(bananaDiscInput.value),
+        pendingDiscard: Number(bananaDiscInput.value),
       });
     });
     pForm.appendChild(pApply);

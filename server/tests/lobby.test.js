@@ -522,9 +522,9 @@ describe("End turn", () => {
       room.send("playCard", { cardId: card.id });
       await waitForMessage(room, "cardPlayed");
     }
-    // After playing all cards, hand is empty. If any bananaHit was received, mustDiscard should be 0
-    const bananaHits = room._messageBuffers["bananaHit"] || [];
-    for (const hit of bananaHits) {
+    // After playing all cards, hand is empty. If any discardHit was received, mustDiscard should be 0
+    const discardHits = room._messageBuffers["discardHit"] || [];
+    for (const hit of discardHits) {
       if (hit.hand.length === 0) {
         expect(hit.mustDiscard).toBe(0);
       }
@@ -633,10 +633,10 @@ describe("Mushroom movement and banana collision", () => {
     await waitForMessage(passiveRoom, "cardPlayed");
 
     // Should receive banana hit
-    const bananaHit = await waitForMessage(passiveRoom, "bananaHit");
-    expect(bananaHit.bananaHits).toHaveLength(1);
-    expect(bananaHit.bananaHits[0].cellId).toBe(2);
-    expect(bananaHit.mustDiscard).toBe(1);
+    const discardHit = await waitForMessage(passiveRoom, "discardHit");
+    expect(discardHit.bananaHits).toHaveLength(1);
+    expect(discardHit.bananaHits[0].cellId).toBe(2);
+    expect(discardHit.mustDiscard).toBe(1);
 
     room1.leave();
     room2.leave();
@@ -687,11 +687,11 @@ describe("Mushroom movement and banana collision", () => {
     passiveRoom.send("playCard", { cardId: doubleMushroom.id });
     await waitForMessage(passiveRoom, "cardPlayed");
 
-    const bananaHit = await waitForMessage(passiveRoom, "bananaHit");
-    expect(bananaHit.bananaHits).toHaveLength(2);
-    expect(bananaHit.bananaHits[0].cellId).toBe(2);
-    expect(bananaHit.bananaHits[1].cellId).toBe(3);
-    expect(bananaHit.mustDiscard).toBe(2);
+    const discardHit = await waitForMessage(passiveRoom, "discardHit");
+    expect(discardHit.bananaHits).toHaveLength(2);
+    expect(discardHit.bananaHits[0].cellId).toBe(2);
+    expect(discardHit.bananaHits[1].cellId).toBe(3);
+    expect(discardHit.mustDiscard).toBe(2);
 
     room1.leave();
     room2.leave();
@@ -704,7 +704,7 @@ describe("Mushroom movement and banana collision", () => {
     // Actually simpler: use _testSetState to place player near a banana.
     // Setup: active player drops banana on cell 2, ends turn.
     // Passive player has only 1 card (mushroom). Plays it → moves to cell 2 (banana!).
-    // But hand is now empty (played last card). mustDiscard should be 0, no bananaHit sent.
+    // But hand is now empty (played last card). mustDiscard should be 0, no discardHit sent.
     const roomId = await createRoom(baseUrl, {
       _testDeck: [["banana"], ["mushroom"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
     });
@@ -750,13 +750,13 @@ describe("Mushroom movement and banana collision", () => {
     passiveRoom.send("playCard", { cardId: mushroom.id });
     const played = await waitForMessage(passiveRoom, "cardPlayed");
 
-    // No bananaHit should be sent — player can end turn normally
-    // Give server time to process, then check no bananaHit was received
+    // No discardHit should be sent — player can end turn normally
+    // Give server time to process, then check no discardHit was received
     await new Promise((r) => setTimeout(r, 100));
-    const buffered = passiveRoom._messageBuffers["bananaHit"];
+    const buffered = passiveRoom._messageBuffers["discardHit"];
     expect(buffered).toHaveLength(0);
 
-    // Player should be able to end turn (pendingBananaDiscards is 0)
+    // Player should be able to end turn (pendingDiscard is 0)
     passiveRoom.send("endTurn");
     const nextGs = await waitForMessage(board, "gameState", (g) => g.activePlayerId === activeId);
     expect(nextGs.activePlayerId).toBe(activeId);

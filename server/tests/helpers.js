@@ -8,7 +8,7 @@ const { WebSocketTransport } = require("@colyseus/ws-transport");
 const { Client } = require("colyseus.js");
 const { GameRoom } = require("../rooms/GameRoom");
 
-const BUFFERED_TYPES = ["players", "cellOccupants", "gameState", "cardsDrawn", "gameAlreadyStarted", "cardPlayed", "bananaHit", "cardDiscarded", "cardBought", "_debugState"];
+const BUFFERED_TYPES = ["players", "cellOccupants", "gameState", "cardsDrawn", "gameAlreadyStarted", "cardPlayed", "discardHit", "cardDiscarded", "cardBought", "_debugState"];
 
 function bufferMessages(room) {
   room._messageBuffers = {};

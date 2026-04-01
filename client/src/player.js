@@ -152,7 +152,7 @@ function updatePlayZone() {
     });
   }
   const endTurnBtn = document.getElementById("end-turn-btn");
-  if (playZone.classList.contains("banana-hit")) {
+  if (playZone.classList.contains("discard-hit")) {
     if (endTurnBtn) {
       endTurnBtn.style.visibility = "";
       endTurnBtn.disabled = true;
@@ -420,10 +420,10 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           renderHand(data.hand, addDragListeners);
           updatePiles(data);
           updateCoinDisplay(data.coins || 0, updateBuyButton);
-          if (data.pendingBananaDiscards > 0) {
-            pendingDiscards = data.pendingBananaDiscards;
+          if (data.pendingDiscard > 0) {
+            pendingDiscards = data.pendingDiscard;
             const playZone = document.getElementById("play-zone");
-            playZone.classList.add("banana-hit");
+            playZone.classList.add("discard-hit");
             playZone.innerHTML = `
               <img src="/banana.svg" class="play-zone-banana" />
               <span class="play-zone-label">Banana! Drag a card here to discard it.</span>
@@ -505,7 +505,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         }
       });
 
-      room.onMessage("bananaHit", async (data) => {
+      room.onMessage("discardHit", async (data) => {
         const playZone = document.getElementById("play-zone");
         const zoneRect = playZone.getBoundingClientRect();
 
@@ -551,7 +551,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         pendingDiscards = data.mustDiscard;
         closeBuyModal();
         updateBuyButton();
-        playZone.classList.add("banana-hit");
+        playZone.classList.add("discard-hit");
         playZone.innerHTML = `
           <img src="/banana.svg" class="play-zone-banana" />
           <span class="play-zone-label"><h2>Banana!</h2><br />Drag a card here to discard it.</span>
@@ -594,7 +594,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         if (data.remaining <= 0) {
           pendingDiscards = 0;
           const playZone = document.getElementById("play-zone");
-          playZone.classList.remove("banana-hit");
+          playZone.classList.remove("discard-hit");
           updatePlayZone();
           updateBuyButton();
         }

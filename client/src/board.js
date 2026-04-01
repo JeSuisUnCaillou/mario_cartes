@@ -438,8 +438,8 @@ export function initBoard(gameId) {
         this.enqueueCellOccupants(cellOccupants);
         if (isDebugModalOpen()) room.send("_debugGetState");
       });
-      room.onMessage("bananaHitBoard", (data) => {
-        this._cellOccupantsQueue.push({ _bananaHit: data });
+      room.onMessage("itemHitBoard", (data) => {
+        this._cellOccupantsQueue.push({ _itemHit: data });
         if (!this._processingQueue) {
           this._processNextCellOccupants();
         }
@@ -468,8 +468,8 @@ export function initBoard(gameId) {
       }
       this._processingQueue = true;
       const entry = this._cellOccupantsQueue.shift();
-      if (entry._bananaHit) {
-        this.animateBananaHit(entry._bananaHit.playerId, entry._bananaHit.cellId);
+      if (entry._itemHit) {
+        this.animateItemHit(entry._itemHit.playerId, entry._itemHit.cellId);
         this.time.delayedCall(1400, () => this._processNextCellOccupants());
       } else if (entry._players) {
         this.updatePlayers(entry._players);
@@ -533,7 +533,7 @@ export function initBoard(gameId) {
       }
     }
 
-    animateBananaHit(playerId, cellId) {
+    animateItemHit(playerId, cellId) {
       const helmet = this.helmets.get(playerId);
       const label = this.nameLabels.get(playerId);
       if (!helmet) return;
