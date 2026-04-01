@@ -517,6 +517,7 @@ input {
   align-self: center;
   margin: 8px;
   flex: 1;
+  min-height: 0;
   aspect-ratio: 54 / 86;
   border: 3px dashed #555;
   border-radius: 8px;
@@ -615,7 +616,6 @@ input {
   align-items: flex-end;
   justify-content: center;
   padding: 8px;
-  height: 35dvh;
   flex-shrink: 0;
   gap: 8px;
 }
