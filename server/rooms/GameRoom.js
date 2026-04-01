@@ -1,7 +1,16 @@
 const { Room } = require("colyseus");
 const { randomUUID } = require("crypto");
 const path = require("path");
+const { MapSchema, ArraySchema } = require("@colyseus/schema");
 const { STARTING_DECK, RIVER_DEFS } = require("./decks");
+const {
+  PlayerSchema,
+  RankEntrySchema,
+  RiverSlotSchema,
+  RiverSchema,
+  CellOccupantsSchema,
+  GameState,
+} = require("./schema");
 
 const DISPOSE_DELAY_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -195,6 +204,15 @@ class GameRoom extends Room {
     this.currentRound = 0;
     this.turnIndex = -1;
     this.activePlayerId = null;
+
+    this.setState(new GameState());
+    this.state.phase = "lobby";
+    this.state.currentRound = 0;
+    this.state.activePlayerId = "";
+    this.state.players = new MapSchema();
+    this.state.ranking = new ArraySchema();
+    this.state.rivers = new ArraySchema();
+    this.state.cellOccupants = new MapSchema();
 
     const cellsData = require(path.join(__dirname, "../../assets/racetrack_0_cells.json"));
     this.cells = new Map(cellsData.map((cell) => [cell.id, cell]));
@@ -561,6 +579,7 @@ class GameRoom extends Room {
 
   broadcastCellOccupants() {
     this.broadcast("cellOccupants", this.cellOccupants);
+    this._syncState();
   }
 
   broadcastPlayers() {
@@ -577,6 +596,7 @@ class GameRoom extends Room {
       finished: this.ranking.includes(p.playerId),
     }));
     this.broadcast("players", players);
+    this._syncState();
   }
 
   broadcastGameState() {
@@ -594,6 +614,91 @@ class GameRoom extends Room {
       }));
     }
     this.broadcast("gameState", state);
+    this._syncState();
+  }
+
+  _syncState() {
+    // Sync top-level fields
+    this.state.phase = this.phase;
+    this.state.currentRound = this.currentRound;
+    this.state.activePlayerId = this.activePlayerId || "";
+
+    // Sync players
+    const activePlayerIds = new Set();
+    for (const [playerId, p] of this.players) {
+      activePlayerIds.add(playerId);
+      let sp = this.state.players.get(playerId);
+      if (!sp) {
+        sp = new PlayerSchema();
+        this.state.players.set(playerId, sp);
+      }
+      sp.name = p.name;
+      sp.cellId = p.cellId;
+      sp.connected = p.connected;
+      sp.handCount = p.hand.length;
+      sp.ready = p.ready;
+      sp.coins = p.coins;
+      sp.lapCount = p.lapCount;
+      sp.pendingShellChoice = p.pendingShellChoice;
+      sp.finished = this.ranking.includes(playerId);
+    }
+    for (const key of this.state.players.keys()) {
+      if (!activePlayerIds.has(key)) this.state.players.delete(key);
+    }
+
+    // Sync ranking
+    while (this.state.ranking.length > 0) this.state.ranking.pop();
+    for (let i = 0; i < this.ranking.length; i++) {
+      const playerId = this.ranking[i];
+      const entry = new RankEntrySchema();
+      entry.playerId = playerId;
+      entry.name = this.players.get(playerId).name;
+      entry.rank = i + 1;
+      this.state.ranking.push(entry);
+    }
+
+    // Sync rivers
+    while (this.state.rivers.length > 0) this.state.rivers.pop();
+    if (this.rivers) {
+      for (const r of this.rivers) {
+        const rs = new RiverSchema();
+        rs.id = r.id;
+        rs.cost = r.cost;
+        rs.deckCount = r.deck.length;
+        rs.slots = new ArraySchema();
+        for (const slot of r.slots) {
+          const ss = new RiverSlotSchema();
+          if (slot) {
+            ss.id = slot.id;
+            ss.items = JSON.stringify(slot.items);
+          } else {
+            ss.id = "";
+            ss.items = "";
+          }
+          rs.slots.push(ss);
+        }
+        this.state.rivers.push(rs);
+      }
+    }
+
+    // Sync cellOccupants
+    const activeCellIds = new Set();
+    for (const cellId of Object.keys(this.cellOccupants)) {
+      activeCellIds.add(String(cellId));
+      let co = this.state.cellOccupants.get(String(cellId));
+      if (!co) {
+        co = new CellOccupantsSchema();
+        co.entries = new ArraySchema();
+        this.state.cellOccupants.set(String(cellId), co);
+      }
+      while (co.entries.length > 0) co.entries.pop();
+      for (const entry of this.cellOccupants[cellId]) {
+        co.entries.push(entry);
+      }
+    }
+    for (const key of this.state.cellOccupants.keys()) {
+      if (!activeCellIds.has(key)) this.state.cellOccupants.delete(key);
+    }
   }
 
   _sendToPlayer(playerId, type, data) {
@@ -616,8 +721,8 @@ class GameRoom extends Room {
 
     if (item === "mushroom") {
       this._resolveMushroomStep(player);
-      if (player.pendingDiscard > 0) return;
-      if (this.ranking.includes(player.playerId)) return;
+      // _resolveMushroomStep handles continuation itself (may be async on hit)
+      return;
     } else if (item === "banana") {
       this._resolveBananaStep(player);
     } else if (item === "coin") {
@@ -629,7 +734,7 @@ class GameRoom extends Room {
       return;
     }
 
-    this._processNextItem(player);
+    this.clock.setTimeout(() => this._processNextItem(player), 0);
   }
 
   _resolveMushroomStep(player) {
@@ -653,40 +758,36 @@ class GameRoom extends Room {
       }
     }
 
-    if (this._bananasOnCell(player.cellId) > 0) {
-      this._removeFromCell(player.cellId, "banana");
-      this.broadcast("itemHitBoard", {
-        type: "banana",
-        playerId: player.playerId,
-        cellId: player.cellId,
-      });
-      this.broadcastCellOccupants();
-      const mustDiscard = Math.min(1, player.hand.length);
-      if (mustDiscard > 0) {
-        player.pendingDiscard = mustDiscard;
-        this._sendToPlayer(player.playerId, "discardHit", {
-          source: "banana",
-          mustDiscard,
-          ...this._cardState(player),
+    const hitType = this._bananasOnCell(player.cellId) > 0 ? "banana"
+      : this._greenShellsOnCell(player.cellId) > 0 ? "green_shell"
+        : null;
+
+    if (hitType) {
+      // Defer hit to next tick so the move patch is sent before the hit patch
+      this.clock.setTimeout(() => {
+        this._removeFromCell(player.cellId, hitType);
+        this.broadcast("itemHitBoard", {
+          type: hitType,
+          playerId: player.playerId,
+          cellId: player.cellId,
         });
-      }
-    } else if (this._greenShellsOnCell(player.cellId) > 0) {
-      this._removeFromCell(player.cellId, "green_shell");
-      this.broadcast("itemHitBoard", {
-        type: "green_shell",
-        playerId: player.playerId,
-        cellId: player.cellId,
-      });
-      this.broadcastCellOccupants();
-      const mustDiscard = Math.min(1, player.hand.length);
-      if (mustDiscard > 0) {
-        player.pendingDiscard = mustDiscard;
-        this._sendToPlayer(player.playerId, "discardHit", {
-          source: "green_shell",
-          mustDiscard,
-          ...this._cardState(player),
-        });
-      }
+        this.broadcastCellOccupants();
+        const mustDiscard = Math.min(1, player.hand.length);
+        if (mustDiscard > 0) {
+          player.pendingDiscard = mustDiscard;
+          this._sendToPlayer(player.playerId, "discardHit", {
+            source: hitType,
+            mustDiscard,
+            ...this._cardState(player),
+          });
+        }
+        if (player.pendingDiscard === 0) {
+          this.clock.setTimeout(() => this._processNextItem(player), 0);
+        }
+      }, 0);
+    } else {
+      // No hit — continue to next item in next tick
+      this.clock.setTimeout(() => this._processNextItem(player), 0);
     }
   }
 
