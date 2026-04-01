@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { bananaCounts } from "../board.functions.js";
+import { bananaCounts, shellCounts } from "../board.functions.js";
 
 describe("bananaCounts", () => {
   it("returns empty object for empty occupants", () => {
@@ -24,5 +24,19 @@ describe("bananaCounts", () => {
 
   it("handles cell with only bananas", () => {
     expect(bananaCounts({ 4: ["banana", "banana", "banana"] })).toEqual({ 4: 3 });
+  });
+});
+
+describe("shellCounts", () => {
+  it("returns empty object for empty occupants", () => {
+    expect(shellCounts({})).toEqual({});
+  });
+
+  it("counts green_shell entries", () => {
+    expect(shellCounts({ 2: ["green_shell", "player1"], 5: ["banana", "green_shell", "green_shell"] })).toEqual({ 2: 1, 5: 2 });
+  });
+
+  it("ignores bananas and players", () => {
+    expect(shellCounts({ 3: ["banana", "player1"] })).toEqual({});
   });
 });

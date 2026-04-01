@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { Client } from "colyseus.js";
 import QRCode from "qrcode";
-import { bananaCounts } from "./board.functions.js";
+import { bananaCounts, shellCounts } from "./board.functions.js";
 import { renderRivers as renderRiverRows } from "./river.js";
 import { isDebugModalOpen, setDebugRoom, onDebugState, setupDebugKeyboard } from "./board_debug.js";
 
@@ -303,6 +303,7 @@ export function initBoard(gameId) {
       this.playerCells = new Map();
       this.latestPlayers = [];
       this.bananaSprites = new Map();
+      this.shellSprites = new Map();
       this.latestCellOccupants = {};
       this._cellOccupantsQueue = [];
       this._processingQueue = false;
@@ -316,6 +317,7 @@ export function initBoard(gameId) {
       this.load.svg("racetrack", "/racetrack_0.svg", { width: trackW, height: trackH });
       this.load.svg("helmet", "/helmet.svg", { width: 64, height: 64 });
       this.load.svg("banana", "/banana.svg", { width: 128, height: 128 });
+      this.load.svg("green_shell", "/green_shell.svg", { width: 128, height: 128 });
       this.load.image("space", "/space.jpg");
     }
 
@@ -371,7 +373,7 @@ export function initBoard(gameId) {
         const cellId = Number(cellIdStr);
         if (!CELL_POSITIONS[cellId]) continue;
         occupants.forEach((entry, slotIndex) => {
-          if (entry === "banana") return;
+          if (entry === "banana" || entry === "green_shell") return;
           const helmet = this.helmets.get(entry);
           const label = this.nameLabels.get(entry);
           if (!helmet) return;
@@ -388,22 +390,24 @@ export function initBoard(gameId) {
       const cellW = this.track.displayWidth / 5;
       const helmetSlot = cellW / 4.5;
       const helmetDisplaySize = helmetSlot * 0.9;
-      const bananaSize = helmetSlot * 0.9;
+      const itemSize = helmetSlot * 0.9;
 
       for (const [cellIdStr, occupants] of Object.entries(this.latestCellOccupants)) {
         const cellId = Number(cellIdStr);
         if (!CELL_POSITIONS[cellId]) continue;
-        const sprites = this.bananaSprites.get(cellId) || [];
+        const bSprites = this.bananaSprites.get(cellId) || [];
+        const sSprites = this.shellSprites.get(cellId) || [];
         let bananaIdx = 0;
+        let shellIdx = 0;
 
         occupants.forEach((entry, slotIndex) => {
           const { x, y } = this.cellSlotPos(cellId, slotIndex, occupants.length);
-          if (entry === "banana") {
-            const sprite = sprites[bananaIdx++];
+          if (entry === "banana" || entry === "green_shell") {
+            const sprite = entry === "banana" ? bSprites[bananaIdx++] : sSprites[shellIdx++];
             if (sprite && (sprite.x !== x || sprite.y !== y)) {
               this.tweens.add({ targets: sprite, x, y, duration: 300, ease: "Power2" });
             }
-            if (sprite) sprite.setScale(bananaSize / sprite.width);
+            if (sprite) sprite.setScale(itemSize / sprite.width);
           } else {
             const helmet = this.helmets.get(entry);
             const label = this.nameLabels.get(entry);
@@ -444,6 +448,12 @@ export function initBoard(gameId) {
           this._processNextCellOccupants();
         }
       });
+      room.onMessage("shellThrown", (data) => {
+        this._cellOccupantsQueue.push({ _shellThrown: data });
+        if (!this._processingQueue) {
+          this._processNextCellOccupants();
+        }
+      });
       room.onMessage("gameState", (data) => {
         updateBoardGameState(data);
         if (data.rivers) renderRivers(data.rivers);
@@ -469,7 +479,10 @@ export function initBoard(gameId) {
       this._processingQueue = true;
       const entry = this._cellOccupantsQueue.shift();
       if (entry._itemHit) {
-        this.animateItemHit(entry._itemHit.playerId, entry._itemHit.cellId);
+        this.animateItemHit(entry._itemHit.playerId, entry._itemHit.cellId, entry._itemHit.type || "banana");
+        this.time.delayedCall(1400, () => this._processNextCellOccupants());
+      } else if (entry._shellThrown) {
+        this.animateShellThrow(entry._shellThrown);
         this.time.delayedCall(1400, () => this._processNextCellOccupants());
       } else if (entry._players) {
         this.updatePlayers(entry._players);
@@ -483,32 +496,34 @@ export function initBoard(gameId) {
     updateCellOccupants(cellOccupants) {
       this.latestCellOccupants = cellOccupants;
 
-      const bananaCountsByCell = bananaCounts(cellOccupants);
+      this._syncItemSprites(this.bananaSprites, bananaCounts(cellOccupants), "banana");
+      this._syncItemSprites(this.shellSprites, shellCounts(cellOccupants), "green_shell");
 
-      // Remove sprites for cells that no longer have bananas
-      for (const [cellId, sprites] of this.bananaSprites) {
-        if (!bananaCountsByCell[cellId]) {
+      this.tweenCellLayout();
+    }
+
+    _syncItemSprites(spriteMap, countsByCell, textureKey) {
+      // Remove sprites for cells that no longer have this item
+      for (const [cellId, sprites] of spriteMap) {
+        if (!countsByCell[cellId]) {
           sprites.forEach((s) => s.destroy());
-          this.bananaSprites.delete(cellId);
+          spriteMap.delete(cellId);
         }
       }
-
       // Create or destroy sprites to match counts
-      for (const [cellId, count] of Object.entries(bananaCountsByCell)) {
-        const existing = this.bananaSprites.get(Number(cellId)) || [];
+      for (const [cellId, count] of Object.entries(countsByCell)) {
+        const existing = spriteMap.get(Number(cellId)) || [];
         while (existing.length > count) {
           existing.pop().destroy();
         }
         while (existing.length < count) {
           const center = this.cellPixelPos(Number(cellId));
-          const sprite = this.add.image(center.x, center.y, "banana");
+          const sprite = this.add.image(center.x, center.y, textureKey);
           sprite.setDepth(0);
           existing.push(sprite);
         }
-        this.bananaSprites.set(Number(cellId), existing);
+        spriteMap.set(Number(cellId), existing);
       }
-
-      this.tweenCellLayout();
     }
 
     snapCellLayout() {
@@ -519,12 +534,14 @@ export function initBoard(gameId) {
       for (const [cellIdStr, occupants] of Object.entries(this.latestCellOccupants)) {
         const cellId = Number(cellIdStr);
         if (!CELL_POSITIONS[cellId]) continue;
-        const sprites = this.bananaSprites.get(cellId) || [];
+        const bSprites = this.bananaSprites.get(cellId) || [];
+        const sSprites = this.shellSprites.get(cellId) || [];
         let bananaIdx = 0;
+        let shellIdx = 0;
 
         occupants.forEach((entry, slotIndex) => {
-          if (entry !== "banana") return;
-          const sprite = sprites[bananaIdx++];
+          if (entry !== "banana" && entry !== "green_shell") return;
+          const sprite = entry === "banana" ? bSprites[bananaIdx++] : sSprites[shellIdx++];
           if (!sprite) return;
           const { x, y } = this.cellSlotPos(cellId, slotIndex, occupants.length);
           sprite.setPosition(x, y);
@@ -533,34 +550,35 @@ export function initBoard(gameId) {
       }
     }
 
-    animateItemHit(playerId, cellId) {
+    animateItemHit(playerId, cellId, itemType = "banana") {
       const helmet = this.helmets.get(playerId);
       const label = this.nameLabels.get(playerId);
       if (!helmet) return;
 
       const moveDelay = 400;
+      const spriteMap = itemType === "green_shell" ? this.shellSprites : this.bananaSprites;
 
-      // Use the real banana sprite from the cell (server hasn't broadcast its removal yet)
-      const sprites = this.bananaSprites.get(cellId) || [];
-      const banana = sprites.pop();
+      // Use the real item sprite from the cell (server hasn't broadcast its removal yet)
+      const sprites = spriteMap.get(cellId) || [];
+      const item = sprites.pop();
       if (sprites.length === 0) {
-        this.bananaSprites.delete(cellId);
+        spriteMap.delete(cellId);
       }
 
-      if (!banana) return;
-      banana.setDepth(10);
+      if (!item) return;
+      item.setDepth(10);
 
-      // Also remove the banana from latestCellOccupants so tweenCellLayout doesn't reposition it
+      // Also remove from latestCellOccupants so tweenCellLayout doesn't reposition it
       const occupants = this.latestCellOccupants[cellId];
       if (occupants) {
-        const idx = occupants.lastIndexOf("banana");
+        const idx = occupants.lastIndexOf(itemType);
         if (idx !== -1) occupants.splice(idx, 1);
       }
 
       // After move completes, rearrange remaining occupants on the cell
       this.time.delayedCall(moveDelay, () => this.tweenCellLayout());
 
-      // After move: helmet rotates twice, banana launches out
+      // After move: helmet rotates twice, item launches out
       const center = this.cellPixelPos(cellId);
       this.tweens.add({
         targets: helmet,
@@ -571,14 +589,107 @@ export function initBoard(gameId) {
         onComplete: () => { helmet.setAngle(0); },
       });
       this.tweens.add({
-        targets: banana,
+        targets: item,
         y: center.y - this.scale.height * 0.6,
         angle: 360,
         alpha: 0,
         duration: 600,
         ease: "Power2",
         delay: moveDelay,
-        onComplete: () => { banana.destroy(); },
+        onComplete: () => { item.destroy(); },
+      });
+    }
+
+    animateShellThrow(data) {
+      const from = this.cellPixelPos(data.fromCellId);
+      const to = this.cellPixelPos(data.toCellId);
+      const cellW = this.track.displayWidth / 5;
+      const itemSize = cellW / 4.5 * 0.9;
+
+      // Create shell sprite at thrower position
+      const shell = this.add.image(from.x, from.y, "green_shell");
+      shell.setScale(itemSize / shell.width);
+      shell.setDepth(10);
+
+      // Tween shell to target cell
+      this.tweens.add({
+        targets: shell,
+        x: to.x,
+        y: to.y,
+        duration: 400,
+        ease: "Power2",
+        onComplete: () => {
+          if (data.hit === "player") {
+            // Spin hit player's helmet and launch shell upward
+            const helmet = this.helmets.get(data.hitPlayerId);
+            if (helmet) {
+              this.tweens.add({
+                targets: helmet,
+                angle: -720,
+                duration: 1000,
+                ease: "Linear",
+                onComplete: () => { helmet.setAngle(0); },
+              });
+            }
+            this.tweens.add({
+              targets: shell,
+              y: to.y - this.scale.height * 0.6,
+              angle: 360,
+              alpha: 0,
+              duration: 600,
+              ease: "Power2",
+              onComplete: () => { shell.destroy(); },
+            });
+          } else if (data.hit === "banana" || data.hit === "green_shell") {
+            // Launch both the shell and the hit item upward at 15° apart
+            const hitSpriteMap = data.hit === "banana" ? this.bananaSprites : this.shellSprites;
+            const hitSprites = hitSpriteMap.get(data.toCellId) || [];
+            const hitItem = hitSprites.pop();
+            if (hitSprites.length === 0) hitSpriteMap.delete(data.toCellId);
+
+            // Remove from latestCellOccupants
+            const occupants = this.latestCellOccupants[data.toCellId];
+            if (occupants) {
+              const idx = occupants.lastIndexOf(data.hit);
+              if (idx !== -1) occupants.splice(idx, 1);
+            }
+
+            const launchY = to.y - this.scale.height * 0.6;
+            const spread = Math.tan(7.5 * Math.PI / 180) * this.scale.height * 0.6;
+
+            // Shell launches upward-left
+            this.tweens.add({
+              targets: shell,
+              x: to.x - spread,
+              y: launchY,
+              angle: 360,
+              alpha: 0,
+              duration: 600,
+              ease: "Power2",
+              onComplete: () => { shell.destroy(); },
+            });
+
+            // Hit item launches upward-right
+            if (hitItem) {
+              hitItem.setDepth(10);
+              this.tweens.add({
+                targets: hitItem,
+                x: to.x + spread,
+                y: launchY,
+                angle: -360,
+                alpha: 0,
+                duration: 600,
+                ease: "Power2",
+                onComplete: () => { hitItem.destroy(); },
+              });
+            }
+
+            this.tweenCellLayout();
+          } else {
+            // No hit — shell stays (will be managed by next cellOccupants update)
+            shell.destroy();
+          }
+        },
       });
     }
 
