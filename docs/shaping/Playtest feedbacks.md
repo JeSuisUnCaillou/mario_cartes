@@ -40,6 +40,8 @@ the indicator that a player has finished should be bigger (BIG RANKING, Crown, w
 
 we need to be able to kick a player from the board. Clicking on a player should open a small menu with the kick action.
 
+We need to be able to restart the game from the board.
+
 
 ## Disconnection stuff, should be resolved by colyseum
 
