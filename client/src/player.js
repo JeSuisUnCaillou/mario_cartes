@@ -516,6 +516,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         }
 
         updatePiles(data);
+        currentCoins = data.coins || 0;
+        updateCoinDisplay(currentCoins, updateBuyButton);
         animating = false;
       });
 
