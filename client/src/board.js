@@ -694,6 +694,22 @@ export function initBoard(gameId) {
       shell.setScale(itemSize / shell.width);
       shell.setDepth(10);
 
+      // Grab the hit item sprite NOW before updateCellOccupants destroys it
+      let hitItem = null;
+      if (data.hit === "banana" || data.hit === "green_shell") {
+        const hitSpriteMap = data.hit === "banana" ? this.bananaSprites : this.shellSprites;
+        const hitSprites = hitSpriteMap.get(data.toCellId) || [];
+        hitItem = hitSprites.pop();
+        if (hitSprites.length === 0) hitSpriteMap.delete(data.toCellId);
+
+        // Remove from latestCellOccupants so tweenCellLayout doesn't reposition it
+        const occupants = this.latestCellOccupants[data.toCellId];
+        if (occupants) {
+          const idx = occupants.lastIndexOf(data.hit);
+          if (idx !== -1) occupants.splice(idx, 1);
+        }
+      }
+
       // Tween shell to target cell
       this.tweens.add({
         targets: shell,
@@ -724,19 +740,6 @@ export function initBoard(gameId) {
               onComplete: () => { shell.destroy(); },
             });
           } else if (data.hit === "banana" || data.hit === "green_shell") {
-            // Launch both the shell and the hit item upward at 15° apart
-            const hitSpriteMap = data.hit === "banana" ? this.bananaSprites : this.shellSprites;
-            const hitSprites = hitSpriteMap.get(data.toCellId) || [];
-            const hitItem = hitSprites.pop();
-            if (hitSprites.length === 0) hitSpriteMap.delete(data.toCellId);
-
-            // Remove from latestCellOccupants
-            const occupants = this.latestCellOccupants[data.toCellId];
-            if (occupants) {
-              const idx = occupants.lastIndexOf(data.hit);
-              if (idx !== -1) occupants.splice(idx, 1);
-            }
-
             const launchY = to.y - this.scale.height * 0.6;
             const spread = Math.tan(7.5 * Math.PI / 180) * this.scale.height * 0.6;
 
