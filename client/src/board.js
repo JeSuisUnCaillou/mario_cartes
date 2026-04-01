@@ -524,8 +524,7 @@ export function initBoard(gameId) {
         if (playersDirty) {
           const players = schemaPlayersToArray(state);
           updateInfoBarPlayers(players);
-          this._cellOccupantsQueue.push({ _players: players });
-          if (!this._processingQueue) this._processNextCellOccupants();
+          this.updatePlayers(players);
           playersDirty = false;
         }
         if (cellOccupantsDirty) {
@@ -581,9 +580,6 @@ export function initBoard(gameId) {
       } else if (entry._shellThrown) {
         this.animateShellThrow(entry._shellThrown);
         this.time.delayedCall(1400, () => this._processNextCellOccupants());
-      } else if (entry._players) {
-        this.updatePlayers(entry._players);
-        this.time.delayedCall(350, () => this._processNextCellOccupants());
       } else {
         this.updateCellOccupants(entry);
         this.time.delayedCall(350, () => this._processNextCellOccupants());
