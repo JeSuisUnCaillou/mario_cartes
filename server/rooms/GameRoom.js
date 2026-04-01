@@ -14,6 +14,7 @@ const {
 
 const DISPOSE_DELAY_MS = 10 * 60 * 1000; // 10 minutes
 const PATCH_DELAY_MS = 60; // Delay between async steps to guarantee separate schema patches (> patchRate 50ms)
+const MOVE_DELAY_MS = 450; // Delay after a mushroom move to let the board helmet tween (400ms) complete
 
 class GameRoom extends Room {
   _createDeck() {
@@ -752,11 +753,11 @@ class GameRoom extends Room {
       }
       this._syncState();
       if (player.pendingDiscard === 0) {
-        this.clock.setTimeout(() => this._processNextItem(player), PATCH_DELAY_MS);
+        this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
       }
     } else {
-      // No hit — continue to next item in next tick
-      this.clock.setTimeout(() => this._processNextItem(player), PATCH_DELAY_MS);
+      // No hit — continue to next item after tween completes
+      this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
     }
   }
 
