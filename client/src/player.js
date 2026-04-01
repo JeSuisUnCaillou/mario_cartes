@@ -367,7 +367,7 @@ function renderFinishedZone(container, ranking, room, { showStartOver = true, my
         ${(ranking || []).map((entry) => {
           const medal = medals[entry.rank - 1] || "";
           const ordinal = ordinalSuffix(entry.rank);
-          return `<li class="finished-entry"><span class="finished-rank">${medal} ${ordinal}</span></li>`;
+          return `<li class="finished-entry"><span class="finished-rank">${medal} ${ordinal}</span><span class="finished-name">${entry.name}</span></li>`;
         }).join("")}
       </ol>
       <button id="start-over-btn" class="start-over-btn">Start Over</button>
