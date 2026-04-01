@@ -29,6 +29,64 @@ let latestPlayersData = [];
 let latestGameState = null;
 let boardRoom = null;
 
+function schemaPlayersToArray(state) {
+  const players = [];
+  state.players.forEach((p, playerId) => {
+    players.push({
+      playerId,
+      name: p.name,
+      cellId: p.cellId,
+      connected: p.connected,
+      handCount: p.handCount,
+      ready: p.ready,
+      coins: p.coins,
+      lapCount: p.lapCount,
+      pendingShellChoice: p.pendingShellChoice,
+      finished: p.finished,
+    });
+  });
+  return players;
+}
+
+function schemaCellOccupantsToObject(state) {
+  const result = {};
+  state.cellOccupants.forEach((co, cellId) => {
+    const entries = [];
+    co.entries.forEach((e) => entries.push(e));
+    if (entries.length > 0) result[cellId] = entries;
+  });
+  return result;
+}
+
+function schemaToGameState(state) {
+  const gs = {
+    phase: state.phase,
+    currentRound: state.currentRound,
+    activePlayerId: state.activePlayerId || null,
+  };
+  if (state.rivers.length > 0) {
+    gs.rivers = [];
+    state.rivers.forEach((r) => {
+      const slots = [];
+      r.slots.forEach((s) => {
+        if (s.id) {
+          slots.push({ id: s.id, items: JSON.parse(s.items) });
+        } else {
+          slots.push(null);
+        }
+      });
+      gs.rivers.push({ id: r.id, cost: r.cost, slots, deckCount: r.deckCount });
+    });
+  }
+  if (state.ranking.length > 0) {
+    gs.ranking = [];
+    state.ranking.forEach((r) => {
+      gs.ranking.push({ playerId: r.playerId, name: r.name, rank: r.rank });
+    });
+  }
+  return gs;
+}
+
 function ordinalSuffix(n) {
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;
@@ -430,18 +488,60 @@ export function initBoard(gameId) {
       const room = await colyseusClient.joinById(roomId, { type: "board" });
       boardRoom = room;
       setDebugRoom(room);
-      room.onMessage("players", (players) => {
-        updateInfoBarPlayers(players);
-        this._cellOccupantsQueue.push({ _players: players });
-        if (!this._processingQueue) {
-          this._processNextCellOccupants();
+
+      // Schema-based state sync
+      let playersDirty = false;
+      let cellOccupantsDirty = false;
+      let gameStateDirty = false;
+      let riversDirty = false;
+
+      room.state.players.onAdd(() => { playersDirty = true; });
+      room.state.players.onChange(() => { playersDirty = true; });
+      room.state.players.onRemove(() => { playersDirty = true; });
+
+      room.state.cellOccupants.onAdd((co, key) => {
+        cellOccupantsDirty = true;
+        co.entries.onAdd(() => { cellOccupantsDirty = true; });
+        co.entries.onChange(() => { cellOccupantsDirty = true; });
+        co.entries.onRemove(() => { cellOccupantsDirty = true; });
+      });
+      room.state.cellOccupants.onRemove(() => { cellOccupantsDirty = true; });
+
+      room.state.listen("phase", () => { gameStateDirty = true; });
+      room.state.listen("currentRound", () => { gameStateDirty = true; });
+      room.state.listen("activePlayerId", () => { gameStateDirty = true; });
+
+      room.state.ranking.onAdd(() => { gameStateDirty = true; });
+      room.state.ranking.onRemove(() => { gameStateDirty = true; });
+
+      room.state.rivers.onAdd(() => { riversDirty = true; });
+      room.state.rivers.onChange(() => { riversDirty = true; });
+      room.state.rivers.onRemove(() => { riversDirty = true; });
+
+      room.onStateChange((state) => {
+        if (playersDirty) {
+          const players = schemaPlayersToArray(state);
+          updateInfoBarPlayers(players);
+          this._cellOccupantsQueue.push({ _players: players });
+          if (!this._processingQueue) this._processNextCellOccupants();
+          playersDirty = false;
+        }
+        if (cellOccupantsDirty) {
+          const cellOccupants = schemaCellOccupantsToObject(state);
+          this.enqueueCellOccupants(cellOccupants);
+          cellOccupantsDirty = false;
+        }
+        if (gameStateDirty || riversDirty) {
+          const gameState = schemaToGameState(state);
+          updateBoardGameState(gameState);
+          if (riversDirty && gameState.rivers) renderRivers(gameState.rivers);
+          gameStateDirty = false;
+          riversDirty = false;
         }
         if (isDebugModalOpen()) room.send("_debugGetState");
       });
-      room.onMessage("cellOccupants", (cellOccupants) => {
-        this.enqueueCellOccupants(cellOccupants);
-        if (isDebugModalOpen()) room.send("_debugGetState");
-      });
+
+      // Animation events stay as messages (not state)
       room.onMessage("itemHitBoard", (data) => {
         this._cellOccupantsQueue.push({ _itemHit: data });
         if (!this._processingQueue) {
@@ -453,11 +553,6 @@ export function initBoard(gameId) {
         if (!this._processingQueue) {
           this._processNextCellOccupants();
         }
-      });
-      room.onMessage("gameState", (data) => {
-        updateBoardGameState(data);
-        if (data.rivers) renderRivers(data.rivers);
-        if (isDebugModalOpen()) room.send("_debugGetState");
       });
       room.onMessage("_debugState", (data) => {
         onDebugState(data);
