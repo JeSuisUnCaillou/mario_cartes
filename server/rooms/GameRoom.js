@@ -34,9 +34,9 @@ class GameRoom extends Room {
       // River 1: 15 single-item cards
       [
         ...Array.from({ length: 5 }, () => ["coin"]),
-        ...Array.from({ length: 3 }, () => ["mushroom"]),
-        ...Array.from({ length: 4 }, () => ["banana"]),
-        ...Array.from({ length: 3 }, () => ["green_shell"]),
+        ...Array.from({ length: 5 }, () => ["mushroom"]),
+        ...Array.from({ length: 5 }, () => ["banana"]),
+        ...Array.from({ length: 5 }, () => ["green_shell"]),
       ],
       // River 2: 27 two-item cards
       [

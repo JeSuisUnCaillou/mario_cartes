@@ -1,10 +1,10 @@
 import { renderRivers } from "./river.js";
 
-export function updateBuyButton(activePlayerId, myPlayerId, latestRivers, pendingDiscards, openBuyModal) {
+export function updateBuyButton(activePlayerId, myPlayerId, latestRivers, blocked, openBuyModal) {
   const container = document.getElementById("buy-btn-container");
   if (!container) return;
   const isMyTurn = activePlayerId === myPlayerId;
-  if (isMyTurn && latestRivers && pendingDiscards === 0) {
+  if (isMyTurn && latestRivers && !blocked) {
     if (!document.getElementById("buy-btn")) {
       container.innerHTML = `<button id="buy-btn" class="buy-btn">Buy cards</button>`;
       document.getElementById("buy-btn").addEventListener("click", openBuyModal);
