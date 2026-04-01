@@ -16,21 +16,54 @@ river_2:
   cost: 3
   deck:
     - coin mushroom
-    - 4x coin banana
-    - 2x mushroom banana
+    - mushroom coin 
+    - coin banana
+    - banana coin 
+    - mushroom banana
+    - banana mushroom 
     - mushroom mushroom
     - green_shell mushroom
+    - mushroom green_shell
+    - green_shell mushroom
+    - mushroom green_shell
     - green_shell coin
-    - 16x banana banana
+    - coin green_shell
+    - green_shell coin
+    - coin green_shell
+    - green_shell banana
+    - banana green_shell
+    - banana banana
+    - coin coin
+    - green_shell green_shell
+    - green_shell green_shell
 
 river_3:
   cost: 5
   deck:
-    - 26x banana banana banana
+    - banana banana banana
     - banana banana mushroom
+    - banana mushroom banana 
+    - mushroom banana banana
     - banana banana coin
-    - banana banana green_shell
-    - green_shell mushroom coin
-    - coin coin mushroom
-    - 4x coin coin banana
+    - banana coin banana
     - coin banana banana
+    - banana banana green_shell
+    - banana green_shell banana 
+    - green_shell banana banana 
+    - coin coin mushroom
+    - coin mushroom coin
+    - mushroom coin coin
+    - coin coin banana
+    - coin banana coin
+    - banana coin coin 
+    - banana green_shell green_shell
+    - green_shell mushroom coin
+    - green_shell mushroom coin
+    - banana mushroom green_shell
+    - banana mushroom green_shell
+    - banana mushroom mushroom
+    - mushroom banana mushroom 
+    - mushroom mushroom banana 
+    - coin mushroom mushroom
+    - mushroom coin mushroom 
+    - mushroom mushroom coin
