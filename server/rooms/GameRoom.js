@@ -422,6 +422,9 @@ class GameRoom extends Room {
     if (data.addHandCard) {
       player.hand.push({ id: randomUUID(), items: data.addHandCard.items });
     }
+    if (data.setHandCard || data.addHandCard) {
+      this._sendToPlayer(player.playerId, "cardsDrawn", this._cardState(player));
+    }
     this.broadcastPlayers();
     this.broadcastCellOccupants();
   }

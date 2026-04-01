@@ -1452,4 +1452,41 @@ describe("Debug mode", () => {
     p2.leave();
     board.leave();
   });
+
+  it("player client receives updated hand when board edits it", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: p1, playerId: pid1 } = await connectPlayer(baseUrl, roomId);
+    const { room: p2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+
+    p1.send("setReady", true);
+    p2.send("setReady", true);
+    await waitForMessage(board, "gameState", (gs) => gs.phase === "playing");
+    // Wait for game start, then clear cardsDrawn buffer
+    await waitForMessage(p1, "cardsDrawn");
+    p1._messageBuffers["cardsDrawn"] = [];
+
+    // Add a card via debug
+    board.send("_testSetState", { playerId: pid1, addHandCard: { items: ["banana", "banana"] } });
+    const afterAdd = await waitForMessage(p1, "cardsDrawn");
+    const addedCard = afterAdd.hand[afterAdd.hand.length - 1];
+    expect(addedCard.items).toEqual(["banana", "banana"]);
+    const sizeAfterAdd = afterAdd.hand.length;
+
+    // Edit first card via debug
+    p1._messageBuffers["cardsDrawn"] = [];
+    board.send("_testSetState", { playerId: pid1, setHandCard: { index: 0, items: ["mushroom"] } });
+    const afterEdit = await waitForMessage(p1, "cardsDrawn");
+    expect(afterEdit.hand[0].items).toEqual(["mushroom"]);
+
+    // Remove first card via debug
+    p1._messageBuffers["cardsDrawn"] = [];
+    board.send("_testSetState", { playerId: pid1, setHandCard: { index: 0, items: null } });
+    const afterRemove = await waitForMessage(p1, "cardsDrawn");
+    expect(afterRemove.hand.length).toBe(sizeAfterAdd - 1);
+
+    p1.leave();
+    p2.leave();
+    board.leave();
+  });
 });
