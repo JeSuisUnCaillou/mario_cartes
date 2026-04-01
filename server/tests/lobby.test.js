@@ -1372,7 +1372,10 @@ describe("Debug mode", () => {
       setRiverSlot: { riverId: 0, slotIndex: 0, items: ["mushroom", "banana"] },
     });
     const gs = await waitForMessage(board, "gameState", (gs) =>
-      gs.rivers && gs.rivers[0].slots[0] && gs.rivers[0].slots[0].items[0] === "mushroom",
+      gs.rivers && gs.rivers[0].slots[0] &&
+      gs.rivers[0].slots[0].items.length === 2 &&
+      gs.rivers[0].slots[0].items[0] === "mushroom" &&
+      gs.rivers[0].slots[0].items[1] === "banana",
     );
     expect(gs.rivers[0].slots[0].items).toEqual(["mushroom", "banana"]);
 
