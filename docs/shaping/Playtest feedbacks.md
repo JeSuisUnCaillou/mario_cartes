@@ -14,6 +14,8 @@ the cards must play sequentially each symbol of the card, from top to bottom.
 
 The player's client doesn't display the coins properly : it should display the coin i earn when i earn them.
 
+The discard pile should also be under the cards in the players hand.
+
 ---
 
 DOING
@@ -28,9 +30,6 @@ We need an explanation of the cards in the player's client.
 
 l'asset de carapace doit avoir juste un trou (à gauche par exemple), l'autre est censé être derrière
 
-I dropped 2 bananas on place, they didn't appear.
-
-The card stayed suspended in the play zone, because of a disconnection maybe. Maybe we should clean the animations or refresh the state when there is a disconnection ?
 
 in the circuit, the players should always be displayed on top of other items 
 
@@ -39,12 +38,18 @@ If a player has finished, his screen should display his ranking while he waits f
 The race is over when only one player has not finished the game. He is added to the ranking as if he finished last.
 
 
-The discard pile should also be under the cards in the players hand.
-
-my player client has been disconnected, and when i refreshed, it skipped my turn. It also happened to another player, and she couldn't come back because here client said "the game has already started"
-
 the indicator that a player has finished should be bigger (BIG RANKING, Crown, whatever)
 
 we need to be able to kick a player from the board. Clicking on a player should open a small menu with the kick action.
 
+
+## Disconnection stuff, should be resolved by colyseum
+
+
 I had a disconnection on my board client, and the position of my player was not updated.
+
+my player client has been disconnected, and when i refreshed, it skipped my turn. It also happened to another player, and she couldn't come back because here client said "the game has already started"
+
+I dropped 2 bananas on place, they didn't appear.
+
+The card stayed suspended in the play zone, because of a disconnection maybe. Maybe we should clean the animations or refresh the state when there is a disconnection ?
