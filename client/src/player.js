@@ -524,28 +524,45 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
       });
 
       room.onMessage("cardPlayed", (data) => {
+        if (!data.cardId) {
+          // State-only update (e.g. after green_shell resolves pendingShellChoice)
+          currentCoins = data.coins;
+          updateCoinDisplay(data.coins, updateBuyButton);
+          if (data.pendingShellChoice) {
+            pendingShellChoice = true;
+            showShellModal();
+            updatePlayZone();
+            updateBuyButton();
+          }
+          return;
+        }
         playing = false;
         ensureCardElements(data.deck);
         // Capture positions BEFORE removing the card
         const positions = captureHandPositions();
-        // Remove the played card from the hand
+        // Read items from the card element before removing it
         const handArea = document.getElementById("hand-area");
         const played = handArea.querySelector(`[data-card-id="${data.cardId}"]`);
+        const items = played ? JSON.parse(played.dataset.items) : [];
         if (played) played.remove();
         // Animate remaining cards from old positions to new fan positions
         recomputeFan(positions);
 
-        // Throw animation for banana or coin
+        // Sequentially throw each item icon (top to bottom, 400ms apart)
+        const ITEM_ICON = { banana: "/banana.svg", coin: "/coin.svg", mushroom: "/mushroom.svg", green_shell: "/green_shell.svg" };
         const playZone = document.getElementById("play-zone");
-        if (data.droppedBanana !== null && data.droppedBanana !== undefined) {
-          spawnThrowAnimation("/banana.svg", playZone);
-        }
-        for (let i = 0; i < data.coinGained; i++) {
-          setTimeout(() => spawnThrowAnimation("/coin.svg", playZone), i * 400);
-        }
+        items.forEach((item, i) => {
+          if (ITEM_ICON[item]) {
+            setTimeout(() => spawnThrowAnimation(ITEM_ICON[item], playZone), i * 400);
+          }
+        });
 
-        currentCoins = data.coins;
-        updateCoinDisplay(data.coins, updateBuyButton);
+        // Update coins and shell modal after item animations finish
+        const animDelay = items.length * 400;
+        setTimeout(() => {
+          currentCoins = data.coins;
+          updateCoinDisplay(data.coins, updateBuyButton);
+        }, animDelay);
 
         // Animate drag clone from play zone to discard pile
         const discardEl = document.getElementById("discard-pile");
@@ -566,14 +583,6 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         });
         if (clones.length === 0) {
           updatePiles(data);
-        }
-
-        // Show shell modal if pending
-        if (data.pendingShellChoice) {
-          pendingShellChoice = true;
-          showShellModal();
-          updatePlayZone();
-          updateBuyButton();
         }
       });
 
