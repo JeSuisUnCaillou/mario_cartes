@@ -35,8 +35,6 @@ We need an explanation of the cards in the player's client.
 
 l'asset de carapace doit avoir juste un trou (à gauche par exemple), l'autre est censé être derrière
 
-If a player has finished, his screen should display his ranking while he waits for the race to be over.
-
 
 the indicator that a player has finished should be bigger (BIG RANKING, Crown, whatever)
 
