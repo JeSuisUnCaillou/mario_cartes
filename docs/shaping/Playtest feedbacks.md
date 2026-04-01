@@ -43,8 +43,10 @@ we need to be able to kick a player from the board. Clicking on a player should 
 We need to be able to restart the game from the board.
 
 
-## Disconnection stuff, should be resolved by colyseum
 
+---
+
+## Disconnection stuff, should be resolved by colyseum
 
 I had a disconnection on my board client, and the position of my player was not updated.
 
