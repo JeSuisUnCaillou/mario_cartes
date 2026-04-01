@@ -419,50 +419,93 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
     renderLobby(room);
     currentRoom = room;
 
-      room.onMessage("gameState", (data) => {
-        gamePhase = data.phase;
-        activePlayerId = data.activePlayerId;
-        if (data.rivers) latestRivers = data.rivers;
+      // Schema-based state sync for public game state
+      let gameStateDirty = false;
+      let playersDirty = false;
+      let riversDirty = false;
 
-        const lobbyZone = document.getElementById("lobby-zone");
-        const gameZone = document.getElementById("game-zone");
-        const finishedZone = document.getElementById("finished-zone");
+      room.state.listen("phase", () => { gameStateDirty = true; });
+      room.state.listen("currentRound", () => { gameStateDirty = true; });
+      room.state.listen("activePlayerId", () => { gameStateDirty = true; });
 
-        if (data.phase === "playing") {
-          if (lobbyZone) lobbyZone.style.display = "none";
-          if (finishedZone) finishedZone.style.display = "none";
-          if (gameZone && gameZone.style.display === "none") {
-            gameZone.style.display = "";
+      room.state.players.onAdd(() => { playersDirty = true; });
+      room.state.players.onChange(() => { playersDirty = true; });
+      room.state.players.onRemove(() => { playersDirty = true; });
+
+      room.state.ranking.onAdd(() => { gameStateDirty = true; });
+      room.state.ranking.onRemove(() => { gameStateDirty = true; });
+
+      room.state.rivers.onAdd(() => { riversDirty = true; });
+      room.state.rivers.onChange(() => { riversDirty = true; });
+      room.state.rivers.onRemove(() => { riversDirty = true; });
+
+      room.onStateChange((state) => {
+        if (gameStateDirty || riversDirty) {
+          gamePhase = state.phase;
+          activePlayerId = state.activePlayerId || null;
+
+          if (riversDirty && state.rivers.length > 0) {
+            latestRivers = [];
+            state.rivers.forEach((r) => {
+              const slots = [];
+              r.slots.forEach((s) => {
+                if (s.id) {
+                  slots.push({ id: s.id, items: JSON.parse(s.items) });
+                } else {
+                  slots.push(null);
+                }
+              });
+              latestRivers.push({ id: r.id, cost: r.cost, slots, deckCount: r.deckCount });
+            });
           }
-        } else if (data.phase === "finished") {
-          if (lobbyZone) lobbyZone.style.display = "none";
-          if (gameZone) gameZone.style.display = "none";
-          if (finishedZone) {
-            finishedZone.style.display = "";
-            renderFinishedZone(finishedZone, data.ranking, room);
+
+          const lobbyZone = document.getElementById("lobby-zone");
+          const gameZone = document.getElementById("game-zone");
+          const finishedZone = document.getElementById("finished-zone");
+
+          if (state.phase === "playing") {
+            if (lobbyZone) lobbyZone.style.display = "none";
+            if (finishedZone) finishedZone.style.display = "none";
+            if (gameZone && gameZone.style.display === "none") {
+              gameZone.style.display = "";
+            }
+          } else if (state.phase === "finished") {
+            if (lobbyZone) lobbyZone.style.display = "none";
+            if (gameZone) gameZone.style.display = "none";
+            if (finishedZone) {
+              finishedZone.style.display = "";
+              const ranking = [];
+              state.ranking.forEach((r) => {
+                ranking.push({ playerId: r.playerId, name: r.name, rank: r.rank });
+              });
+              renderFinishedZone(finishedZone, ranking, room);
+            }
+          } else if (state.phase === "lobby") {
+            if (gameZone) gameZone.style.display = "none";
+            if (finishedZone) finishedZone.style.display = "none";
+            isReady = false;
+            if (lobbyZone) {
+              lobbyZone.style.display = "";
+              renderLobby(room);
+            }
           }
-        } else if (data.phase === "lobby") {
-          if (gameZone) gameZone.style.display = "none";
-          if (finishedZone) finishedZone.style.display = "none";
-          isReady = false;
-          if (lobbyZone) {
-            lobbyZone.style.display = "";
-            renderLobby(room);
-          }
+
+          updatePlayZone();
+          updateBuyButton();
+          if (document.querySelector(".buy-modal")) renderBuyModal(currentRoom, latestRivers, currentCoins);
+          gameStateDirty = false;
+          riversDirty = false;
         }
 
-        updatePlayZone();
-        updateBuyButton();
-        if (document.querySelector(".buy-modal")) renderBuyModal(currentRoom, latestRivers, currentCoins);
-      });
-
-      room.onMessage("players", (players) => {
-        if (gamePhase === "lobby" && myPlayerId) {
-          const me = players.find((p) => p.playerId === myPlayerId);
-          if (me && me.ready !== isReady) {
-            isReady = me.ready;
-            renderLobby(room);
+        if (playersDirty) {
+          if (gamePhase === "lobby" && myPlayerId) {
+            const me = state.players.get(myPlayerId);
+            if (me && me.ready !== isReady) {
+              isReady = me.ready;
+              renderLobby(room);
+            }
           }
+          playersDirty = false;
         }
       });
 
