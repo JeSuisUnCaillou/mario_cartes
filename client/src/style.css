@@ -827,10 +827,13 @@ input {
   gap: 16px;
   width: 100%;
   max-width: fit-content;
-  --river-card-w: min(80px, 16vw);
 }
 
 /* Buy modal river overrides */
+.buy-modal-content .river-cards {
+  --river-card-w: min(80px, 16vw);
+}
+
 .buy-modal-content .river-row {
   background: black;
 }
