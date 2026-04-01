@@ -14,7 +14,7 @@ const {
 
 const DISPOSE_DELAY_MS = 10 * 60 * 1000; // 10 minutes
 const PATCH_DELAY_MS = 60; // Delay between async steps to guarantee separate schema patches (> patchRate 50ms)
-const MOVE_DELAY_MS = 450; // Delay after a mushroom move to let the board helmet tween (400ms) complete
+const MOVE_DELAY_MS = 700; // Delay after a mushroom move to let the board helmet tween complete with a visible pause
 
 class GameRoom extends Room {
   _createDeck() {
