@@ -631,6 +631,7 @@ input {
   gap: 4px;
   flex-shrink: 0;
   position: relative;
+  z-index: 1;
 }
 
 .pile-icon {
@@ -684,7 +685,7 @@ input {
   justify-content: center;
   min-height: 0;
   position: relative;
-  z-index: 1;
+  z-index: 2;
   filter: drop-shadow(10px 15px 4px rgba(0, 0, 0, 0.35));
 }
 

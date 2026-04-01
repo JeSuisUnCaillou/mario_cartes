@@ -696,7 +696,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
             clone.style.top = srcRect.top + "px";
             clone.style.width = srcRect.width + "px";
             clone.style.height = srcRect.height + "px";
-            clone.style.zIndex = "200";
+            clone.style.zIndex = "50";
             clone.style.margin = "0";
             clone.style.transition = "all 0.3s ease-in-out";
             document.body.appendChild(clone);
