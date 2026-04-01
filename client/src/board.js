@@ -686,8 +686,12 @@ export function initBoard(gameId) {
 
             this.tweenCellLayout();
           } else {
-            // No hit — shell stays (will be managed by next cellOccupants update)
-            shell.destroy();
+            // No hit — shell stays. Add it to shellSprites so _syncItemSprites
+            // doesn't create a duplicate (which would cause a blink).
+            shell.setDepth(0);
+            const existing = this.shellSprites.get(data.toCellId) || [];
+            existing.push(shell);
+            this.shellSprites.set(data.toCellId, existing);
           }
         },
       });
