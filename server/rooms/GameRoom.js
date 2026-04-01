@@ -92,6 +92,7 @@ class GameRoom extends Room {
       discardCount: dp.length,
       discardTopCard: dp.length > 0 ? dp[dp.length - 1] : null,
       pendingDiscard: player.pendingDiscard,
+      pendingShellChoice: player.pendingShellChoice,
       coins: player.coins,
       deck: [...player.hand, ...player.drawPile, ...player.discardPile],
     };
@@ -132,6 +133,14 @@ class GameRoom extends Room {
     return this._cellOccupants(cellId).filter((e) => e === "banana").length;
   }
 
+  _greenShellsOnCell(cellId) {
+    return this._cellOccupants(cellId).filter((e) => e === "green_shell").length;
+  }
+
+  _previousCell(cellId) {
+    return this.prevCell[cellId];
+  }
+
   onCreate(options) {
     if (options._roomId) {
       this.roomId = options._roomId;
@@ -149,6 +158,10 @@ class GameRoom extends Room {
 
     const cellsData = require(path.join(__dirname, "../../assets/racetrack_0_cells.json"));
     this.cells = new Map(cellsData.map((cell) => [cell.id, cell]));
+    this.prevCell = {};
+    for (const cell of cellsData) {
+      this.prevCell[cell.next_cell] = cell.id;
+    }
     this.cellOccupants = {};
     this.ranking = [];
 
@@ -229,6 +242,7 @@ class GameRoom extends Room {
       if (player.playerId !== this.activePlayerId) return;
       if (player.hand.length > 0) return;
       if (player.pendingDiscard > 0) return;
+      if (player.pendingShellChoice) return;
       client.send("cardsDrawn", this._drawCards(player));
       this.broadcastPlayers();
     });
@@ -239,6 +253,7 @@ class GameRoom extends Room {
       if (this.phase !== "playing") return;
       if (player.playerId !== this.activePlayerId) return;
       if (player.pendingDiscard > 0) return;
+      if (player.pendingShellChoice) return;
       const cardIndex = player.hand.findIndex((c) => c.id === data.cardId);
       if (cardIndex === -1) return;
       const [card] = player.hand.splice(cardIndex, 1);
@@ -263,6 +278,8 @@ class GameRoom extends Room {
           coinGained += 1;
         } else if (item === "mushroom") {
           moveCount += 1;
+        } else if (item === "green_shell") {
+          player.pendingShellChoice = true;
         }
       }
 
@@ -354,6 +371,7 @@ class GameRoom extends Room {
       if (this.phase !== "playing") return;
       if (player.playerId !== this.activePlayerId) return;
       if (player.pendingDiscard > 0) return;
+      if (player.pendingShellChoice) return;
       this._endTurnAndAdvance(player);
     });
 
@@ -363,6 +381,7 @@ class GameRoom extends Room {
       if (this.phase !== "playing") return;
       if (player.playerId !== this.activePlayerId) return;
       if (player.pendingDiscard > 0) return;
+      if (player.pendingShellChoice) return;
       const river = this.rivers.find((r) => r.id === data.riverId);
       if (!river) return;
       const slotIndex = river.slots.findIndex((c) => c && c.id === data.cardId);
@@ -441,6 +460,7 @@ class GameRoom extends Room {
       coins: p.coins,
       lapCount: p.lapCount,
       pendingDiscard: p.pendingDiscard,
+      pendingShellChoice: p.pendingShellChoice,
       handCount: p.hand.length,
       drawCount: p.drawPile.length,
       discardCount: p.discardPile.length,
@@ -476,7 +496,7 @@ class GameRoom extends Room {
   _initialPlayerState() {
     return {
       cellId: 1, drawPile: this._createDeck(), hand: [], discardPile: [],
-      pendingDiscard: 0, ready: false, hasPlayedAllCards: false, coins: 0, lapCount: 0,
+      pendingDiscard: 0, pendingShellChoice: false, ready: false, hasPlayedAllCards: false, coins: 0, lapCount: 0,
     };
   }
 
@@ -563,6 +583,7 @@ class GameRoom extends Room {
       ready: p.ready,
       coins: p.coins,
       lapCount: p.lapCount,
+      pendingShellChoice: p.pendingShellChoice,
       finished: this.ranking.includes(p.playerId),
     }));
     this.broadcast("players", players);
