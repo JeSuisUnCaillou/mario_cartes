@@ -831,7 +831,7 @@ input {
 
 /* Buy modal river overrides */
 .buy-modal-content .river-cards {
-  --river-card-w: min(80px, 16vw);
+  --river-card-w: 16vw;
 }
 
 .buy-modal-content .river-row {
