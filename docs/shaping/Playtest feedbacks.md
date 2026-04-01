@@ -1,11 +1,17 @@
+DONE 
+
+all remaining coins must be removed when a player ends his turn. That's client side.
+
+---
+
+TODO 
+
 The players want to set it to READY right away, even though not everyone has arrived yet.
 
 quand j'achète dans la river une carte, elle apparaît sur la discard par dessus la modale.
 -> la discard pile doit être aussi sous la main
 
 l'asset de carapace doit avoir juste un trou (à gauche par exemple), l'autre est censé être derrière
-
-all remaining coins must be removed when a player ends his turn. That's client side.
 
 the cards must play sequentially each symbol of the card, from top to bottom.
 
