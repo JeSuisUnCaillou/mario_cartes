@@ -619,6 +619,8 @@ input {
   padding: 8px;
   flex-shrink: 0;
   gap: 8px;
+  /* Fixed height prevents layout shift when hand becomes empty */
+  height: 30vh;
 }
 
 .draw-pile,
@@ -683,7 +685,6 @@ input {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  min-height: 0;
   position: relative;
   z-index: 2;
   filter: drop-shadow(10px 15px 4px rgba(0, 0, 0, 0.35));
