@@ -518,7 +518,6 @@ input {
   margin: 8px;
   flex: 1;
   aspect-ratio: 54 / 86;
-  max-height: 40vh;
   border: 3px dashed #555;
   border-radius: 8px;
   box-sizing: border-box;
@@ -616,8 +615,8 @@ input {
   align-items: flex-end;
   justify-content: center;
   padding: 8px;
-  height: 40vh;
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
   gap: 8px;
 }
 
