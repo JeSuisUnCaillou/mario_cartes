@@ -1140,6 +1140,34 @@ describe("Win condition and laps", () => {
     board.leave();
   });
 
+  it("single player race ends when they finish", async () => {
+    const roomId = await createRoom(baseUrl, { _testDeck: singleDeck });
+    const { room, playerId } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
+
+    room.send("_testSetState", { cellId: 13, lapCount: 3 });
+    await waitForPlayers(board, (list) =>
+      list.some((p) => p.playerId === playerId && p.cellId === 13),
+    );
+
+    const cards = await waitForMessage(room, "cardsDrawn");
+    room.send("playCard", { cardId: cards.hand[0].id });
+    await waitForMessage(room, "cardPlayed");
+    room.send("playCard", { cardId: cards.hand[1].id });
+    await waitForMessage(room, "cardPlayed");
+
+    const gs = await waitForMessage(board, "gameState", (g) => g.phase === "finished");
+    expect(gs.ranking).toHaveLength(1);
+    expect(gs.ranking[0].playerId).toBe(playerId);
+    expect(gs.ranking[0].rank).toBe(1);
+
+    room.leave();
+    board.leave();
+  });
+
   it("all players finishing sets phase to finished with ranking", async () => {
     const roomId = await createRoom(baseUrl, { _testDeck: singleDeck });
     const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
