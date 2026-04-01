@@ -577,8 +577,6 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
       room.onMessage("cardPlayed", (data) => {
         if (!data.cardId) {
           // State-only update (e.g. after green_shell resolves pendingShellChoice)
-          currentCoins = data.coins;
-          updateCoinDisplay(data.coins, updateBuyButton);
           if (data.pendingShellChoice) {
             pendingShellChoice = true;
             showShellModal();
@@ -608,12 +606,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           }
         });
 
-        // Update coins and shell modal after item animations finish
-        const animDelay = items.length * 400;
-        setTimeout(() => {
-          currentCoins = data.coins;
-          updateCoinDisplay(data.coins, updateBuyButton);
-        }, animDelay);
+        // Coins are updated via schema state (onStateChange), no need to set from cardPlayed
 
         // Animate drag clone from play zone to discard pile
         const discardEl = document.getElementById("discard-pile");
