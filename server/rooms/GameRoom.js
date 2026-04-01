@@ -46,15 +46,6 @@ class GameRoom extends Room {
     });
   }
 
-  _riverState() {
-    return this.rivers.map((r) => ({
-      id: r.id,
-      cost: r.cost,
-      slots: r.slots,
-      deckCount: r.deck.length,
-    }));
-  }
-
 
   _shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
