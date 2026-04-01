@@ -830,10 +830,6 @@ input {
 }
 
 /* Buy modal river overrides */
-.buy-modal-content .river-cards {
-  --river-card-w: 16vw;
-}
-
 .buy-modal-content .river-row {
   background: black;
 }
@@ -842,7 +838,24 @@ input {
   width: 40px;
 }
 
+.buy-modal-content .river-slots {
+  display: contents;
+}
+
+.buy-modal-content .river-deck {
+  flex: 1;
+  min-width: 0;
+}
+
+.buy-modal-content .river-deck-img,
+.buy-modal-content .river-deck-empty {
+  width: 100%;
+}
+
 .buy-modal-content .river-card {
+  flex: 1;
+  width: auto;
+  min-width: 0;
   cursor: pointer;
   margin: 0;
   transform: none;
