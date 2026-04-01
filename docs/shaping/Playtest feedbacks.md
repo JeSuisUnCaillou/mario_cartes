@@ -8,13 +8,13 @@ Also the discard pile should also be under the cards in the players hand.
 
 the cards must play sequentially each symbol of the card, from top to bottom.
 
-in the circuit, the players should always be displayed on top of other items 
+in the circuit, the players should always be displayed on top of other items
+
+the cards must play sequentially each symbol of the card, from top to bottom.
 
 ---
 
 DOING
-
-the cards must play sequentially each symbol of the card, from top to bottom.
 
 ---
 
@@ -35,3 +35,11 @@ in the circuit, the players should always be displayed on top of other items
 If a player has finished, his screen should display his ranking while he waits for the race to be over.
 
 The race is over when only one player has not finished the game. He is added to the ranking as if he finished last.
+
+The player's client doesn't display the coins properly : it should display the coin i earn when i earn them.
+
+The discard pile should also be under the cards in the players hand.
+
+my player client has been disconnected, and when i refreshed, it skipped my turn.
+
+the indicator that a player has finished should be bigger (BIG RANKING, Crown, whatever)
