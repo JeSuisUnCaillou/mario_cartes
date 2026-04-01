@@ -583,6 +583,12 @@ class GameRoom extends Room {
 
 
   _syncState() {
+    // Sync fields then send patch immediately (don't wait for patchRate interval)
+    this._syncSchemaFields();
+    this.broadcastPatch();
+  }
+
+  _syncSchemaFields() {
     // Sync top-level fields
     this.state.phase = this.phase;
     this.state.currentRound = this.currentRound;
