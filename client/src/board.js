@@ -771,6 +771,7 @@ export function initBoard(gameId) {
             const helmet = this.add.image(x, y, "helmet");
             helmet.setScale(helmetDisplaySize / helmet.width);
             helmet.setAlpha(alpha);
+            helmet.setDepth(5);
             this.helmets.set(p.playerId, helmet);
 
             const label = this.add.text(x, y - helmetDisplaySize * 0.7, p.name || "???", {
@@ -782,6 +783,7 @@ export function initBoard(gameId) {
               align: "center",
             }).setOrigin(0.5, 1);
             label.setAlpha(alpha);
+            label.setDepth(5);
             this.nameLabels.set(p.playerId, label);
             this.playerCells.set(p.playerId, p.cellId);
           }
