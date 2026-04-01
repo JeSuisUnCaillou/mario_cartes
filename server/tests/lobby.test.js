@@ -448,7 +448,9 @@ describe("End turn", () => {
   });
 
   it("endTurn draws new cards if hand is empty", async () => {
-    const roomId = await createRoom(baseUrl);
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
@@ -511,7 +513,9 @@ describe("End turn", () => {
   });
 
   it("banana hit with empty hand skips penalty", async () => {
-    const roomId = await createRoom(baseUrl);
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");

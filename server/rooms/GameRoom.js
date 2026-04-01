@@ -12,8 +12,8 @@ class GameRoom extends Room {
     const cards = [
       ...Array.from({ length: 6 }, () => ({ id: randomUUID(), items: ["coin"] })),
       { id: randomUUID(), items: ["coin", "coin"] },
+      { id: randomUUID(), items: ["green_shell"] },
       { id: randomUUID(), items: ["mushroom"] },
-      { id: randomUUID(), items: ["banana"] },
     ];
     return this._shuffle(cards);
   }
