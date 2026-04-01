@@ -214,9 +214,12 @@ function renderDebugModal(state) {
     const occupants = state.cellOccupants[cellId] || [];
     const playerNames = [];
     let bananaCount = 0;
+    let shellCount = 0;
     for (const occ of occupants) {
       if (occ === "banana") {
         bananaCount++;
+      } else if (occ === "green_shell") {
+        shellCount++;
       } else {
         const player = state.players.find((p) => p.playerId === occ);
         playerNames.push(player ? player.name : occ.slice(0, 6));
@@ -236,11 +239,26 @@ function renderDebugModal(state) {
       bananaRow.appendChild(removeBtn);
       cellEl.appendChild(bananaRow);
     }
-    const addBtn = el("button", "debug-small-btn debug-add-btn", "+\uD83C\uDF4C");
-    addBtn.addEventListener("click", () => {
+    if (shellCount > 0) {
+      const shellRow = el("div", "debug-cell-bananas");
+      shellRow.textContent = "\uD83D\uDC22 \u00D7" + shellCount + " ";
+      const removeBtn = el("button", "debug-small-btn debug-remove-btn", "\u2212");
+      removeBtn.addEventListener("click", () => {
+        boardRoom.send("_debugSetGameState", { removeShell: { cellId } });
+      });
+      shellRow.appendChild(removeBtn);
+      cellEl.appendChild(shellRow);
+    }
+    const addBananaBtn = el("button", "debug-small-btn debug-add-btn", "+\uD83C\uDF4C");
+    addBananaBtn.addEventListener("click", () => {
       boardRoom.send("_debugSetGameState", { addBanana: { cellId } });
     });
-    cellEl.appendChild(addBtn);
+    cellEl.appendChild(addBananaBtn);
+    const addShellBtn = el("button", "debug-small-btn debug-add-btn", "+\uD83D\uDC22");
+    addShellBtn.addEventListener("click", () => {
+      boardRoom.send("_debugSetGameState", { addShell: { cellId } });
+    });
+    cellEl.appendChild(addShellBtn);
     circuitGrid.appendChild(cellEl);
   }
   circuitSection.appendChild(circuitGrid);

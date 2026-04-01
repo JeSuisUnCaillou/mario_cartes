@@ -34,22 +34,27 @@ class GameRoom extends Room {
       // River 1: 15 single-item cards
       [
         ...Array.from({ length: 5 }, () => ["coin"]),
-        ...Array.from({ length: 5 }, () => ["mushroom"]),
-        ...Array.from({ length: 5 }, () => ["banana"]),
+        ...Array.from({ length: 3 }, () => ["mushroom"]),
+        ...Array.from({ length: 4 }, () => ["banana"]),
+        ...Array.from({ length: 3 }, () => ["green_shell"]),
       ],
       // River 2: 27 two-item cards
       [
         ["coin", "mushroom"],
         ...Array.from({ length: 4 }, () => ["coin", "banana"]),
-        ...Array.from({ length: 3 }, () => ["mushroom", "banana"]),
+        ...Array.from({ length: 2 }, () => ["mushroom", "banana"]),
         ["mushroom", "mushroom"],
-        ...Array.from({ length: 18 }, () => ["banana", "banana"]),
+        ["green_shell", "mushroom"],
+        ["green_shell", "coin"],
+        ...Array.from({ length: 16 }, () => ["banana", "banana"]),
       ],
       // River 3: 36 three-item cards
       [
-        ...Array.from({ length: 28 }, () => ["banana", "banana", "banana"]),
+        ...Array.from({ length: 26 }, () => ["banana", "banana", "banana"]),
         ["banana", "banana", "mushroom"],
         ["banana", "banana", "coin"],
+        ["banana", "banana", "green_shell"],
+        ["green_shell", "mushroom", "coin"],
         ["coin", "coin", "mushroom"],
         ...Array.from({ length: 4 }, () => ["coin", "coin", "banana"]),
         ["coin", "banana", "banana"],
@@ -263,6 +268,12 @@ class GameRoom extends Room {
       }
       if (data.removeBanana) {
         this._removeFromCell(data.removeBanana.cellId, "banana");
+      }
+      if (data.addShell) {
+        this._addToCell(data.addShell.cellId, "green_shell");
+      }
+      if (data.removeShell) {
+        this._removeFromCell(data.removeShell.cellId, "green_shell");
       }
       if (data.setRiverSlot && this.rivers) {
         const river = this.rivers.find((r) => r.id === data.setRiverSlot.riverId);
@@ -520,6 +531,7 @@ class GameRoom extends Room {
     if (data.lapCount !== undefined) player.lapCount = data.lapCount;
     if (data.coins !== undefined) player.coins = data.coins;
     if (data.pendingDiscard !== undefined) player.pendingDiscard = data.pendingDiscard;
+    if (data.pendingShellChoice !== undefined) player.pendingShellChoice = data.pendingShellChoice;
     if (data.setHandCard) {
       const { index, items } = data.setHandCard;
       if (index >= 0 && index < player.hand.length) {
