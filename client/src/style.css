@@ -955,6 +955,10 @@ input {
   color: black;
 }
 
+.finished-name {
+  color: black;
+}
+
 .start-over-btn {
   margin-top: 20px;
   padding: 12px 32px;
