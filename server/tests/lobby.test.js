@@ -284,17 +284,19 @@ describe("Ready state and game start", () => {
 
   it("setReady(false) unsets player ready", async () => {
     const roomId = await createRoom(baseUrl);
-    const { room, playerId } = await connectPlayer(baseUrl, roomId);
-    room.send("setReady", true);
-    await waitForPlayers(room, (list) =>
-      list.some((p) => p.playerId === playerId && p.ready),
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+    room1.send("setReady", true);
+    await waitForPlayers(room2, (list) =>
+      list.some((p) => p.playerId === id1 && p.ready),
     );
-    room.send("setReady", false);
-    const players = await waitForPlayers(room, (list) =>
-      list.some((p) => p.playerId === playerId && !p.ready),
+    room1.send("setReady", false);
+    const players = await waitForPlayers(room2, (list) =>
+      list.some((p) => p.playerId === id1 && !p.ready),
     );
-    expect(players.find((p) => p.playerId === playerId).ready).toBe(false);
-    room.leave();
+    expect(players.find((p) => p.playerId === id1).ready).toBe(false);
+    room1.leave();
+    room2.leave();
   });
 
   it("single player ready starts the game", async () => {
@@ -503,12 +505,12 @@ describe("End turn", () => {
       room1.send("playCard", { cardId: card.id });
       await waitForMessage(room1, "cardPlayed");
     }
-    // Clear buffered gameState messages before checking
-    room1._messageBuffers["gameState"] = [];
     // Wait and verify turn did NOT auto-advance
     await new Promise((r) => setTimeout(r, 200));
-    const buffered = room1._messageBuffers["gameState"];
-    expect(buffered).toHaveLength(0);
+    // activePlayerId should still be id1 (turn not auto-ended)
+    const latestGs = room1._messageBuffers["gameState"];
+    const last = latestGs[latestGs.length - 1];
+    expect(last.activePlayerId).toBe(id1);
     room1.leave();
     room2.leave();
   });

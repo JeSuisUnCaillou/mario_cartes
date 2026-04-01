@@ -10,6 +10,64 @@ const { GameRoom } = require("../rooms/GameRoom");
 
 const BUFFERED_TYPES = ["players", "cellOccupants", "gameState", "cardsDrawn", "gameAlreadyStarted", "cardPlayed", "discardHit", "cardDiscarded", "cardBought", "shellThrown", "itemHitBoard", "_debugState"];
 
+function schemaPlayersToArray(state) {
+  const players = [];
+  state.players.forEach((p, playerId) => {
+    players.push({
+      playerId,
+      name: p.name,
+      cellId: p.cellId,
+      connected: p.connected,
+      handCount: p.handCount,
+      ready: p.ready,
+      coins: p.coins,
+      lapCount: p.lapCount,
+      pendingShellChoice: p.pendingShellChoice,
+      finished: p.finished,
+    });
+  });
+  return players;
+}
+
+function schemaCellOccupantsToObject(state) {
+  const result = {};
+  state.cellOccupants.forEach((co, cellId) => {
+    const entries = [];
+    co.entries.forEach((e) => entries.push(e));
+    if (entries.length > 0) result[cellId] = entries;
+  });
+  return result;
+}
+
+function schemaToGameState(state) {
+  const gs = {
+    phase: state.phase,
+    currentRound: state.currentRound,
+    activePlayerId: state.activePlayerId || null,
+  };
+  if (state.rivers.length > 0) {
+    gs.rivers = [];
+    state.rivers.forEach((r) => {
+      const slots = [];
+      r.slots.forEach((s) => {
+        if (s.id) {
+          slots.push({ id: s.id, items: JSON.parse(s.items) });
+        } else {
+          slots.push(null);
+        }
+      });
+      gs.rivers.push({ id: r.id, cost: r.cost, slots, deckCount: r.deckCount });
+    });
+  }
+  if (state.ranking.length > 0) {
+    gs.ranking = [];
+    state.ranking.forEach((r) => {
+      gs.ranking.push({ playerId: r.playerId, name: r.name, rank: r.rank });
+    });
+  }
+  return gs;
+}
+
 function bufferMessages(room) {
   room._messageBuffers = {};
   for (const type of BUFFERED_TYPES) {
@@ -18,6 +76,18 @@ function bufferMessages(room) {
       room._messageBuffers[type].push(data);
     });
   }
+
+  // Synthesize players/gameState/cellOccupants from schema state changes
+  room.onStateChange((state) => {
+    room._messageBuffers["players"].push(schemaPlayersToArray(state));
+    room._messageBuffers["cellOccupants"].push(schemaCellOccupantsToObject(state));
+    room._messageBuffers["gameState"].push(schemaToGameState(state));
+
+    // Fire pending waitForMessage/waitForPlayers callbacks
+    if (room._stateChangeCallbacks) {
+      for (const cb of room._stateChangeCallbacks) cb();
+    }
+  });
 }
 
 export async function startServer() {
@@ -133,6 +203,8 @@ export async function connectBoard(baseUrl, roomId) {
   return { room };
 }
 
+const SCHEMA_SYNCED_TYPES = new Set(["players", "cellOccupants", "gameState"]);
+
 export function waitForMessage(room, type, predicateOrTimeout, timeout = 5000) {
   let predicate;
   if (typeof predicateOrTimeout === "function") {
@@ -160,36 +232,42 @@ export function waitForMessage(room, type, predicateOrTimeout, timeout = 5000) {
       () => reject(new Error(`Timed out waiting for message "${type}"`)),
       timeout,
     );
-    room.onMessage(type, (data) => {
-      if (!predicate || predicate(data)) {
-        clearTimeout(timer);
-        resolve(data);
-      }
-    });
+
+    // For schema-synced types, check buffer on each state change
+    if (SCHEMA_SYNCED_TYPES.has(type)) {
+      if (!room._stateChangeCallbacks) room._stateChangeCallbacks = [];
+      const check = () => {
+        if (predicate) {
+          for (let i = 0; i < buffer.length; i++) {
+            if (predicate(buffer[i])) {
+              const match = buffer[i];
+              buffer.splice(0, i + 1);
+              clearTimeout(timer);
+              const idx = room._stateChangeCallbacks.indexOf(check);
+              if (idx !== -1) room._stateChangeCallbacks.splice(idx, 1);
+              resolve(match);
+              return;
+            }
+          }
+        } else if (buffer.length > 0) {
+          clearTimeout(timer);
+          const idx = room._stateChangeCallbacks.indexOf(check);
+          if (idx !== -1) room._stateChangeCallbacks.splice(idx, 1);
+          resolve(buffer.shift());
+        }
+      };
+      room._stateChangeCallbacks.push(check);
+    } else {
+      room.onMessage(type, (data) => {
+        if (!predicate || predicate(data)) {
+          clearTimeout(timer);
+          resolve(data);
+        }
+      });
+    }
   });
 }
 
 export function waitForPlayers(room, predicate, timeout = 5000) {
-  const buffer = room._messageBuffers && room._messageBuffers["players"];
-  if (buffer) {
-    for (let i = 0; i < buffer.length; i++) {
-      if (predicate(buffer[i])) {
-        const match = buffer[i];
-        buffer.splice(0, i + 1);
-        return Promise.resolve(match);
-      }
-    }
-  }
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(
-      () => reject(new Error("Timed out waiting for players match")),
-      timeout,
-    );
-    room.onMessage("players", (players) => {
-      if (predicate(players)) {
-        clearTimeout(timer);
-        resolve(players);
-      }
-    });
-  });
+  return waitForMessage(room, "players", predicate, timeout);
 }

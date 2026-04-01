@@ -145,8 +145,7 @@ class GameRoom extends Room {
         hit: "player",
         hitPlayerId,
       });
-      this.broadcastCellOccupants();
-      this.broadcastPlayers();
+      this._syncState();
       return;
     }
 
@@ -159,8 +158,7 @@ class GameRoom extends Room {
         toCellId: targetCellId,
         hit: "banana",
       });
-      this.broadcastCellOccupants();
-      this.broadcastPlayers();
+      this._syncState();
       return;
     }
 
@@ -173,8 +171,7 @@ class GameRoom extends Room {
         toCellId: targetCellId,
         hit: "green_shell",
       });
-      this.broadcastCellOccupants();
-      this.broadcastPlayers();
+      this._syncState();
       return;
     }
 
@@ -186,8 +183,7 @@ class GameRoom extends Room {
       toCellId: targetCellId,
       hit: null,
     });
-    this.broadcastCellOccupants();
-    this.broadcastPlayers();
+    this._syncState();
   }
 
   onCreate(options) {
@@ -272,9 +268,7 @@ class GameRoom extends Room {
           }
         }
       }
-      this.broadcastPlayers();
-      this.broadcastCellOccupants();
-      this.broadcastGameState();
+      this._syncState();
     });
 
     this.onMessage("_debugGetState", (client) => {
@@ -287,7 +281,7 @@ class GameRoom extends Room {
       const player = this._getPlayer(client);
       if (!player) return;
       player.name = (newName || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
-      this.broadcastPlayers();
+      this._syncState();
     });
 
     this.onMessage("setReady", (client, ready) => {
@@ -295,7 +289,7 @@ class GameRoom extends Room {
       if (!player) return;
       if (this.phase !== "lobby") return;
       player.ready = !!ready;
-      this.broadcastPlayers();
+      this._syncState();
       this._checkAllReady();
     });
 
@@ -308,7 +302,7 @@ class GameRoom extends Room {
       if (player.pendingDiscard > 0) return;
       if (player.pendingShellChoice) return;
       client.send("cardsDrawn", this._drawCards(player));
-      this.broadcastPlayers();
+      this._syncState();
     });
 
     this.onMessage("playCard", (client, data) => {
@@ -345,7 +339,7 @@ class GameRoom extends Room {
         remaining: player.pendingDiscard,
         ...this._cardState(player),
       });
-      this.broadcastPlayers();
+      this._syncState();
 
       if (player.pendingDiscard === 0 && player.pendingItems.length > 0) {
         this._processNextItem(player);
@@ -399,12 +393,11 @@ class GameRoom extends Room {
       player.discardPile.push(card);
       river.slots[slotIndex] = null;
       client.send("cardBought", { cardId: card.id, riverId: river.id, slotIndex, ...this._cardState(player) });
-      this.broadcastGameState();
-      this.broadcastPlayers();
+      this._syncState();
       if (river.deck.length > 0) {
         this.clock.setTimeout(() => {
           river.slots[slotIndex] = river.deck.shift();
-          this.broadcastGameState();
+          this._syncState();
         }, 400);
       }
     });
@@ -422,9 +415,7 @@ class GameRoom extends Room {
         Object.assign(player, this._initialPlayerState());
         this._addToCell(1, player.playerId);
       }
-      this.broadcastPlayers();
-      this.broadcastCellOccupants();
-      this.broadcastGameState();
+      this._syncState();
     });
   }
 
@@ -454,8 +445,7 @@ class GameRoom extends Room {
     if (data.setHandCard || data.addHandCard) {
       this._sendToPlayer(player.playerId, "cardsDrawn", this._cardState(player));
     }
-    this.broadcastPlayers();
-    this.broadcastCellOccupants();
+    this._syncState();
   }
 
   _fullState() {
@@ -550,12 +540,10 @@ class GameRoom extends Room {
       this.clientsInfo.set(client.sessionId, { type });
     }
 
-    this.broadcastPlayers();
-    this.broadcastCellOccupants();
-    this.broadcastGameState();
+    this._syncState();
   }
 
-  onLeave(client) {
+  async onLeave(client, consented) {
     const info = this.clientsInfo.get(client.sessionId);
     if (info && info.type === "player" && info.playerId) {
       const player = this.players.get(info.playerId);
@@ -569,53 +557,34 @@ class GameRoom extends Room {
           }
         }, DISPOSE_DELAY_MS);
       }
+      this.clientsInfo.delete(client.sessionId);
+      this._syncState();
+
+      // Allow reconnection for 60s — Colyseus buffers schema patches during this window
+      if (!consented) {
+        try {
+          await this.allowReconnection(client, 60);
+          // Client reconnected — restore connection state
+          if (player) player.connected = true;
+          if (this._turnAdvanceTimer) {
+            this._turnAdvanceTimer.clear();
+            this._turnAdvanceTimer = null;
+          }
+          this.clientsInfo.set(client.sessionId, { type: "player", playerId: info.playerId });
+          this._syncState();
+          return;
+        } catch {
+          // Reconnection timed out — player stays disconnected
+        }
+      }
+    } else {
+      this.clientsInfo.delete(client.sessionId);
     }
-    this.clientsInfo.delete(client.sessionId);
-    this.broadcastPlayers();
     if (this.clients.length === 0) {
       this._disposeTimer = setTimeout(() => this.disconnect(), DISPOSE_DELAY_MS);
     }
   }
 
-  broadcastCellOccupants() {
-    this.broadcast("cellOccupants", this.cellOccupants);
-    this._syncState();
-  }
-
-  broadcastPlayers() {
-    const players = Array.from(this.players.values()).map((p) => ({
-      playerId: p.playerId,
-      name: p.name,
-      cellId: p.cellId,
-      connected: p.connected,
-      handCount: p.hand.length,
-      ready: p.ready,
-      coins: p.coins,
-      lapCount: p.lapCount,
-      pendingShellChoice: p.pendingShellChoice,
-      finished: this.ranking.includes(p.playerId),
-    }));
-    this.broadcast("players", players);
-    this._syncState();
-  }
-
-  broadcastGameState() {
-    const state = {
-      phase: this.phase,
-      currentRound: this.currentRound,
-      activePlayerId: this.activePlayerId,
-    };
-    if (this.rivers) state.rivers = this._riverState();
-    if (this.ranking.length > 0) {
-      state.ranking = this.ranking.map((playerId, i) => ({
-        playerId,
-        name: this.players.get(playerId).name,
-        rank: i + 1,
-      }));
-    }
-    this.broadcast("gameState", state);
-    this._syncState();
-  }
 
   _syncState() {
     // Sync top-level fields
@@ -713,7 +682,7 @@ class GameRoom extends Room {
 
   _processNextItem(player) {
     if (player.pendingItems.length === 0) {
-      this.broadcastPlayers();
+      this._syncState();
       return;
     }
 
@@ -730,7 +699,7 @@ class GameRoom extends Room {
     } else if (item === "green_shell") {
       player.pendingShellChoice = true;
       this._sendToPlayer(player.playerId, "cardPlayed", { ...this._cardState(player) });
-      this.broadcastPlayers();
+      this._syncState();
       return;
     }
 
@@ -743,7 +712,7 @@ class GameRoom extends Room {
     player.cellId = this.cells.get(player.cellId).next_cell;
     this._removeFromCell(oldCellId, player.playerId);
     this._addToCell(player.cellId, player.playerId);
-    this.broadcastCellOccupants();
+    this._syncState();
 
     if (this.cells.get(player.cellId).finish_line) {
       player.lapCount++;
@@ -771,7 +740,7 @@ class GameRoom extends Room {
           playerId: player.playerId,
           cellId: player.cellId,
         });
-        this.broadcastCellOccupants();
+        this._syncState();
         const mustDiscard = Math.min(1, player.hand.length);
         if (mustDiscard > 0) {
           player.pendingDiscard = mustDiscard;
@@ -799,12 +768,12 @@ class GameRoom extends Room {
     } else {
       occupants.push("banana");
     }
-    this.broadcastCellOccupants();
+    this._syncState();
   }
 
   _resolveCoinStep(player) {
     player.coins += 1;
-    this.broadcastPlayers();
+    this._syncState();
   }
 
   _checkAllReady() {
@@ -828,8 +797,7 @@ class GameRoom extends Room {
       this._sendToPlayer(playerId, "cardsDrawn", drawResult);
     }
 
-    this.broadcastGameState();
-    this.broadcastPlayers();
+    this._syncState();
   }
 
   _endTurnAndAdvance(player) {
@@ -841,7 +809,7 @@ class GameRoom extends Room {
     }
     const drawResult = this._drawCards(player);
     this._sendToPlayer(player.playerId, "cardsDrawn", drawResult);
-    this.broadcastPlayers();
+    this._syncState();
     player.hasPlayedAllCards = false;
     this._advanceTurn();
   }
@@ -865,8 +833,7 @@ class GameRoom extends Room {
     if (attempts >= playerIds.length) return;
 
     this.players.get(this.activePlayerId).hasPlayedAllCards = false;
-    this.broadcastGameState();
-    this.broadcastPlayers();
+    this._syncState();
   }
 
   _endTurnForFinishedPlayer(player) {
@@ -876,14 +843,13 @@ class GameRoom extends Room {
       player.discardPile.push(...player.hand.splice(0));
     }
     player.hasPlayedAllCards = false;
-    this.broadcastPlayers();
+    this._syncState();
     this._advanceTurn();
   }
 
   _endGame() {
     this.phase = "finished";
-    this.broadcastGameState();
-    this.broadcastPlayers();
+    this._syncState();
   }
 }
 
