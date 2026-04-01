@@ -299,6 +299,22 @@ describe("Ready state and game start", () => {
     room2.leave();
   });
 
+  it("board observer sees ready state change via schema sync", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    const { room: playerRoom, playerId } = await connectPlayer(baseUrl, roomId);
+    await waitForPlayers(board, (list) =>
+      list.some((p) => p.playerId === playerId && !p.ready),
+    );
+    playerRoom.send("setReady", true);
+    const players = await waitForPlayers(board, (list) =>
+      list.some((p) => p.playerId === playerId && p.ready),
+    );
+    expect(players.find((p) => p.playerId === playerId).ready).toBe(true);
+    playerRoom.leave();
+    board.leave();
+  });
+
   it("single player ready starts the game", async () => {
     const roomId = await createRoom(baseUrl);
     const { room } = await connectPlayer(baseUrl, roomId);
