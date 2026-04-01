@@ -551,10 +551,18 @@ input {
 }
 
 .play-zone.discard-hit {
-  border-color: #e8a317;
-  background: rgba(232, 163, 23, 0.1);
   flex-direction: column;
   gap: 8px;
+}
+
+.play-zone.discard-hit-banana {
+  border-color: #e8a317;
+  background: rgba(232, 163, 23, 0.1);
+}
+
+.play-zone.discard-hit-shell {
+  border-color: #2d8c2d;
+  background: rgba(45, 140, 45, 0.1);
 }
 
 .play-zone-banana {

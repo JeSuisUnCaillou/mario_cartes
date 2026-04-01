@@ -474,10 +474,10 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           if (data.pendingDiscard > 0) {
             pendingDiscards = data.pendingDiscard;
             const playZone = document.getElementById("play-zone");
-            playZone.classList.add("discard-hit");
+            playZone.classList.add("discard-hit", "discard-hit-banana");
             playZone.innerHTML = `
               <img src="/banana.svg" class="play-zone-banana" />
-              <span class="play-zone-label">Banana! Drag a card here to discard it.</span>
+              <span class="play-zone-label">Drag a card here to discard it.</span>
             `;
             updatePlayZone();
           }
@@ -574,25 +574,29 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         const playZone = document.getElementById("play-zone");
         const zoneRect = playZone.getBoundingClientRect();
 
-        // Crash animation: banana falls from above into the play zone
-        const crashBanana = document.createElement("img");
-        crashBanana.src = "/banana.svg";
-        crashBanana.className = "banana-crash";
-        crashBanana.style.position = "fixed";
-        crashBanana.style.width = "80px";
-        crashBanana.style.height = "auto";
-        crashBanana.style.left = (zoneRect.left + zoneRect.width / 2 - 40) + "px";
-        crashBanana.style.top = "-100px";
-        crashBanana.style.zIndex = "999";
-        crashBanana.style.pointerEvents = "none";
-        document.body.appendChild(crashBanana);
-        crashBanana.getBoundingClientRect();
-        crashBanana.style.transition = "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
-        crashBanana.style.top = (zoneRect.top + zoneRect.height / 2 - 40) + "px";
+        const isShell = data.source === "green_shell";
+        const crashSrc = isShell ? "/green_shell.svg" : "/banana.svg";
+        const hitLabel = isShell ? "Green shell!" : "Banana!";
+        const hitClass = isShell ? "discard-hit-shell" : "discard-hit-banana";
+
+        // Crash animation: item falls from above into the play zone
+        const crashItem = document.createElement("img");
+        crashItem.src = crashSrc;
+        crashItem.style.position = "fixed";
+        crashItem.style.width = "80px";
+        crashItem.style.height = "auto";
+        crashItem.style.left = (zoneRect.left + zoneRect.width / 2 - 40) + "px";
+        crashItem.style.top = "-100px";
+        crashItem.style.zIndex = "999";
+        crashItem.style.pointerEvents = "none";
+        document.body.appendChild(crashItem);
+        crashItem.getBoundingClientRect();
+        crashItem.style.transition = "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
+        crashItem.style.top = (zoneRect.top + zoneRect.height / 2 - 40) + "px";
         await new Promise((resolve) => {
-          crashBanana.addEventListener("transitionend", resolve, { once: true });
+          crashItem.addEventListener("transitionend", resolve, { once: true });
         });
-        crashBanana.remove();
+        crashItem.remove();
 
         // Auto-draw if server drew cards for us
         if (data.autoDrawn) {
@@ -612,14 +616,14 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           animating = false;
         }
 
-        // Enter banana discard mode
+        // Enter discard mode
         pendingDiscards = data.mustDiscard;
         closeBuyModal();
         updateBuyButton();
-        playZone.classList.add("discard-hit");
+        playZone.classList.add("discard-hit", hitClass);
         playZone.innerHTML = `
-          <img src="/banana.svg" class="play-zone-banana" />
-          <span class="play-zone-label"><h2>Banana!</h2><br />Drag a card here to discard it.</span>
+          <img src="${crashSrc}" class="play-zone-banana" />
+          <span class="play-zone-label"><h2>${hitLabel}</h2><br />Drag a card here to discard it.</span>
         `;
         updatePlayZone();
       });
@@ -659,7 +663,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         if (data.remaining <= 0) {
           pendingDiscards = 0;
           const playZone = document.getElementById("play-zone");
-          playZone.classList.remove("discard-hit");
+          playZone.classList.remove("discard-hit", "discard-hit-banana", "discard-hit-shell");
           updatePlayZone();
           updateBuyButton();
         }

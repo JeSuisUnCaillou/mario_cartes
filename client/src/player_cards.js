@@ -4,6 +4,7 @@ const ITEM_ICONS = {
   coin: "/coin.svg",
   banana: "/banana.svg",
   mushroom: "/mushroom.svg",
+  green_shell: "/green_shell.svg",
 };
 
 const cardElements = new Map();
