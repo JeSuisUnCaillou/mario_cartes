@@ -1088,6 +1088,10 @@ input {
   gap: 2px;
 }
 
+.debug-hand-card .debug-apply-btn {
+  align-self: center;
+}
+
 .debug-circuit-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
