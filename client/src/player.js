@@ -500,11 +500,17 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         }
 
         if (playersDirty) {
-          if (gamePhase === "lobby" && myPlayerId) {
+          if (myPlayerId) {
             const me = state.players.get(myPlayerId);
-            if (me && me.ready !== isReady) {
-              isReady = me.ready;
-              renderLobby(room);
+            if (me) {
+              if (gamePhase === "lobby" && me.ready !== isReady) {
+                isReady = me.ready;
+                renderLobby(room);
+              }
+              if (gamePhase === "playing" && me.coins !== currentCoins) {
+                currentCoins = me.coins;
+                updateCoinDisplay(currentCoins, updateBuyButton);
+              }
             }
           }
           playersDirty = false;
