@@ -21,9 +21,9 @@ function parseCardLines(lines) {
 
 const STARTING_DECK = parseCardLines(raw.player_starting_deck);
 
-const RIVER_DEFS = [raw.river_1_deck, raw.river_2_deck, raw.river_3_deck].map((river) => ({
+const RIVER_DEFS = [raw.river_1, raw.river_2, raw.river_3].map((river) => ({
   cost: river.cost,
-  cards: parseCardLines(river.cards || []),
+  cards: parseCardLines(river.deck || []),
 }));
 
 module.exports = { STARTING_DECK, RIVER_DEFS };
