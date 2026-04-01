@@ -1196,3 +1196,48 @@ input {
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+/* Shell direction modal */
+.shell-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shell-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+
+.shell-modal-title {
+  color: #fff;
+  font-size: 1.4em;
+  text-align: center;
+  margin: 0;
+}
+
+.shell-modal-buttons {
+  display: flex;
+  gap: 24px;
+}
+
+.shell-modal-btn {
+  padding: 24px 36px;
+  font-size: 1.3em;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  background: #2d8c2d;
+}
+
+.shell-modal-btn:active {
+  background: #1f6b1f;
+}

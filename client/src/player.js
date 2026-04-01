@@ -24,13 +24,64 @@ let myPlayerId = null;
 let activePlayerId = null;
 let latestRivers = null;
 let currentCoins = 0;
+let pendingShellChoice = false;
 
 function updateBuyButton() {
-  _updateBuyButton(activePlayerId, myPlayerId, latestRivers, pendingDiscards, openBuyModal);
+  _updateBuyButton(activePlayerId, myPlayerId, latestRivers, pendingDiscards || pendingShellChoice, openBuyModal);
 }
 
 function openBuyModal() {
   _openBuyModal(currentRoom, latestRivers, currentCoins);
+}
+
+function showShellModal() {
+  closeShellModal();
+  const overlay = document.createElement("div");
+  overlay.className = "shell-modal";
+
+  const content = document.createElement("div");
+  content.className = "shell-modal-content";
+
+  const title = document.createElement("h2");
+  title.className = "shell-modal-title";
+  title.textContent = "Throw the green shell";
+  content.appendChild(title);
+
+  const buttons = document.createElement("div");
+  buttons.className = "shell-modal-buttons";
+
+  const backwardBtn = document.createElement("button");
+  backwardBtn.className = "shell-modal-btn shell-modal-backward";
+  backwardBtn.textContent = "Backwards";
+  backwardBtn.addEventListener("click", () => {
+    if (currentRoom) currentRoom.send("shellChoice", { direction: "backward" });
+    pendingShellChoice = false;
+    closeShellModal();
+    updatePlayZone();
+    updateBuyButton();
+  });
+  buttons.appendChild(backwardBtn);
+
+  const forwardBtn = document.createElement("button");
+  forwardBtn.className = "shell-modal-btn shell-modal-forward";
+  forwardBtn.textContent = "Forward";
+  forwardBtn.addEventListener("click", () => {
+    if (currentRoom) currentRoom.send("shellChoice", { direction: "forward" });
+    pendingShellChoice = false;
+    closeShellModal();
+    updatePlayZone();
+    updateBuyButton();
+  });
+  buttons.appendChild(forwardBtn);
+
+  content.appendChild(buttons);
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
+}
+
+function closeShellModal() {
+  const modal = document.querySelector(".shell-modal");
+  if (modal) modal.remove();
 }
 
 function getPointerPos(e) {
@@ -147,12 +198,12 @@ function updatePlayZone() {
   if (endTurnContainer && !document.getElementById("end-turn-btn")) {
     endTurnContainer.innerHTML = `<button id="end-turn-btn" class="end-turn-btn">End turn</button>`;
     document.getElementById("end-turn-btn").addEventListener("click", () => {
-      if (playing || animating || pendingDiscards > 0) return;
+      if (playing || animating || pendingDiscards > 0 || pendingShellChoice) return;
       if (currentRoom) currentRoom.send("endTurn");
     });
   }
   const endTurnBtn = document.getElementById("end-turn-btn");
-  if (playZone.classList.contains("discard-hit")) {
+  if (playZone.classList.contains("discard-hit") || pendingShellChoice) {
     if (endTurnBtn) {
       endTurnBtn.style.visibility = "";
       endTurnBtn.disabled = true;
@@ -430,6 +481,12 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
             `;
             updatePlayZone();
           }
+          if (data.pendingShellChoice) {
+            pendingShellChoice = true;
+            showShellModal();
+            updatePlayZone();
+            updateBuyButton();
+          }
           return;
         }
         animating = true;
@@ -502,6 +559,14 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         });
         if (clones.length === 0) {
           updatePiles(data);
+        }
+
+        // Show shell modal if pending
+        if (data.pendingShellChoice) {
+          pendingShellChoice = true;
+          showShellModal();
+          updatePlayZone();
+          updateBuyButton();
         }
       });
 
