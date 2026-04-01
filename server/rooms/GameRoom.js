@@ -13,6 +13,7 @@ const {
 } = require("./schema");
 
 const DISPOSE_DELAY_MS = 10 * 60 * 1000; // 10 minutes
+const PATCH_DELAY_MS = 60; // Delay between async steps to guarantee separate schema patches (> patchRate 50ms)
 
 class GameRoom extends Room {
   _createDeck() {
@@ -193,6 +194,10 @@ class GameRoom extends Room {
     this.activePlayerId = null;
 
     this.setState(new GameState());
+    // Separate clock ticking from patch sending so that clock.setTimeout
+    // callbacks don't fire inside broadcastPatch() (which would batch
+    // their state changes into the same patch as the previous _syncState).
+    this.setSimulationInterval(() => {});
     this.state.phase = "lobby";
     this.state.currentRound = 0;
     this.state.activePlayerId = "";
@@ -694,7 +699,7 @@ class GameRoom extends Room {
       return;
     }
 
-    this.clock.setTimeout(() => this._processNextItem(player), 0);
+    this.clock.setTimeout(() => this._processNextItem(player), PATCH_DELAY_MS);
   }
 
   _resolveMushroomStep(player) {
@@ -723,7 +728,7 @@ class GameRoom extends Room {
         : null;
 
     if (hitType) {
-      // Defer hit to next tick so the move patch is sent before the hit patch
+      // Defer hit so the move patch is sent before the hit patch
       this.clock.setTimeout(() => {
         this._removeFromCell(player.cellId, hitType);
         this.broadcast("itemHitBoard", {
@@ -742,12 +747,12 @@ class GameRoom extends Room {
           });
         }
         if (player.pendingDiscard === 0) {
-          this.clock.setTimeout(() => this._processNextItem(player), 0);
+          this.clock.setTimeout(() => this._processNextItem(player), PATCH_DELAY_MS);
         }
-      }, 0);
+      }, PATCH_DELAY_MS);
     } else {
       // No hit — continue to next item in next tick
-      this.clock.setTimeout(() => this._processNextItem(player), 0);
+      this.clock.setTimeout(() => this._processNextItem(player), PATCH_DELAY_MS);
     }
   }
 
