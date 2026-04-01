@@ -1,10 +1,9 @@
 player_starting_deck:
-  - 4x coin
-  - 2x coin mushroom
+  - 6x coin mushroom
   - coin coin
   - green_shell
   - mushroom
-  - banana
+  - banana mushroom
 
 river_1:
   cost: 1
@@ -28,7 +27,7 @@ river_2:
     - green_shell coin coin
     - coin coin green_shell
     - green_shell banana coin
-    - banana green_shell
+    - banana green_shell coin
     - green_shell green_shell
     - green_shell green_shell
     - 5x coin coin coin
@@ -54,6 +53,6 @@ river_3:
     - banana green_shell green_shell
     - 4x green_shell mushroom coin
     - 4x green_shell mushroom coin
-    - 4x banana mushroom green_shell
-    - 4x banana mushroom green_shell
+    - 2x banana mushroom green_shell
+    - 2x banana mushroom green_shell
     - 4x mushroom mushroom 
