@@ -1,0 +1,56 @@
+import { renderRivers } from "./river.js";
+
+export function updateBuyButton(activePlayerId, myPlayerId, latestRivers, pendingDiscards, openBuyModal) {
+  const container = document.getElementById("buy-btn-container");
+  if (!container) return;
+  const isMyTurn = activePlayerId === myPlayerId;
+  if (isMyTurn && latestRivers && pendingDiscards === 0) {
+    if (!document.getElementById("buy-btn")) {
+      container.innerHTML = `<button id="buy-btn" class="buy-btn">Buy cards</button>`;
+      document.getElementById("buy-btn").addEventListener("click", openBuyModal);
+    }
+    container.style.visibility = "";
+  } else {
+    container.style.visibility = "hidden";
+  }
+}
+
+export function openBuyModal(currentRoom, latestRivers, currentCoins) {
+  if (document.querySelector(".buy-modal")) return;
+  const overlay = document.createElement("div");
+  overlay.className = "buy-modal";
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeBuyModal();
+  });
+
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "buy-modal-close";
+  closeBtn.textContent = "✕";
+  closeBtn.addEventListener("click", closeBuyModal);
+  overlay.appendChild(closeBtn);
+
+  const content = document.createElement("div");
+  content.className = "buy-modal-content";
+  overlay.appendChild(content);
+
+  document.body.appendChild(overlay);
+  renderBuyModal(currentRoom, latestRivers, currentCoins);
+}
+
+export function renderBuyModal(currentRoom, latestRivers, currentCoins) {
+  const content = document.querySelector(".buy-modal-content");
+  if (!content || !latestRivers) return;
+  renderRivers(content, latestRivers, {
+    onCardClick: (river, card) => {
+      if (currentRoom) {
+        currentRoom.send("buyCard", { riverId: river.id, cardId: card.id });
+      }
+    },
+    isAffordable: (river) => currentCoins >= river.cost,
+  });
+}
+
+export function closeBuyModal() {
+  const modal = document.querySelector(".buy-modal");
+  if (modal) modal.remove();
+}

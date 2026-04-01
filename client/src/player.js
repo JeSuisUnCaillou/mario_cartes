@@ -1,61 +1,16 @@
 import { Client } from "colyseus.js";
-import { isPointInRect, splitDrawBatches, initialDrawPileCount, normalizeName, cardItemPositions } from "./player.functions.js";
-import { renderRivers } from "./river.js";
+import { isPointInRect, splitDrawBatches, initialDrawPileCount, normalizeName } from "./player.functions.js";
+import {
+  ensureCardElements, getCardElement, spawnThrowAnimation,
+  animateShuffle, animateDrawCards, captureHandPositions, recomputeFan,
+  renderHand, renderPileContent, updatePileCount, updatePiles, updateCoinDisplay,
+} from "./player_cards.js";
+import { updateBuyButton as _updateBuyButton, openBuyModal as _openBuyModal, renderBuyModal, closeBuyModal } from "./player_buy.js";
 
 function ordinalSuffix(n) {
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-
-const ITEM_ICONS = {
-  coin: "/coin.svg",
-  banana: "/banana.svg",
-  mushroom: "/mushroom.svg",
-};
-
-const cardElements = new Map();
-
-function createCardElement(card) {
-  const container = document.createElement("div");
-  container.className = "card";
-  container.dataset.cardId = card.id;
-  container.dataset.items = JSON.stringify(card.items);
-
-  const bg = document.createElement("img");
-  bg.src = "/card - blank.svg";
-  bg.className = "card-bg";
-  bg.draggable = false;
-  container.appendChild(bg);
-
-  const positions = cardItemPositions(card.items.length);
-  card.items.forEach((item, i) => {
-    const icon = document.createElement("img");
-    icon.src = ITEM_ICONS[item];
-    icon.className = "card-item";
-    icon.style.left = positions[i].x;
-    icon.style.top = positions[i].y;
-    icon.draggable = false;
-    container.appendChild(icon);
-  });
-
-  return container;
-}
-
-function ensureCardElements(deck) {
-  if (!deck) return;
-  for (const card of deck) {
-    if (!cardElements.has(card.id)) {
-      cardElements.set(card.id, createCardElement(card));
-    }
-  }
-}
-
-function getCardElement(card) {
-  if (!cardElements.has(card.id)) {
-    cardElements.set(card.id, createCardElement(card));
-  }
-  return cardElements.get(card.id);
 }
 
 let playing = false;
@@ -70,218 +25,12 @@ let activePlayerId = null;
 let latestRivers = null;
 let currentCoins = 0;
 
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+function updateBuyButton() {
+  _updateBuyButton(activePlayerId, myPlayerId, latestRivers, pendingDiscards, openBuyModal);
 }
 
-function spawnThrowAnimation(imageSrc, playZone) {
-  const zoneRect = playZone.getBoundingClientRect();
-  const el = document.createElement("img");
-  el.src = imageSrc;
-  el.className = "item-throw";
-  el.style.position = "fixed";
-  el.style.width = "60px";
-  el.style.height = "auto";
-  el.style.left = (zoneRect.left + zoneRect.width / 2 - 30) + "px";
-  el.style.top = (zoneRect.top + zoneRect.height / 2 - 30) + "px";
-  el.style.zIndex = "999";
-  el.style.pointerEvents = "none";
-  document.body.appendChild(el);
-  el.addEventListener("animationend", () => el.remove(), { once: true });
-}
-
-async function animateShuffle(count) {
-  const discardEl = document.getElementById("discard-pile");
-  const drawEl = document.getElementById("draw-pile");
-  const discardRect = discardEl.getBoundingClientRect();
-  const drawRect = drawEl.getBoundingClientRect();
-  let remaining = count;
-
-  for (let i = 0; i < count; i++) {
-    remaining--;
-    renderPileContent("discard-pile-content", remaining, "Discard pile", "/card - back.svg");
-    updatePileCount("discard-count", remaining);
-
-    const card = document.createElement("img");
-    card.src = "/card - back.svg";
-    card.className = "card-anim";
-    card.style.position = "fixed";
-    card.style.width = "40px";
-    card.style.height = "auto";
-    card.style.left = (discardRect.left + discardRect.width / 2 - 20) + "px";
-    card.style.top = (discardRect.top) + "px";
-    card.style.zIndex = "999";
-    card.style.transition = "all 0.12s ease-in-out";
-    card.style.pointerEvents = "none";
-    document.body.appendChild(card);
-
-    // Force reflow then animate to draw pile in arc
-    card.getBoundingClientRect();
-    card.style.left = (drawRect.left + drawRect.width / 2 - 20) + "px";
-    card.style.top = (drawRect.top) + "px";
-
-    await delay(50);
-    card.addEventListener("transitionend", () => card.remove(), { once: true });
-  }
-  // Wait for last card transition to finish
-  await delay(150);
-}
-
-async function animateDrawCards(cards, startIndex = 0) {
-  const drawEl = document.getElementById("draw-pile");
-  const drawRect = drawEl.getBoundingClientRect();
-  const handArea = document.getElementById("hand-area");
-
-  // If first batch, clear hand area
-  if (startIndex === 0) {
-    handArea.innerHTML = "";
-  }
-
-  // Animate each card one by one: add to DOM, recompute fan, fly in
-  for (let i = 0; i < cards.length; i++) {
-    const card = cards[i];
-    const el = getCardElement(card);
-    el.style.visibility = "hidden";
-    el.style.transform = "rotate(0deg) translateY(0px)";
-    handArea.appendChild(el);
-
-    // Recompute fan for all visible cards + this new one
-    const allCards = Array.from(handArea.children);
-    const visibleCount = allCards.length;
-    const angleStep = 10;
-    allCards.forEach((c, idx) => {
-      const offset = idx - (visibleCount - 1) / 2;
-      const rotation = offset * angleStep;
-      const lift = Math.abs(offset) * 8;
-      c.dataset.fanTransform = `rotate(${rotation}deg) translateY(${lift}px)`;
-      // Existing visible cards animate via CSS transition
-      if (c !== el) {
-        c.style.transform = c.dataset.fanTransform;
-      }
-    });
-
-    // Set the new card's transform to get its target position
-    el.style.transform = el.dataset.fanTransform;
-    const targetRect = el.getBoundingClientRect();
-
-    // Update draw pile count
-    animDrawCount--;
-    renderPileContent("draw-pile-content", animDrawCount, "Draw pile", "/card - back.svg");
-    updatePileCount("draw-count", animDrawCount);
-
-    // Create 3D flipping card that flies from draw pile to hand
-    const flyer = document.createElement("div");
-    flyer.className = "card-flyer";
-    flyer.style.position = "fixed";
-    flyer.style.width = "40px";
-    flyer.style.aspectRatio = "54 / 86";
-    flyer.style.left = (drawRect.left + drawRect.width / 2 - 20) + "px";
-    flyer.style.top = drawRect.top + "px";
-    flyer.style.zIndex = "999";
-    flyer.style.pointerEvents = "none";
-    flyer.style.perspective = "600px";
-
-    const inner = document.createElement("div");
-    inner.className = "card-flyer-inner";
-    inner.style.transition = "transform 0.25s ease-in-out";
-    inner.style.transform = "rotateY(0deg)";
-
-    const backFace = document.createElement("img");
-    backFace.src = "/card - back.svg";
-    backFace.className = "card-flyer-face card-flyer-back";
-
-    const frontFace = el.cloneNode(true);
-    frontFace.className = "card-flyer-face card-flyer-front";
-    frontFace.style.cssText = "";
-
-    inner.appendChild(backFace);
-    inner.appendChild(frontFace);
-    flyer.appendChild(inner);
-    document.body.appendChild(flyer);
-
-    // Force reflow, then animate position + size + flip
-    flyer.getBoundingClientRect();
-    const flyDuration = 250;
-    flyer.style.transition = `left ${flyDuration}ms ease-out, top ${flyDuration}ms ease-out, width ${flyDuration}ms ease-out`;
-    flyer.style.left = targetRect.left + "px";
-    flyer.style.top = targetRect.top + "px";
-    flyer.style.width = targetRect.width + "px";
-    inner.style.transform = "rotateY(180deg)";
-
-    // Wait for fly+flip to fully complete, then swap instantly
-    await new Promise((resolve) => {
-      flyer.addEventListener("transitionend", () => {
-        el.style.visibility = "";
-        addDragListeners(el);
-        flyer.remove();
-        resolve();
-      }, { once: true });
-    });
-  }
-}
-
-function captureHandPositions() {
-  const handArea = document.getElementById("hand-area");
-  const cards = Array.from(handArea.querySelectorAll(".card"));
-  const positions = new Map();
-  cards.forEach((img) => {
-    positions.set(img.dataset.cardId, img.getBoundingClientRect());
-  });
-  return positions;
-}
-
-function recomputeFan(previousPositions) {
-  const handArea = document.getElementById("hand-area");
-  const cards = Array.from(handArea.querySelectorAll(".card:not([style*='visibility: hidden'])"));
-  const n = cards.length;
-  const angleStep = 10;
-
-  // Compute and apply new fan transforms without transition
-  cards.forEach((img, i) => {
-    img.style.transition = "none";
-    const offset = i - (n - 1) / 2;
-    const rotation = offset * angleStep;
-    const lift = Math.abs(offset) * 8;
-    img.dataset.fanTransform = `rotate(${rotation}deg) translateY(${lift}px)`;
-    img.style.transform = img.dataset.fanTransform;
-  });
-
-  // FLIP: Invert — if we have previous positions, offset cards back to where they were
-  if (previousPositions) {
-    cards.forEach((img) => {
-      const oldRect = previousPositions.get(img.dataset.cardId);
-      if (oldRect) {
-        const newRect = img.getBoundingClientRect();
-        const dx = oldRect.left - newRect.left;
-        const dy = oldRect.top - newRect.top;
-        img.style.transform = `translate(${dx}px, ${dy}px) ${img.dataset.fanTransform}`;
-      }
-    });
-  }
-
-  // FLIP: Play — force reflow then animate to final positions
-  handArea.getBoundingClientRect();
-  cards.forEach((img) => {
-    img.style.transition = "transform 0.4s ease-in-out, margin-left 0.4s ease-in-out";
-    img.style.transform = img.dataset.fanTransform;
-  });
-}
-
-function renderHand(hand) {
-  const handArea = document.getElementById("hand-area");
-  handArea.innerHTML = "";
-  const n = hand.length;
-  const angleStep = 10;
-  hand.forEach((card, i) => {
-    const el = getCardElement(card);
-    const offset = i - (n - 1) / 2;
-    const rotation = offset * angleStep;
-    const lift = Math.abs(offset) * 8;
-    el.style.transform = `rotate(${rotation}deg) translateY(${lift}px)`;
-    el.dataset.fanTransform = el.style.transform;
-    addDragListeners(el);
-    handArea.appendChild(el);
-  });
+function openBuyModal() {
+  _openBuyModal(currentRoom, latestRivers, currentCoins);
 }
 
 function getPointerPos(e) {
@@ -390,89 +139,6 @@ function addDragListeners(card) {
   card.addEventListener("touchstart", onStart, { passive: false });
 }
 
-function renderPileContent(containerId, count, emptyLabel, iconSrc) {
-  const container = document.getElementById(containerId);
-  if (count === 0) {
-    container.innerHTML = `<div class="pile-empty"><span>${emptyLabel}</span></div>`;
-  } else {
-    container.innerHTML = `<img class="pile-icon" src="${iconSrc}" alt="${emptyLabel}" />`;
-  }
-}
-
-function updatePileCount(countId, count) {
-  document.getElementById(countId).textContent = count;
-}
-
-function updatePiles({ drawCount, discardCount, discardTopCard }) {
-  renderPileContent("draw-pile-content", drawCount, "Draw pile", "/card - back.svg");
-  const discardContainer = document.getElementById("discard-pile-content");
-  if (discardCount === 0) {
-    discardContainer.innerHTML = `<div class="pile-empty"><span>Discard pile</span></div>`;
-  } else if (discardTopCard) {
-    const miniCard = createCardElement(discardTopCard);
-    miniCard.className = "card pile-card";
-    discardContainer.innerHTML = "";
-    discardContainer.appendChild(miniCard);
-  }
-  updatePileCount("draw-count", drawCount);
-  updatePileCount("discard-count", discardCount);
-}
-
-function updateBuyButton() {
-  const container = document.getElementById("buy-btn-container");
-  if (!container) return;
-  const isMyTurn = activePlayerId === myPlayerId;
-  if (isMyTurn && latestRivers && pendingDiscards === 0) {
-    if (!document.getElementById("buy-btn")) {
-      container.innerHTML = `<button id="buy-btn" class="buy-btn">Buy cards</button>`;
-      document.getElementById("buy-btn").addEventListener("click", openBuyModal);
-    }
-    container.style.visibility = "";
-  } else {
-    container.style.visibility = "hidden";
-  }
-}
-
-function openBuyModal() {
-  if (document.querySelector(".buy-modal")) return;
-  const overlay = document.createElement("div");
-  overlay.className = "buy-modal";
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) closeBuyModal();
-  });
-
-  const closeBtn = document.createElement("button");
-  closeBtn.className = "buy-modal-close";
-  closeBtn.textContent = "✕";
-  closeBtn.addEventListener("click", closeBuyModal);
-  overlay.appendChild(closeBtn);
-
-  const content = document.createElement("div");
-  content.className = "buy-modal-content";
-  overlay.appendChild(content);
-
-  document.body.appendChild(overlay);
-  renderBuyModal();
-}
-
-function renderBuyModal() {
-  const content = document.querySelector(".buy-modal-content");
-  if (!content || !latestRivers) return;
-  renderRivers(content, latestRivers, {
-    onCardClick: (river, card) => {
-      if (currentRoom) {
-        currentRoom.send("buyCard", { riverId: river.id, cardId: card.id });
-      }
-    },
-    isAffordable: (river) => currentCoins >= river.cost,
-  });
-}
-
-function closeBuyModal() {
-  const modal = document.querySelector(".buy-modal");
-  if (modal) modal.remove();
-}
-
 function updatePlayZone() {
   const playZone = document.getElementById("play-zone");
   const endTurnContainer = document.getElementById("end-turn-container");
@@ -507,20 +173,6 @@ function updatePlayZone() {
       endTurnBtn.classList.remove("disabled");
     }
   }
-}
-
-function updateCoinDisplay(coins) {
-  currentCoins = coins;
-  const coinDisplay = document.getElementById("coin-display");
-  if (!coinDisplay) return;
-  coinDisplay.innerHTML = "";
-  for (let i = 0; i < coins; i++) {
-    const img = document.createElement("img");
-    img.src = "/coin.svg";
-    img.className = "coin-icon";
-    coinDisplay.appendChild(img);
-  }
-  updateBuyButton();
 }
 
 async function joinWithRetry(client, gameId, options, maxAttempts = 30, delayMs = 2000) {
@@ -747,7 +399,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
 
         updatePlayZone();
         updateBuyButton();
-        if (document.querySelector(".buy-modal")) renderBuyModal();
+        if (document.querySelector(".buy-modal")) renderBuyModal(currentRoom, latestRivers, currentCoins);
       });
 
       room.onMessage("players", (players) => {
@@ -765,9 +417,9 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         ensureCardElements(data.deck);
         // On reconnect (hand already existed), just render without animation
         if (data.drawnBeforeShuffle === undefined) {
-          renderHand(data.hand);
+          renderHand(data.hand, addDragListeners);
           updatePiles(data);
-          updateCoinDisplay(data.coins || 0);
+          updateCoinDisplay(data.coins || 0, updateBuyButton);
           if (data.pendingBananaDiscards > 0) {
             pendingDiscards = data.pendingBananaDiscards;
             const playZone = document.getElementById("play-zone");
@@ -787,7 +439,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
 
         // Draw first batch (cards from draw pile before shuffle)
         if (firstBatch.length > 0) {
-          await animateDrawCards(firstBatch);
+          animDrawCount = await animateDrawCards(firstBatch, addDragListeners, animDrawCount);
         }
 
         // Shuffle animation if needed
@@ -801,7 +453,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
 
         // Draw second batch (cards from draw pile after shuffle)
         if (secondBatch.length > 0) {
-          await animateDrawCards(secondBatch, firstBatch.length);
+          animDrawCount = await animateDrawCards(secondBatch, addDragListeners, animDrawCount, firstBatch.length);
         }
 
         updatePiles(data);
@@ -829,7 +481,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           setTimeout(() => spawnThrowAnimation("/coin.svg", playZone), i * 400);
         }
 
-        updateCoinDisplay(data.coins);
+        updateCoinDisplay(data.coins, updateBuyButton);
 
         // Animate drag clone from play zone to discard pile
         const discardEl = document.getElementById("discard-pile");
@@ -883,14 +535,14 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           const drawData = data.autoDrawn;
           const { firstBatch, secondBatch } = splitDrawBatches(drawData.hand, drawData.drawnBeforeShuffle);
           animDrawCount = initialDrawPileCount(drawData.drawCount, drawData.hand.length, drawData.shuffledCount, drawData.drawnBeforeShuffle);
-          if (firstBatch.length > 0) await animateDrawCards(firstBatch);
+          if (firstBatch.length > 0) animDrawCount = await animateDrawCards(firstBatch, addDragListeners, animDrawCount);
           if (drawData.shuffledCount > 0) {
             await animateShuffle(drawData.shuffledCount);
             animDrawCount = drawData.drawCount + secondBatch.length;
             renderPileContent("draw-pile-content", animDrawCount, "Draw pile", "/card - back.svg");
             updatePileCount("draw-count", animDrawCount);
           }
-          if (secondBatch.length > 0) await animateDrawCards(secondBatch, firstBatch.length);
+          if (secondBatch.length > 0) animDrawCount = await animateDrawCards(secondBatch, addDragListeners, animDrawCount, firstBatch.length);
           updatePiles(drawData);
           animating = false;
         }
@@ -951,7 +603,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
       room.onMessage("cardBought", (data) => {
         ensureCardElements(data.deck);
         currentCoins = data.coins;
-        updateCoinDisplay(data.coins);
+        updateCoinDisplay(data.coins, updateBuyButton);
         updatePiles(data);
         updateBuyButton();
 
@@ -982,7 +634,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
             });
           }
           // Re-render modal with updated rivers and coins
-          if (latestRivers) renderBuyModal();
+          if (latestRivers) renderBuyModal(currentRoom, latestRivers, currentCoins);
         }
       });
 
