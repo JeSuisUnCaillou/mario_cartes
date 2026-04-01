@@ -300,103 +300,16 @@ class GameRoom extends Room {
       if (player.playerId !== this.activePlayerId) return;
       if (player.pendingDiscard > 0) return;
       if (player.pendingShellChoice) return;
+      if (player.pendingItems.length > 0) return;
       const cardIndex = player.hand.findIndex((c) => c.id === data.cardId);
       if (cardIndex === -1) return;
       const [card] = player.hand.splice(cardIndex, 1);
       if (player.hand.length === 0) player.hasPlayedAllCards = true;
 
-      // Process card items
-      let droppedBanana = null;
-      let coinGained = 0;
-      let moveCount = 0;
-      for (const item of card.items) {
-        if (item === "banana") {
-          if (droppedBanana === null) droppedBanana = player.cellId;
-          const occupants = this._cellOccupants(player.cellId);
-          const playerIdx = occupants.indexOf(player.playerId);
-          if (playerIdx !== -1) {
-            occupants.splice(playerIdx, 0, "banana");
-          } else {
-            occupants.push("banana");
-          }
-        } else if (item === "coin") {
-          player.coins += 1;
-          coinGained += 1;
-        } else if (item === "mushroom") {
-          moveCount += 1;
-        } else if (item === "green_shell") {
-          player.pendingShellChoice = true;
-        }
-      }
-
-      // Move one cell at a time, checking for item collisions and lap completion
-      const itemHits = [];
-      let playerFinished = false;
-      if (player.lapCount === 0) player.lapCount = 1;
-      for (let i = 0; i < moveCount; i++) {
-        const oldCellId = player.cellId;
-        player.cellId = this.cells.get(player.cellId).next_cell;
-        this._removeFromCell(oldCellId, player.playerId);
-        this._addToCell(player.cellId, player.playerId);
-        this.broadcastCellOccupants();
-
-        // Lap detection
-        if (this.cells.get(player.cellId).finish_line) {
-          player.lapCount++;
-          if (player.lapCount > 3) {
-            this.ranking.push(player.playerId);
-            playerFinished = true;
-            break;
-          }
-        }
-
-        if (this._bananasOnCell(player.cellId) > 0) {
-          this._removeFromCell(player.cellId, "banana");
-          this.broadcast("itemHitBoard", {
-            type: "banana",
-            playerId: player.playerId,
-            cellId: player.cellId,
-          });
-          itemHits.push({ cellId: player.cellId, source: "banana" });
-        } else if (this._greenShellsOnCell(player.cellId) > 0) {
-          this._removeFromCell(player.cellId, "green_shell");
-          this.broadcast("itemHitBoard", {
-            type: "green_shell",
-            playerId: player.playerId,
-            cellId: player.cellId,
-          });
-          itemHits.push({ cellId: player.cellId, source: "green_shell" });
-        }
-      }
-
       player.discardPile.push(card);
-      if (droppedBanana !== null) this.broadcastCellOccupants();
-      client.send("cardPlayed", { cardId: card.id, droppedBanana, coinGained, ...this._cardState(player) });
-      this.broadcastPlayers();
-
-      // Player just finished: auto-end turn
-      if (playerFinished) {
-        this._endTurnForFinishedPlayer(player);
-        if (this.ranking.length === this.players.size) {
-          this._endGame();
-        }
-        return;
-      }
-
-      // Send item hit events to the player (stacking discards)
-      if (itemHits.length > 0) {
-        const mustDiscard = Math.min(itemHits.length, player.hand.length);
-        if (mustDiscard > 0) {
-          player.pendingDiscard = mustDiscard;
-          client.send("discardHit", {
-            source: itemHits[0].source,
-            itemHits,
-            mustDiscard,
-            ...this._cardState(player),
-          });
-        }
-      }
-
+      player.pendingItems = [...card.items];
+      this._sendToPlayer(player.playerId, "cardPlayed", { cardId: card.id, ...this._cardState(player) });
+      this._processNextItem(player);
     });
 
     this.onMessage("discardCard", (client, data) => {
@@ -416,6 +329,9 @@ class GameRoom extends Room {
       });
       this.broadcastPlayers();
 
+      if (player.pendingDiscard === 0 && player.pendingItems.length > 0) {
+        this._processNextItem(player);
+      }
     });
 
     this.onMessage("shellChoice", (client, data) => {
@@ -430,6 +346,10 @@ class GameRoom extends Room {
         : this._previousCell(player.cellId);
 
       this._resolveShell(player, client, targetCellId);
+
+      if (player.pendingItems.length > 0) {
+        this._processNextItem(player);
+      }
     });
 
     this.onMessage("endTurn", (client) => {
@@ -439,6 +359,7 @@ class GameRoom extends Room {
       if (player.playerId !== this.activePlayerId) return;
       if (player.pendingDiscard > 0) return;
       if (player.pendingShellChoice) return;
+      if (player.pendingItems.length > 0) return;
       this._endTurnAndAdvance(player);
     });
 
@@ -449,6 +370,7 @@ class GameRoom extends Room {
       if (player.playerId !== this.activePlayerId) return;
       if (player.pendingDiscard > 0) return;
       if (player.pendingShellChoice) return;
+      if (player.pendingItems.length > 0) return;
       const river = this.rivers.find((r) => r.id === data.riverId);
       if (!river) return;
       const slotIndex = river.slots.findIndex((c) => c && c.id === data.cardId);
@@ -564,7 +486,7 @@ class GameRoom extends Room {
   _initialPlayerState() {
     return {
       cellId: 1, drawPile: this._createDeck(), hand: [], discardPile: [],
-      pendingDiscard: 0, pendingShellChoice: false, ready: false, hasPlayedAllCards: false, coins: 0, lapCount: 0,
+      pendingDiscard: 0, pendingShellChoice: false, pendingItems: [], ready: false, hasPlayedAllCards: false, coins: 0, lapCount: 0,
     };
   }
 
@@ -684,6 +606,106 @@ class GameRoom extends Room {
     }
   }
 
+  _processNextItem(player) {
+    if (player.pendingItems.length === 0) {
+      this.broadcastPlayers();
+      return;
+    }
+
+    const item = player.pendingItems.shift();
+
+    if (item === "mushroom") {
+      this._resolveMushroomStep(player);
+      if (player.pendingDiscard > 0) return;
+      if (this.ranking.includes(player.playerId)) return;
+    } else if (item === "banana") {
+      this._resolveBananaStep(player);
+    } else if (item === "coin") {
+      this._resolveCoinStep(player);
+    } else if (item === "green_shell") {
+      player.pendingShellChoice = true;
+      this._sendToPlayer(player.playerId, "cardPlayed", { ...this._cardState(player) });
+      this.broadcastPlayers();
+      return;
+    }
+
+    this._processNextItem(player);
+  }
+
+  _resolveMushroomStep(player) {
+    if (player.lapCount === 0) player.lapCount = 1;
+    const oldCellId = player.cellId;
+    player.cellId = this.cells.get(player.cellId).next_cell;
+    this._removeFromCell(oldCellId, player.playerId);
+    this._addToCell(player.cellId, player.playerId);
+    this.broadcastCellOccupants();
+
+    if (this.cells.get(player.cellId).finish_line) {
+      player.lapCount++;
+      if (player.lapCount > 3) {
+        this.ranking.push(player.playerId);
+        player.pendingItems = [];
+        this._endTurnForFinishedPlayer(player);
+        if (this.ranking.length === this.players.size) {
+          this._endGame();
+        }
+        return;
+      }
+    }
+
+    if (this._bananasOnCell(player.cellId) > 0) {
+      this._removeFromCell(player.cellId, "banana");
+      this.broadcast("itemHitBoard", {
+        type: "banana",
+        playerId: player.playerId,
+        cellId: player.cellId,
+      });
+      this.broadcastCellOccupants();
+      const mustDiscard = Math.min(1, player.hand.length);
+      if (mustDiscard > 0) {
+        player.pendingDiscard = mustDiscard;
+        this._sendToPlayer(player.playerId, "discardHit", {
+          source: "banana",
+          mustDiscard,
+          ...this._cardState(player),
+        });
+      }
+    } else if (this._greenShellsOnCell(player.cellId) > 0) {
+      this._removeFromCell(player.cellId, "green_shell");
+      this.broadcast("itemHitBoard", {
+        type: "green_shell",
+        playerId: player.playerId,
+        cellId: player.cellId,
+      });
+      this.broadcastCellOccupants();
+      const mustDiscard = Math.min(1, player.hand.length);
+      if (mustDiscard > 0) {
+        player.pendingDiscard = mustDiscard;
+        this._sendToPlayer(player.playerId, "discardHit", {
+          source: "green_shell",
+          mustDiscard,
+          ...this._cardState(player),
+        });
+      }
+    }
+  }
+
+  _resolveBananaStep(player) {
+    const occupants = this._cellOccupants(player.cellId);
+    const playerIdx = occupants.indexOf(player.playerId);
+    if (playerIdx !== -1) {
+      occupants.splice(playerIdx, 0, "banana");
+    } else {
+      occupants.push("banana");
+    }
+    this.broadcastCellOccupants();
+  }
+
+  _resolveCoinStep(player) {
+    player.coins += 1;
+    this.broadcastPlayers();
+  }
+
   _checkAllReady() {
     if (this.players.size === 0) return;
     for (const player of this.players.values()) {
@@ -711,6 +733,7 @@ class GameRoom extends Room {
 
   _endTurnAndAdvance(player) {
     player.coins = 0;
+    player.pendingItems = [];
     // Discard remaining hand cards
     if (player.hand.length > 0) {
       player.discardPile.push(...player.hand.splice(0));
@@ -747,6 +770,7 @@ class GameRoom extends Room {
 
   _endTurnForFinishedPlayer(player) {
     player.coins = 0;
+    player.pendingItems = [];
     if (player.hand.length > 0) {
       player.discardPile.push(...player.hand.splice(0));
     }

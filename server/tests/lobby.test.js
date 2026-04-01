@@ -384,12 +384,11 @@ describe("Deck and coins", () => {
     const coinCard = cards.hand.find((c) => c.items.length === 1 && c.items[0] === "coin");
     if (!coinCard) return; // Skip if no single-coin card in hand (unlikely with 3/8)
     room.send("playCard", { cardId: coinCard.id });
-    const result = await waitForMessage(room, "cardPlayed");
-    expect(result.coins).toBe(1);
-    expect(result.coinGained).toBe(1);
-    // Player should not have moved from cell 1
-    const players = await waitForPlayers(room, (list) => list[0].handCount === 4);
-    expect(players[0].cellId).toBe(1);
+    await waitForMessage(room, "cardPlayed");
+    // Coin is resolved sequentially, check via players broadcast
+    const players = await waitForPlayers(room, (list) => list[0].coins === 1);
+    expect(players[0].coins).toBe(1);
+    expect(players[0].cellId).toBe(1); // should not have moved
     room.leave();
   });
 
@@ -402,9 +401,9 @@ describe("Deck and coins", () => {
     const coinCard = cards.hand.find((c) => c.items.length === 2 && c.items.every((i) => i === "coin"));
     if (!coinCard) return; // Skip if no double-coin card in hand
     room.send("playCard", { cardId: coinCard.id });
-    const result = await waitForMessage(room, "cardPlayed");
-    expect(result.coins).toBe(2);
-    expect(result.coinGained).toBe(2);
+    await waitForMessage(room, "cardPlayed");
+    const players = await waitForPlayers(room, (list) => list[0].coins === 2);
+    expect(players[0].coins).toBe(2);
     room.leave();
   });
 });
@@ -438,8 +437,8 @@ describe("End turn", () => {
     const coinCard = cards.hand.find((c) => c.items.length === 1 && c.items[0] === "coin");
     if (!coinCard) { room.leave(); return; }
     room.send("playCard", { cardId: coinCard.id });
-    const played = await waitForMessage(room, "cardPlayed");
-    expect(played.coins).toBe(1);
+    await waitForMessage(room, "cardPlayed");
+    await waitForPlayers(room, (list) => list[0].coins === 1);
     room.send("endTurn");
     // After endTurn, players broadcast should show coins: 0
     const players = await waitForPlayers(room, (list) => list[0].coins === 0);
@@ -569,11 +568,11 @@ describe("Mushroom movement and banana collision", () => {
     const multiCard = cards.hand.find((c) => c.items.includes("banana") && c.items.includes("coin") && c.items.includes("mushroom"));
     expect(multiCard).toBeDefined();
     room.send("playCard", { cardId: multiCard.id });
-    const result = await waitForMessage(room, "cardPlayed");
-    expect(result.coinGained).toBe(1);
-    expect(result.droppedBanana).toBe(1); // banana dropped on starting cell
+    await waitForMessage(room, "cardPlayed");
+    // Items resolve sequentially: banana on cell 1, then coin, then mushroom moves to cell 2
     const players = await waitForPlayers(room, (list) => list[0].cellId === 2);
     expect(players[0].cellId).toBe(2); // moved forward 1
+    expect(players[0].coins).toBe(1);
     room.leave();
   });
 
@@ -641,8 +640,7 @@ describe("Mushroom movement and banana collision", () => {
 
     // Should receive banana hit
     const discardHit = await waitForMessage(passiveRoom, "discardHit");
-    expect(discardHit.itemHits).toHaveLength(1);
-    expect(discardHit.itemHits[0].cellId).toBe(2);
+    expect(discardHit.source).toBe("banana");
     expect(discardHit.mustDiscard).toBe(1);
 
     room1.leave();
@@ -694,11 +692,20 @@ describe("Mushroom movement and banana collision", () => {
     passiveRoom.send("playCard", { cardId: doubleMushroom.id });
     await waitForMessage(passiveRoom, "cardPlayed");
 
-    const discardHit = await waitForMessage(passiveRoom, "discardHit");
-    expect(discardHit.itemHits).toHaveLength(2);
-    expect(discardHit.itemHits[0].cellId).toBe(2);
-    expect(discardHit.itemHits[1].cellId).toBe(3);
-    expect(discardHit.mustDiscard).toBe(2);
+    // First mushroom hits banana on cell 2
+    const discardHit1 = await waitForMessage(passiveRoom, "discardHit");
+    expect(discardHit1.source).toBe("banana");
+    expect(discardHit1.mustDiscard).toBe(1);
+
+    // Discard a card to resolve first hit
+    const discardable = passiveCards.hand.find((c) => c.id !== doubleMushroom.id);
+    passiveRoom.send("discardCard", { cardId: discardable.id });
+    await waitForMessage(passiveRoom, "cardDiscarded");
+
+    // Second mushroom hits banana on cell 3
+    const discardHit2 = await waitForMessage(passiveRoom, "discardHit");
+    expect(discardHit2.source).toBe("banana");
+    expect(discardHit2.mustDiscard).toBe(1);
 
     room1.leave();
     room2.leave();
@@ -1523,7 +1530,8 @@ describe("Green shell", () => {
     expect(shellCard).toBeDefined();
 
     room.send("playCard", { cardId: shellCard.id });
-    const played = await waitForMessage(room, "cardPlayed");
+    // First cardPlayed is card removal, second is after green_shell resolves with pendingShellChoice
+    const played = await waitForMessage(room, "cardPlayed", (p) => p.pendingShellChoice === true);
     expect(played.pendingShellChoice).toBe(true);
 
     room.leave();
@@ -1539,7 +1547,7 @@ describe("Green shell", () => {
     const cards = await waitForMessage(room, "cardsDrawn");
     const shellCard = cards.hand.find((c) => c.items.includes("green_shell"));
     room.send("playCard", { cardId: shellCard.id });
-    await waitForMessage(room, "cardPlayed");
+    await waitForMessage(room, "cardPlayed", (p) => p.pendingShellChoice === true);
 
     // Try playing another card — should be ignored
     const coinCard = cards.hand.find((c) => c.items.includes("coin"));
@@ -1572,7 +1580,7 @@ describe("Green shell", () => {
     const shellCard = cards.hand.find((c) => c.items.includes("green_shell"));
 
     room.send("playCard", { cardId: shellCard.id });
-    await waitForMessage(room, "cardPlayed");
+    await waitForMessage(room, "cardPlayed", (p) => p.pendingShellChoice === true);
 
     room.send("shellChoice", { direction: "forward" });
     const thrown = await waitForMessage(board, "shellThrown");
@@ -1600,7 +1608,7 @@ describe("Green shell", () => {
     const shellCard = cards.hand.find((c) => c.items.includes("green_shell"));
 
     room.send("playCard", { cardId: shellCard.id });
-    await waitForMessage(room, "cardPlayed");
+    await waitForMessage(room, "cardPlayed", (p) => p.pendingShellChoice === true);
 
     room.send("shellChoice", { direction: "backward" });
     const thrown = await waitForMessage(board, "shellThrown");
@@ -1638,7 +1646,7 @@ describe("Green shell", () => {
     // Now active is on cell 2. Throw shell backward to cell 1 where passive is
     const shellCard = activeCards.hand.find((c) => c.items.includes("green_shell"));
     activeRoom.send("playCard", { cardId: shellCard.id });
-    await waitForMessage(activeRoom, "cardPlayed");
+    await waitForMessage(activeRoom, "cardPlayed", (p) => p.pendingShellChoice === true);
 
     activeRoom.send("shellChoice", { direction: "backward" });
     const thrown = await waitForMessage(board, "shellThrown");
@@ -1671,7 +1679,7 @@ describe("Green shell", () => {
 
     const shellCard = cards.hand.find((c) => c.items.includes("green_shell"));
     room.send("playCard", { cardId: shellCard.id });
-    await waitForMessage(room, "cardPlayed");
+    await waitForMessage(room, "cardPlayed", (p) => p.pendingShellChoice === true);
 
     room.send("shellChoice", { direction: "forward" });
     const thrown = await waitForMessage(board, "shellThrown");
@@ -1698,7 +1706,7 @@ describe("Green shell", () => {
     const shellCard = cards.hand.find((c) => c.items.includes("green_shell"));
 
     room.send("playCard", { cardId: shellCard.id });
-    await waitForMessage(room, "cardPlayed");
+    await waitForMessage(room, "cardPlayed", (p) => p.pendingShellChoice === true);
 
     room.send("shellChoice", { direction: "left" });
     await new Promise((r) => setTimeout(r, 100));
@@ -1725,7 +1733,7 @@ describe("Green shell", () => {
     // Play green_shell, throw forward to cell 2
     const shellCard = cards.hand.find((c) => c.items.includes("green_shell"));
     room.send("playCard", { cardId: shellCard.id });
-    await waitForMessage(room, "cardPlayed");
+    await waitForMessage(room, "cardPlayed", (p) => p.pendingShellChoice === true);
     room.send("shellChoice", { direction: "forward" });
     await waitForMessage(board, "shellThrown");
 
