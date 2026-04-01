@@ -16,6 +16,8 @@ The player's client doesn't display the coins properly : it should display the c
 
 The discard pile should also be under the cards in the players hand.
 
+If a player has finished, his screen should display his ranking while he waits for the race to be over.
+
 ---
 
 DOING
@@ -29,7 +31,6 @@ The players want to set it to READY right away, even though not everyone has arr
 We need an explanation of the cards in the player's client.
 
 l'asset de carapace doit avoir juste un trou (à gauche par exemple), l'autre est censé être derrière
-
 
 If a player has finished, his screen should display his ranking while he waits for the race to be over.
 
