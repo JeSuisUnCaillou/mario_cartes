@@ -714,7 +714,6 @@ class GameRoom extends Room {
     player.cellId = this.cells.get(player.cellId).next_cell;
     this._removeFromCell(oldCellId, player.playerId);
     this._addToCell(player.cellId, player.playerId);
-    this._syncState();
 
     if (this.cells.get(player.cellId).finish_line) {
       player.lapCount++;
@@ -735,9 +734,9 @@ class GameRoom extends Room {
 
     if (hitType) {
       this._removeFromCell(player.cellId, hitType);
-      // Send itemHitBoard BEFORE _syncState so the message arrives before the patch.
-      // The board's animateItemHit has a built-in moveDelay (400ms) that waits for
-      // the helmet tween to finish before playing the hit effects.
+      // Send itemHitBoard BEFORE _syncState so the message arrives before the
+      // single patch containing both move + hit. The board's animateItemHit has
+      // a built-in moveDelay that waits for the helmet tween to finish.
       this.broadcast("itemHitBoard", {
         type: hitType,
         playerId: player.playerId,
@@ -757,6 +756,7 @@ class GameRoom extends Room {
         this.clock.setTimeout(() => this._processNextItem(player), PATCH_DELAY_MS);
       }
     } else {
+      this._syncState();
       // No hit — continue to next item in next tick
       this.clock.setTimeout(() => this._processNextItem(player), PATCH_DELAY_MS);
     }
