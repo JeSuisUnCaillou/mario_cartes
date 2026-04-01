@@ -205,7 +205,8 @@ function updatePlayZone() {
   const endTurnBtn = document.getElementById("end-turn-btn");
   if (playZone.classList.contains("discard-hit") || pendingShellChoice) {
     if (endTurnBtn) {
-      endTurnBtn.style.visibility = "";
+      const isMyTurn = activePlayerId === myPlayerId;
+      endTurnBtn.style.visibility = isMyTurn ? "" : "hidden";
       endTurnBtn.disabled = true;
       endTurnBtn.classList.add("disabled");
     }
@@ -622,6 +623,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         pendingDiscards = data.mustDiscard;
         closeBuyModal();
         updateBuyButton();
+        playZone.classList.remove("waiting");
         playZone.classList.add("discard-hit", hitClass);
         playZone.innerHTML = `
           <img src="${crashSrc}" class="play-zone-banana" />
