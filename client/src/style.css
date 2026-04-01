@@ -825,7 +825,9 @@ input {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: fit-content;
+  width: 100%;
+  max-width: fit-content;
+  --river-card-w: min(80px, 16vw);
 }
 
 /* Buy modal river overrides */
