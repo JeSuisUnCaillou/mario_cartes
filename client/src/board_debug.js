@@ -16,14 +16,12 @@ export function onDebugState(data) {
 }
 
 export function setupDebugKeyboard() {
-  if (import.meta.env.DEV) {
-    document.addEventListener("keydown", (e) => {
-      if (e.ctrlKey && e.key === "d") {
-        e.preventDefault();
-        toggleDebugModal();
-      }
-    });
-  }
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.key === "d") {
+      e.preventDefault();
+      toggleDebugModal();
+    }
+  });
 }
 
 function toggleDebugModal() {
