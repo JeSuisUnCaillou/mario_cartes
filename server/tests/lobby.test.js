@@ -576,6 +576,47 @@ describe("Mushroom movement and banana collision", () => {
     room.leave();
   });
 
+  it("[mushroom, banana] drops banana on cell 2 (after move)", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["mushroom", "banana"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    const card = cards.hand.find((c) => c.items[0] === "mushroom" && c.items[1] === "banana");
+    room.send("playCard", { cardId: card.id });
+    await waitForMessage(room, "cardPlayed");
+    // Mushroom moves to cell 2, then banana drops on cell 2
+    const occ = await waitForMessage(board, "cellOccupants", (o) => o[2] && o[2].includes("banana"));
+    expect(occ[2]).toContain("banana");
+    expect(occ[1] || []).not.toContain("banana"); // NOT on starting cell
+    room.leave();
+    board.leave();
+  });
+
+  it("[banana, mushroom] drops banana on cell 1 (before move)", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["banana", "mushroom"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    const card = cards.hand.find((c) => c.items[0] === "banana" && c.items[1] === "mushroom");
+    room.send("playCard", { cardId: card.id });
+    await waitForMessage(room, "cardPlayed");
+    // Banana drops on cell 1, then mushroom moves to cell 2
+    const players = await waitForPlayers(room, (list) => list[0].cellId === 2);
+    expect(players[0].cellId).toBe(2);
+    const occ = await waitForMessage(board, "cellOccupants", (o) => o[1] && o[1].includes("banana"));
+    expect(occ[1]).toContain("banana"); // banana on starting cell
+    room.leave();
+    board.leave();
+  });
+
   it("banana-only card broadcasts cellOccupants to board", async () => {
     const roomId = await createRoom(baseUrl, {
       _testDeck: [["banana"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
