@@ -141,6 +141,75 @@ class GameRoom extends Room {
     return this.prevCell[cellId];
   }
 
+  _resolveShell(thrower, throwerClient, targetCellId) {
+    const occupants = this._cellOccupants(targetCellId);
+
+    // Priority 1: hit a player (excluding thrower), randomly chosen
+    const playerIds = occupants.filter((e) => e !== "banana" && e !== "green_shell" && e !== thrower.playerId);
+    if (playerIds.length > 0) {
+      const hitPlayerId = playerIds[Math.floor(Math.random() * playerIds.length)];
+      const hitPlayer = this.players.get(hitPlayerId);
+      const mustDiscard = Math.min(1, hitPlayer.hand.length);
+      if (mustDiscard > 0) {
+        hitPlayer.pendingDiscard = mustDiscard;
+        this._sendToPlayer(hitPlayerId, "discardHit", {
+          source: "green_shell",
+          mustDiscard,
+          ...this._cardState(hitPlayer),
+        });
+      }
+      this.broadcast("shellThrown", {
+        playerId: thrower.playerId,
+        fromCellId: thrower.cellId,
+        toCellId: targetCellId,
+        hit: "player",
+        hitPlayerId,
+      });
+      this.broadcastCellOccupants();
+      this.broadcastPlayers();
+      return;
+    }
+
+    // Priority 2: hit a banana — both destroyed
+    if (this._bananasOnCell(targetCellId) > 0) {
+      this._removeFromCell(targetCellId, "banana");
+      this.broadcast("shellThrown", {
+        playerId: thrower.playerId,
+        fromCellId: thrower.cellId,
+        toCellId: targetCellId,
+        hit: "banana",
+      });
+      this.broadcastCellOccupants();
+      this.broadcastPlayers();
+      return;
+    }
+
+    // Priority 3: hit another shell — both destroyed
+    if (this._greenShellsOnCell(targetCellId) > 0) {
+      this._removeFromCell(targetCellId, "green_shell");
+      this.broadcast("shellThrown", {
+        playerId: thrower.playerId,
+        fromCellId: thrower.cellId,
+        toCellId: targetCellId,
+        hit: "green_shell",
+      });
+      this.broadcastCellOccupants();
+      this.broadcastPlayers();
+      return;
+    }
+
+    // Nothing to hit — shell stays on cell
+    this._addToCell(targetCellId, "green_shell");
+    this.broadcast("shellThrown", {
+      playerId: thrower.playerId,
+      fromCellId: thrower.cellId,
+      toCellId: targetCellId,
+      hit: null,
+    });
+    this.broadcastCellOccupants();
+    this.broadcastPlayers();
+  }
+
   onCreate(options) {
     if (options._roomId) {
       this.roomId = options._roomId;
@@ -283,8 +352,8 @@ class GameRoom extends Room {
         }
       }
 
-      // Move one cell at a time, checking for banana collisions and lap completion
-      const bananaHits = [];
+      // Move one cell at a time, checking for item collisions and lap completion
+      const itemHits = [];
       let playerFinished = false;
       if (player.lapCount === 0) player.lapCount = 1;
       for (let i = 0; i < moveCount; i++) {
@@ -310,9 +379,16 @@ class GameRoom extends Room {
             type: "banana",
             playerId: player.playerId,
             cellId: player.cellId,
-            count: 1,
           });
-          bananaHits.push({ cellId: player.cellId });
+          itemHits.push({ cellId: player.cellId, source: "banana" });
+        } else if (this._greenShellsOnCell(player.cellId) > 0) {
+          this._removeFromCell(player.cellId, "green_shell");
+          this.broadcast("itemHitBoard", {
+            type: "green_shell",
+            playerId: player.playerId,
+            cellId: player.cellId,
+          });
+          itemHits.push({ cellId: player.cellId, source: "green_shell" });
         }
       }
 
@@ -330,14 +406,14 @@ class GameRoom extends Room {
         return;
       }
 
-      // Send banana hit events to the player (stacking discards)
-      if (bananaHits.length > 0) {
-        const mustDiscard = Math.min(bananaHits.length, player.hand.length);
+      // Send item hit events to the player (stacking discards)
+      if (itemHits.length > 0) {
+        const mustDiscard = Math.min(itemHits.length, player.hand.length);
         if (mustDiscard > 0) {
           player.pendingDiscard = mustDiscard;
           client.send("discardHit", {
-            source: "banana",
-            bananaHits,
+            source: itemHits[0].source,
+            itemHits,
             mustDiscard,
             ...this._cardState(player),
           });
@@ -363,6 +439,20 @@ class GameRoom extends Room {
       });
       this.broadcastPlayers();
 
+    });
+
+    this.onMessage("shellChoice", (client, data) => {
+      const player = this._getPlayer(client);
+      if (!player) return;
+      if (!player.pendingShellChoice) return;
+      if (data.direction !== "forward" && data.direction !== "backward") return;
+
+      player.pendingShellChoice = false;
+      const targetCellId = data.direction === "forward"
+        ? this.cells.get(player.cellId).next_cell
+        : this._previousCell(player.cellId);
+
+      this._resolveShell(player, client, targetCellId);
     });
 
     this.onMessage("endTurn", (client) => {
