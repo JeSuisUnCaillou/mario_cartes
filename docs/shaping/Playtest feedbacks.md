@@ -40,6 +40,10 @@ The player's client doesn't display the coins properly : it should display the c
 
 The discard pile should also be under the cards in the players hand.
 
-my player client has been disconnected, and when i refreshed, it skipped my turn.
+my player client has been disconnected, and when i refreshed, it skipped my turn. It also happened to another player, and she couldn't come back because here client said "the game has already started"
 
 the indicator that a player has finished should be bigger (BIG RANKING, Crown, whatever)
+
+we need to be able to kick a player from the board. Clicking on a player should open a small menu with the kick action.
+
+I had a disconnection on my board client, and the position of my player was not updated.
