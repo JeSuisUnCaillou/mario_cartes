@@ -358,10 +358,10 @@ function renderLobby(room) {
   }
 }
 
-function renderFinishedZone(container, ranking, room) {
+function renderFinishedZone(container, ranking, room, { showStartOver = true } = {}) {
   const medals = ["🥇", "🥈", "🥉"];
   container.innerHTML = `
-    <h2 class="finished-title">Race Complete!</h2>
+    <h2 class="finished-title">${showStartOver ? "Race Complete!" : "You finished!"}</h2>
     <ol class="finished-list">
       ${(ranking || []).map((entry) => {
         const medal = medals[entry.rank - 1] || "";
@@ -369,11 +369,13 @@ function renderFinishedZone(container, ranking, room) {
         return `<li class="finished-entry"><span class="finished-rank">${medal} ${ordinal}</span></li>`;
       }).join("")}
     </ol>
-    <button id="start-over-btn" class="start-over-btn">Start Over</button>
+    ${showStartOver ? '<button id="start-over-btn" class="start-over-btn">Start Over</button>' : '<p class="waiting-message">Waiting for other players…</p>'}
   `;
-  document.getElementById("start-over-btn").addEventListener("click", () => {
-    room.send("startOver");
-  });
+  if (showStartOver) {
+    document.getElementById("start-over-btn").addEventListener("click", () => {
+      room.send("startOver");
+    });
+  }
 }
 
 function startGame(gameId, name, existingPlayerId, existingRoom) {
@@ -466,10 +468,24 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           const finishedZone = document.getElementById("finished-zone");
 
           if (state.phase === "playing") {
-            if (lobbyZone) lobbyZone.style.display = "none";
-            if (finishedZone) finishedZone.style.display = "none";
-            if (gameZone && gameZone.style.display === "none") {
-              gameZone.style.display = "";
+            const me = myPlayerId ? state.players.get(myPlayerId) : null;
+            if (me && me.finished) {
+              if (lobbyZone) lobbyZone.style.display = "none";
+              if (gameZone) gameZone.style.display = "none";
+              if (finishedZone) {
+                finishedZone.style.display = "";
+                const ranking = [];
+                state.ranking.forEach((r) => {
+                  ranking.push({ playerId: r.playerId, name: r.name, rank: r.rank });
+                });
+                renderFinishedZone(finishedZone, ranking, room, { showStartOver: false });
+              }
+            } else {
+              if (lobbyZone) lobbyZone.style.display = "none";
+              if (finishedZone) finishedZone.style.display = "none";
+              if (gameZone && gameZone.style.display === "none") {
+                gameZone.style.display = "";
+              }
             }
           } else if (state.phase === "finished") {
             if (lobbyZone) lobbyZone.style.display = "none";
@@ -510,6 +526,19 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
               if (gamePhase === "playing" && me.coins !== currentCoins) {
                 currentCoins = me.coins;
                 updateCoinDisplay(currentCoins, updateBuyButton);
+              }
+              if (gamePhase === "playing" && me.finished) {
+                const gameZone = document.getElementById("game-zone");
+                const finishedZone = document.getElementById("finished-zone");
+                if (gameZone) gameZone.style.display = "none";
+                if (finishedZone) {
+                  finishedZone.style.display = "";
+                  const ranking = [];
+                  state.ranking.forEach((r) => {
+                    ranking.push({ playerId: r.playerId, name: r.name, rank: r.rank });
+                  });
+                  renderFinishedZone(finishedZone, ranking, room, { showStartOver: false });
+                }
               }
             }
           }

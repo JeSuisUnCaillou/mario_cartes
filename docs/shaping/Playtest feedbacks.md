@@ -31,8 +31,6 @@ We need an explanation of the cards in the player's client.
 l'asset de carapace doit avoir juste un trou (à gauche par exemple), l'autre est censé être derrière
 
 
-in the circuit, the players should always be displayed on top of other items 
-
 If a player has finished, his screen should display his ranking while he waits for the race to be over.
 
 The race is over when only one player has not finished the game. He is added to the ranking as if he finished last.
