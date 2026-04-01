@@ -1281,3 +1281,126 @@ describe("Start over", () => {
     board.leave();
   });
 });
+
+describe("Debug mode", () => {
+  it("board can request full state via _debugGetState", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: p1, playerId: pid1 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+
+    board.send("_debugGetState");
+    const state = await waitForMessage(board, "_debugState");
+
+    expect(state.phase).toBe("lobby");
+    expect(state.currentRound).toBe(0);
+    expect(state.players).toHaveLength(1);
+    expect(state.players[0].playerId).toBe(pid1);
+    expect(state.players[0]).toHaveProperty("hand");
+    expect(state.players[0]).toHaveProperty("drawPile");
+    expect(state.players[0]).toHaveProperty("discardPile");
+    expect(state.cellOccupants).toBeDefined();
+
+    p1.leave();
+    board.leave();
+  });
+
+  it("player client cannot request _debugGetState", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: p1 } = await connectPlayer(baseUrl, roomId);
+
+    p1.send("_debugGetState");
+    await new Promise((r) => setTimeout(r, 100));
+    const buffered = p1._messageBuffers["_debugState"] || [];
+    expect(buffered).toHaveLength(0);
+
+    p1.leave();
+  });
+
+  it("board can set player state via _testSetState with playerId", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: p1, playerId: pid1 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+
+    board.send("_testSetState", { playerId: pid1, cellId: 5, coins: 10, lapCount: 2 });
+    const players = await waitForPlayers(board, (ps) =>
+      ps.some((p) => p.playerId === pid1 && p.cellId === 5 && p.coins === 10 && p.lapCount === 2),
+    );
+    expect(players).toBeDefined();
+
+    p1.leave();
+    board.leave();
+  });
+
+  it("board can set game state via _debugSetGameState", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: p1 } = await connectPlayer(baseUrl, roomId);
+    const { room: p2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+
+    p1.send("setReady", true);
+    p2.send("setReady", true);
+    await waitForMessage(board, "gameState", (gs) => gs.phase === "playing");
+
+    board.send("_debugSetGameState", { addBanana: { cellId: 5 } });
+    const occ = await waitForMessage(board, "cellOccupants", (co) =>
+      (co["5"] || []).includes("banana"),
+    );
+    expect(occ["5"]).toContain("banana");
+
+    board.send("_debugSetGameState", { removeBanana: { cellId: 5 } });
+    const occ2 = await waitForMessage(board, "cellOccupants", (co) =>
+      !(co["5"] || []).includes("banana"),
+    );
+    expect((occ2["5"] || []).includes("banana")).toBe(false);
+
+    p1.leave();
+    p2.leave();
+    board.leave();
+  });
+
+  it("board can edit river slot via _debugSetGameState", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: p1 } = await connectPlayer(baseUrl, roomId);
+    const { room: p2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+
+    p1.send("setReady", true);
+    p2.send("setReady", true);
+    await waitForMessage(board, "gameState", (gs) => gs.phase === "playing");
+
+    board.send("_debugSetGameState", {
+      setRiverSlot: { riverId: 0, slotIndex: 0, items: ["mushroom", "banana"] },
+    });
+    const gs = await waitForMessage(board, "gameState", (gs) =>
+      gs.rivers && gs.rivers[0].slots[0] && gs.rivers[0].slots[0].items[0] === "mushroom",
+    );
+    expect(gs.rivers[0].slots[0].items).toEqual(["mushroom", "banana"]);
+
+    p1.leave();
+    p2.leave();
+    board.leave();
+  });
+
+  it("_debugGetState includes rivers when game is playing", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: p1 } = await connectPlayer(baseUrl, roomId);
+    const { room: p2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+
+    p1.send("setReady", true);
+    p2.send("setReady", true);
+    await waitForMessage(board, "gameState", (gs) => gs.phase === "playing");
+
+    board.send("_debugGetState");
+    const state = await waitForMessage(board, "_debugState");
+
+    expect(state.rivers).toHaveLength(3);
+    expect(state.rivers[0]).toHaveProperty("cost");
+    expect(state.rivers[0]).toHaveProperty("slots");
+    expect(state.rivers[0]).toHaveProperty("deckCount");
+
+    p1.leave();
+    p2.leave();
+    board.leave();
+  });
+});

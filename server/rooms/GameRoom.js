@@ -153,17 +153,57 @@ class GameRoom extends Room {
     this.ranking = [];
 
     this.onMessage("_testSetState", (client, data) => {
-      if (!this._testDeck) return;
-      const player = this._getPlayer(client);
-      if (!player) return;
-      if (data.cellId !== undefined) {
-        this._removeFromCell(player.cellId, player.playerId);
-        player.cellId = data.cellId;
-        this._addToCell(player.cellId, player.playerId);
+      const info = this.clientsInfo.get(client.sessionId);
+      if (!info) return;
+      let player;
+      if (info.type === "board") {
+        if (!data.playerId) return;
+        player = this.players.get(data.playerId);
+      } else {
+        if (!this._testDeck) return;
+        player = this._getPlayer(client);
       }
-      if (data.lapCount !== undefined) player.lapCount = data.lapCount;
+      if (!player) return;
+      this._applyPlayerState(player, data);
+    });
+
+    this.onMessage("_debugSetGameState", (client, data) => {
+      const info = this.clientsInfo.get(client.sessionId);
+      if (!info || info.type !== "board") return;
+      if (data.phase !== undefined) this.phase = data.phase;
+      if (data.activePlayerId !== undefined) {
+        this.activePlayerId = data.activePlayerId;
+        const playerIds = Array.from(this.players.keys());
+        this.turnIndex = playerIds.indexOf(data.activePlayerId);
+      }
+      if (data.addBanana) {
+        this._addToCell(data.addBanana.cellId, "banana");
+      }
+      if (data.removeBanana) {
+        this._removeFromCell(data.removeBanana.cellId, "banana");
+      }
+      if (data.setRiverSlot && this.rivers) {
+        const river = this.rivers.find((r) => r.id === data.setRiverSlot.riverId);
+        if (river && data.setRiverSlot.slotIndex >= 0 && data.setRiverSlot.slotIndex < 3) {
+          if (data.setRiverSlot.items) {
+            river.slots[data.setRiverSlot.slotIndex] = {
+              id: randomUUID(),
+              items: data.setRiverSlot.items,
+            };
+          } else {
+            river.slots[data.setRiverSlot.slotIndex] = null;
+          }
+        }
+      }
       this.broadcastPlayers();
       this.broadcastCellOccupants();
+      this.broadcastGameState();
+    });
+
+    this.onMessage("_debugGetState", (client) => {
+      const info = this.clientsInfo.get(client.sessionId);
+      if (!info || info.type !== "board") return;
+      client.send("_debugState", this._fullState());
     });
 
     this.onMessage("changeName", (client, newName) => {
@@ -358,6 +398,61 @@ class GameRoom extends Room {
       this.broadcastCellOccupants();
       this.broadcastGameState();
     });
+  }
+
+  _applyPlayerState(player, data) {
+    if (data.cellId !== undefined) {
+      this._removeFromCell(player.cellId, player.playerId);
+      player.cellId = data.cellId;
+      this._addToCell(player.cellId, player.playerId);
+    }
+    if (data.lapCount !== undefined) player.lapCount = data.lapCount;
+    if (data.coins !== undefined) player.coins = data.coins;
+    if (data.pendingBananaDiscards !== undefined) player.pendingBananaDiscards = data.pendingBananaDiscards;
+    this.broadcastPlayers();
+    this.broadcastCellOccupants();
+  }
+
+  _fullState() {
+    const players = Array.from(this.players.values()).map((p) => ({
+      playerId: p.playerId,
+      name: p.name,
+      cellId: p.cellId,
+      connected: p.connected,
+      ready: p.ready,
+      coins: p.coins,
+      lapCount: p.lapCount,
+      pendingBananaDiscards: p.pendingBananaDiscards,
+      handCount: p.hand.length,
+      drawCount: p.drawPile.length,
+      discardCount: p.discardPile.length,
+      hand: p.hand,
+      drawPile: p.drawPile,
+      discardPile: p.discardPile,
+    }));
+    const state = {
+      phase: this.phase,
+      currentRound: this.currentRound,
+      activePlayerId: this.activePlayerId,
+      cellOccupants: this.cellOccupants,
+      players,
+    };
+    if (this.rivers) {
+      state.rivers = this.rivers.map((r) => ({
+        id: r.id,
+        cost: r.cost,
+        slots: r.slots,
+        deckCount: r.deck.length,
+      }));
+    }
+    if (this.ranking.length > 0) {
+      state.ranking = this.ranking.map((playerId, i) => ({
+        playerId,
+        name: this.players.get(playerId).name,
+        rank: i + 1,
+      }));
+    }
+    return state;
   }
 
   _initialPlayerState() {
