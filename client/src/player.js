@@ -358,23 +358,33 @@ function renderLobby(room) {
   }
 }
 
-function renderFinishedZone(container, ranking, room, { showStartOver = true } = {}) {
+function renderFinishedZone(container, ranking, room, { showStartOver = true, myPlayerId: pid = null } = {}) {
   const medals = ["🥇", "🥈", "🥉"];
-  container.innerHTML = `
-    <h2 class="finished-title">${showStartOver ? "Race Complete!" : "You finished!"}</h2>
-    <ol class="finished-list">
-      ${(ranking || []).map((entry) => {
-        const medal = medals[entry.rank - 1] || "";
-        const ordinal = ordinalSuffix(entry.rank);
-        return `<li class="finished-entry"><span class="finished-rank">${medal} ${ordinal}</span></li>`;
-      }).join("")}
-    </ol>
-    ${showStartOver ? '<button id="start-over-btn" class="start-over-btn">Start Over</button>' : '<p class="waiting-message">Waiting for other players…</p>'}
-  `;
   if (showStartOver) {
+    container.innerHTML = `
+      <h2 class="finished-title">Race Complete!</h2>
+      <ol class="finished-list">
+        ${(ranking || []).map((entry) => {
+          const medal = medals[entry.rank - 1] || "";
+          const ordinal = ordinalSuffix(entry.rank);
+          return `<li class="finished-entry"><span class="finished-rank">${medal} ${ordinal}</span></li>`;
+        }).join("")}
+      </ol>
+      <button id="start-over-btn" class="start-over-btn">Start Over</button>
+    `;
     document.getElementById("start-over-btn").addEventListener("click", () => {
       room.send("startOver");
     });
+  } else {
+    const myEntry = (ranking || []).find((e) => e.playerId === pid);
+    const rank = myEntry ? myEntry.rank : ranking ? ranking.length : 1;
+    const medal = medals[rank - 1] || "";
+    const ordinal = ordinalSuffix(rank);
+    container.innerHTML = `
+      <h2 class="finished-title">You finished!</h2>
+      <div class="finished-entry"><span class="finished-rank">${medal} ${ordinal}</span></div>
+      <p class="waiting-message">Waiting for other players…</p>
+    `;
   }
 }
 
@@ -478,7 +488,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
                 state.ranking.forEach((r) => {
                   ranking.push({ playerId: r.playerId, name: r.name, rank: r.rank });
                 });
-                renderFinishedZone(finishedZone, ranking, room, { showStartOver: false });
+                renderFinishedZone(finishedZone, ranking, room, { showStartOver: false, myPlayerId });
               }
             } else {
               if (lobbyZone) lobbyZone.style.display = "none";
@@ -537,7 +547,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
                   state.ranking.forEach((r) => {
                     ranking.push({ playerId: r.playerId, name: r.name, rank: r.rank });
                   });
-                  renderFinishedZone(finishedZone, ranking, room, { showStartOver: false });
+                  renderFinishedZone(finishedZone, ranking, room, { showStartOver: false, myPlayerId });
                 }
               }
             }
