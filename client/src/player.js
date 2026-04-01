@@ -470,7 +470,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         if (data.drawnBeforeShuffle === undefined) {
           renderHand(data.hand, addDragListeners);
           updatePiles(data);
-          updateCoinDisplay(data.coins || 0, updateBuyButton);
+          currentCoins = data.coins || 0;
+          updateCoinDisplay(currentCoins, updateBuyButton);
           if (data.pendingDiscard > 0) {
             pendingDiscards = data.pendingDiscard;
             const playZone = document.getElementById("play-zone");
@@ -538,6 +539,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           setTimeout(() => spawnThrowAnimation("/coin.svg", playZone), i * 400);
         }
 
+        currentCoins = data.coins;
         updateCoinDisplay(data.coins, updateBuyButton);
 
         // Animate drag clone from play zone to discard pile
