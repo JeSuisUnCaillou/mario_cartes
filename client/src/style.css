@@ -939,18 +939,13 @@ input {
 
 /* Debug mode */
 .debug-badge {
-  position: fixed;
-  top: 4px;
-  right: 4px;
   background: #cc3333;
   color: #fff;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: bold;
-  padding: 2px 6px;
+  padding: 3px 10px;
   border-radius: 3px;
-  z-index: 400;
-  pointer-events: none;
-  opacity: 0.7;
+  align-self: center;
 }
 
 .debug-modal {

@@ -701,12 +701,6 @@ export function initBoard(gameId) {
   });
 
   if (import.meta.env.DEV) {
-    const badge = document.createElement("div");
-    badge.className = "debug-badge";
-    badge.textContent = "DEBUG";
-    badge.title = "Ctrl+D to open debug panel";
-    document.body.appendChild(badge);
-
     document.addEventListener("keydown", (e) => {
       if (e.ctrlKey && e.key === "d") {
         e.preventDefault();
@@ -765,6 +759,9 @@ function renderDebugModal(state) {
   const content = document.querySelector(".debug-modal-content");
   if (!content) return;
   content.innerHTML = "";
+
+  const badge = el("div", "debug-badge", "DEBUG");
+  content.appendChild(badge);
 
   // --- Game section ---
   const gameSection = el("div", "debug-section");
