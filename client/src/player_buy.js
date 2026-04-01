@@ -40,6 +40,7 @@ export function openBuyModal(currentRoom, latestRivers, currentCoins) {
 export function renderBuyModal(currentRoom, latestRivers, currentCoins) {
   const content = document.querySelector(".buy-modal-content");
   if (!content || !latestRivers) return;
+
   renderRivers(content, latestRivers, {
     onCardClick: (river, card) => {
       if (currentRoom) {
@@ -48,6 +49,17 @@ export function renderBuyModal(currentRoom, latestRivers, currentCoins) {
     },
     isAffordable: (river) => currentCoins >= river.cost,
   });
+
+  // Coin display on top of rivers
+  const coinBar = document.createElement("div");
+  coinBar.className = "buy-modal-coins";
+  for (let i = 0; i < currentCoins; i++) {
+    const img = document.createElement("img");
+    img.src = "/coin.svg";
+    img.className = "coin-icon";
+    coinBar.appendChild(img);
+  }
+  content.prepend(coinBar);
 }
 
 export function closeBuyModal() {

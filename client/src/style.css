@@ -814,6 +814,13 @@ input {
   z-index: 101;
 }
 
+.buy-modal-coins {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px;
+}
+
 .buy-modal-content {
   display: flex;
   flex-direction: column;
