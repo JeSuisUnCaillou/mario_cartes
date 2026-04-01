@@ -50,21 +50,9 @@ function showShellModal() {
   const buttons = document.createElement("div");
   buttons.className = "shell-modal-buttons";
 
-  const backwardBtn = document.createElement("button");
-  backwardBtn.className = "shell-modal-btn shell-modal-backward";
-  backwardBtn.textContent = "Backwards";
-  backwardBtn.addEventListener("click", () => {
-    if (currentRoom) currentRoom.send("shellChoice", { direction: "backward" });
-    pendingShellChoice = false;
-    closeShellModal();
-    updatePlayZone();
-    updateBuyButton();
-  });
-  buttons.appendChild(backwardBtn);
-
   const forwardBtn = document.createElement("button");
   forwardBtn.className = "shell-modal-btn shell-modal-forward";
-  forwardBtn.textContent = "Forward";
+  forwardBtn.innerHTML = "Forward &#x2191;";
   forwardBtn.addEventListener("click", () => {
     if (currentRoom) currentRoom.send("shellChoice", { direction: "forward" });
     pendingShellChoice = false;
@@ -73,6 +61,18 @@ function showShellModal() {
     updateBuyButton();
   });
   buttons.appendChild(forwardBtn);
+
+  const backwardBtn = document.createElement("button");
+  backwardBtn.className = "shell-modal-btn shell-modal-backward";
+  backwardBtn.innerHTML = "Backwards &#x2193;";
+  backwardBtn.addEventListener("click", () => {
+    if (currentRoom) currentRoom.send("shellChoice", { direction: "backward" });
+    pendingShellChoice = false;
+    closeShellModal();
+    updatePlayZone();
+    updateBuyButton();
+  });
+  buttons.appendChild(backwardBtn);
 
   content.appendChild(buttons);
   overlay.appendChild(content);
