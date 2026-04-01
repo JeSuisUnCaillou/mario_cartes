@@ -1,6 +1,7 @@
 const { Room } = require("colyseus");
 const { randomUUID } = require("crypto");
 const path = require("path");
+const { STARTING_DECK, RIVER_DEFS } = require("./decks");
 
 const DISPOSE_DELAY_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -9,12 +10,7 @@ class GameRoom extends Room {
     if (this._testDeck) {
       return this._testDeck.map((items) => ({ id: randomUUID(), items }));
     }
-    const cards = [
-      ...Array.from({ length: 6 }, () => ({ id: randomUUID(), items: ["coin"] })),
-      { id: randomUUID(), items: ["coin", "coin"] },
-      { id: randomUUID(), items: ["green_shell"] },
-      { id: randomUUID(), items: ["mushroom"] },
-    ];
+    const cards = STARTING_DECK.map((items) => ({ id: randomUUID(), items: [...items] }));
     return this._shuffle(cards);
   }
 
@@ -30,41 +26,11 @@ class GameRoom extends Room {
         };
       });
     }
-    const riverDefs = [
-      // River 1: 15 single-item cards
-      [
-        ...Array.from({ length: 5 }, () => ["coin"]),
-        ...Array.from({ length: 5 }, () => ["mushroom"]),
-        ...Array.from({ length: 5 }, () => ["banana"]),
-        ...Array.from({ length: 5 }, () => ["green_shell"]),
-      ],
-      // River 2: 27 two-item cards
-      [
-        ["coin", "mushroom"],
-        ...Array.from({ length: 4 }, () => ["coin", "banana"]),
-        ...Array.from({ length: 2 }, () => ["mushroom", "banana"]),
-        ["mushroom", "mushroom"],
-        ["green_shell", "mushroom"],
-        ["green_shell", "coin"],
-        ...Array.from({ length: 16 }, () => ["banana", "banana"]),
-      ],
-      // River 3: 36 three-item cards
-      [
-        ...Array.from({ length: 26 }, () => ["banana", "banana", "banana"]),
-        ["banana", "banana", "mushroom"],
-        ["banana", "banana", "coin"],
-        ["banana", "banana", "green_shell"],
-        ["green_shell", "mushroom", "coin"],
-        ["coin", "coin", "mushroom"],
-        ...Array.from({ length: 4 }, () => ["coin", "coin", "banana"]),
-        ["coin", "banana", "banana"],
-      ],
-    ];
-    return riverDefs.map((def, i) => {
-      const cards = this._shuffle(def.map((items) => ({ id: randomUUID(), items })));
+    return RIVER_DEFS.map((river, i) => {
+      const cards = this._shuffle(river.cards.map((items) => ({ id: randomUUID(), items: [...items] })));
       return {
         id: i,
-        cost: [1, 3, 5][i],
+        cost: river.cost,
         deck: cards.slice(3),
         slots: cards.slice(0, 3),
       };

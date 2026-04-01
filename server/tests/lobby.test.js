@@ -488,7 +488,9 @@ describe("End turn", () => {
   });
 
   it("playing all cards does not auto-end turn", async () => {
-    const roomId = await createRoom(baseUrl);
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
     const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
     const { room: room2 } = await connectPlayer(baseUrl, roomId);
     room1.send("setReady", true);
