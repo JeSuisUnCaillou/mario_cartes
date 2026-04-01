@@ -722,9 +722,7 @@ class GameRoom extends Room {
         this.ranking.push(player.playerId);
         player.pendingItems = [];
         this._endTurnForFinishedPlayer(player);
-        if (this.ranking.length === this.players.size) {
-          this._endGame();
-        }
+        if (this._checkRaceOver()) return;
         return;
       }
     }
@@ -847,6 +845,18 @@ class GameRoom extends Room {
     player.hasPlayedAllCards = false;
     this._syncState();
     this._advanceTurn();
+  }
+
+  _checkRaceOver() {
+    const unfinished = Array.from(this.players.keys()).filter((id) => !this.ranking.includes(id));
+    if (unfinished.length <= 1) {
+      for (const id of unfinished) {
+        this.ranking.push(id);
+      }
+      this._endGame();
+      return true;
+    }
+    return false;
   }
 
   _endGame() {
