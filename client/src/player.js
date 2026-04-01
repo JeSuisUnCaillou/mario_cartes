@@ -64,7 +64,7 @@ function showShellModal() {
 
   const backwardBtn = document.createElement("button");
   backwardBtn.className = "shell-modal-btn shell-modal-backward";
-  backwardBtn.innerHTML = "Backwards &#x2193;";
+  backwardBtn.innerHTML = "Backward &#x2193;";
   backwardBtn.addEventListener("click", () => {
     if (currentRoom) currentRoom.send("shellChoice", { direction: "backward" });
     pendingShellChoice = false;
