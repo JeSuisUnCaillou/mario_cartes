@@ -615,8 +615,8 @@ input {
   align-items: flex-end;
   justify-content: center;
   padding: 8px;
-  flex: 1;
-  min-height: 0;
+  height: 35dvh;
+  flex-shrink: 0;
   gap: 8px;
 }
 
