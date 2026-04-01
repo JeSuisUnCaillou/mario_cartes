@@ -495,8 +495,10 @@ export function initBoard(gameId) {
       let gameStateDirty = false;
       let riversDirty = false;
 
-      room.state.players.onAdd(() => { playersDirty = true; });
-      room.state.players.onChange(() => { playersDirty = true; });
+      room.state.players.onAdd((player) => {
+        playersDirty = true;
+        player.onChange(() => { playersDirty = true; });
+      });
       room.state.players.onRemove(() => { playersDirty = true; });
 
       room.state.cellOccupants.onAdd((co, key) => {

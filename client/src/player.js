@@ -428,8 +428,10 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
       room.state.listen("currentRound", () => { gameStateDirty = true; });
       room.state.listen("activePlayerId", () => { gameStateDirty = true; });
 
-      room.state.players.onAdd(() => { playersDirty = true; });
-      room.state.players.onChange(() => { playersDirty = true; });
+      room.state.players.onAdd((player) => {
+        playersDirty = true;
+        player.onChange(() => { playersDirty = true; });
+      });
       room.state.players.onRemove(() => { playersDirty = true; });
 
       room.state.ranking.onAdd(() => { gameStateDirty = true; });
