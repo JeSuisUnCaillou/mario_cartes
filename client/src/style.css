@@ -515,14 +515,15 @@ input {
   align-items: center;
   justify-content: center;
   align-self: center;
-  margin: 8px;
+  margin: 15px 8px;
+  padding: 15px;
+  max-width: 80vw;
   flex: 1;
   min-height: 0;
   aspect-ratio: 54 / 86;
   border: 3px dashed #555;
   border-radius: 8px;
   box-sizing: border-box;
-  padding: 15px;
 }
 
 .play-zone-label {
