@@ -648,7 +648,7 @@ export function initBoard(gameId) {
       const label = this.nameLabels.get(playerId);
       if (!helmet) return;
 
-      const moveDelay = 400;
+      const moveDelay = 350; // Slightly shorter than the 400ms helmet tween to account for Power2 ease deceleration
       const spriteMap = itemType === "green_shell" ? this.shellSprites : this.bananaSprites;
 
       // Use the real item sprite from the cell (server hasn't broadcast its removal yet)
