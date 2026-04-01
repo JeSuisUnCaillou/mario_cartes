@@ -529,7 +529,7 @@ export function initBoard(gameId) {
         }
         if (cellOccupantsDirty) {
           const cellOccupants = schemaCellOccupantsToObject(state);
-          this.enqueueCellOccupants(cellOccupants);
+          this.updateCellOccupants(cellOccupants);
           cellOccupantsDirty = false;
         }
         if (gameStateDirty || riversDirty) {
@@ -560,13 +560,6 @@ export function initBoard(gameId) {
       });
     }
 
-    enqueueCellOccupants(cellOccupants) {
-      this._cellOccupantsQueue.push(cellOccupants);
-      if (!this._processingQueue) {
-        this._processNextCellOccupants();
-      }
-    }
-
     _processNextCellOccupants() {
       if (this._cellOccupantsQueue.length === 0) {
         this._processingQueue = false;
@@ -580,9 +573,6 @@ export function initBoard(gameId) {
       } else if (entry._shellThrown) {
         this.animateShellThrow(entry._shellThrown);
         this.time.delayedCall(1400, () => this._processNextCellOccupants());
-      } else {
-        this.updateCellOccupants(entry);
-        this.time.delayedCall(350, () => this._processNextCellOccupants());
       }
     }
 
