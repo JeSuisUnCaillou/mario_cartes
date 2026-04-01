@@ -824,10 +824,6 @@ function renderDebugModal(state) {
     pForm.appendChild(labeledField("Coins", coinsInput));
     const bananaDiscInput = numInput(p.pendingBananaDiscards, 0);
     pForm.appendChild(labeledField("Pending discards", bananaDiscInput));
-    const handInput = numInput(p.handCount);
-    handInput.readOnly = true;
-    handInput.classList.add("debug-readonly");
-    pForm.appendChild(labeledField("Hand", handInput));
     const drawInput = numInput(p.drawCount);
     drawInput.readOnly = true;
     drawInput.classList.add("debug-readonly");
@@ -849,6 +845,42 @@ function renderDebugModal(state) {
     });
     pForm.appendChild(pApply);
     pCard.appendChild(pForm);
+
+    // Hand cards
+    const handSection = el("div", "debug-hand-section");
+    handSection.appendChild(el("div", "debug-label", `Hand (${p.hand.length})`));
+    const handCards = el("div", "debug-hand-cards");
+    for (let ci = 0; ci < p.hand.length; ci++) {
+      const card = p.hand[ci];
+      const cardEl = el("div", "debug-hand-card");
+      const itemsInput = el("input", "debug-input debug-river-items-input");
+      itemsInput.value = card.items.join(", ");
+      cardEl.appendChild(itemsInput);
+      const applyBtn = el("button", "debug-small-btn debug-apply-btn", "\u2713");
+      const cardIndex = ci;
+      applyBtn.addEventListener("click", () => {
+        const raw = itemsInput.value.trim();
+        const items = raw ? raw.split(",").map((s) => s.trim()).filter(Boolean) : null;
+        if (items) {
+          boardRoom.send("_testSetState", { playerId: p.playerId, setHandCard: { index: cardIndex, items } });
+        }
+      });
+      cardEl.appendChild(applyBtn);
+      const removeBtn = el("button", "debug-small-btn debug-remove-btn", "\u2715");
+      removeBtn.addEventListener("click", () => {
+        boardRoom.send("_testSetState", { playerId: p.playerId, setHandCard: { index: cardIndex, items: null } });
+      });
+      cardEl.appendChild(removeBtn);
+      handCards.appendChild(cardEl);
+    }
+    const addCardBtn = el("button", "debug-small-btn debug-add-btn", "+ card");
+    addCardBtn.addEventListener("click", () => {
+      boardRoom.send("_testSetState", { playerId: p.playerId, addHandCard: { items: ["coin"] } });
+    });
+    handCards.appendChild(addCardBtn);
+    handSection.appendChild(handCards);
+    pCard.appendChild(handSection);
+
     playersSection.appendChild(pCard);
   }
   content.appendChild(playersSection);

@@ -409,6 +409,19 @@ class GameRoom extends Room {
     if (data.lapCount !== undefined) player.lapCount = data.lapCount;
     if (data.coins !== undefined) player.coins = data.coins;
     if (data.pendingBananaDiscards !== undefined) player.pendingBananaDiscards = data.pendingBananaDiscards;
+    if (data.setHandCard) {
+      const { index, items } = data.setHandCard;
+      if (index >= 0 && index < player.hand.length) {
+        if (items) {
+          player.hand[index] = { id: randomUUID(), items };
+        } else {
+          player.hand.splice(index, 1);
+        }
+      }
+    }
+    if (data.addHandCard) {
+      player.hand.push({ id: randomUUID(), items: data.addHandCard.items });
+    }
     this.broadcastPlayers();
     this.broadcastCellOccupants();
   }

@@ -1406,4 +1406,50 @@ describe("Debug mode", () => {
     p2.leave();
     board.leave();
   });
+
+  it("board can add, edit, and remove cards in a player's hand", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: p1, playerId: pid1 } = await connectPlayer(baseUrl, roomId);
+    const { room: p2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+
+    p1.send("setReady", true);
+    p2.send("setReady", true);
+    await waitForMessage(board, "gameState", (gs) => gs.phase === "playing");
+
+    // Get initial state
+    board.send("_debugGetState");
+    const before = await waitForMessage(board, "_debugState");
+    const player = before.players.find((p) => p.playerId === pid1);
+    const initialHandSize = player.handCount;
+
+    // Add a card
+    board.send("_testSetState", { playerId: pid1, addHandCard: { items: ["mushroom", "banana"] } });
+    await waitForPlayers(board, (ps) => ps.find((p) => p.playerId === pid1).handCount === initialHandSize + 1);
+
+    board._messageBuffers["_debugState"] = [];
+    board.send("_debugGetState");
+    const afterAdd = await waitForMessage(board, "_debugState");
+    const addedPlayer = afterAdd.players.find((p) => p.playerId === pid1);
+    const lastCard = addedPlayer.hand[addedPlayer.hand.length - 1];
+    expect(lastCard.items).toEqual(["mushroom", "banana"]);
+
+    // Edit the last card
+    const editIndex = addedPlayer.hand.length - 1;
+    board.send("_testSetState", { playerId: pid1, setHandCard: { index: editIndex, items: ["coin", "coin"] } });
+    await waitForPlayers(board, () => true);
+    board._messageBuffers["_debugState"] = [];
+    board.send("_debugGetState");
+    const afterEdit = await waitForMessage(board, "_debugState");
+    const editedCard = afterEdit.players.find((p) => p.playerId === pid1).hand[editIndex];
+    expect(editedCard.items).toEqual(["coin", "coin"]);
+
+    // Remove that card
+    board.send("_testSetState", { playerId: pid1, setHandCard: { index: editIndex, items: null } });
+    await waitForPlayers(board, (ps) => ps.find((p) => p.playerId === pid1).handCount === initialHandSize);
+
+    p1.leave();
+    p2.leave();
+    board.leave();
+  });
 });
