@@ -21,14 +21,14 @@ river_2:
     - banana mushroom 
     - 5x green_shell mushroom
     - 5x mushroom green_shell
-    - green_shell mushroom
-    - 5x mushroom green_shell
+    - red_shell mushroom
+    - 5x mushroom red_shell
     - green_shell coin coin
-    - green_shell coin coin
-    - coin coin green_shell
-    - green_shell banana coin
-    - banana green_shell coin
-    - green_shell green_shell
+    - red_shell coin coin
+    - coin coin red_shell
+    - red_shell banana coin
+    - banana red_shell coin
+    - red_shell red_shell
     - green_shell green_shell
     - 5x coin coin coin
     - banana banana banana
@@ -50,9 +50,9 @@ river_3:
     - banana mushroom mushroom
     - mushroom banana banana
     - 4x coin coin mushroom
-    - banana green_shell green_shell
+    - banana red_shell green_shell
     - 4x green_shell mushroom coin
-    - 4x green_shell mushroom coin
+    - 4x red_shell mushroom coin
     - banana mushroom green_shell
-    - banana mushroom green_shell
+    - banana mushroom red_shell
     - 4x mushroom mushroom 
