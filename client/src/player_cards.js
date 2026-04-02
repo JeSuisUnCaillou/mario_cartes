@@ -10,6 +10,10 @@ const ITEM_ICONS = {
 
 const cardElements = new Map();
 
+export function clearCardElements() {
+  cardElements.clear();
+}
+
 export function updateCardMushroomIcons(useDark) {
   const src = useDark ? "/dark_mushroom.svg" : "/mushroom.svg";
   for (const [, el] of cardElements) {

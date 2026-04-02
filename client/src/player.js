@@ -1,7 +1,7 @@
 import { Client, Callbacks } from "@colyseus/sdk";
 import { isPointInRect, splitDrawBatches, initialDrawPileCount, normalizeName } from "./player.functions.js";
 import {
-  ensureCardElements, getCardElement, spawnThrowAnimation,
+  ensureCardElements, getCardElement, spawnThrowAnimation, clearCardElements,
   animateShuffle, animateDrawCards, captureHandPositions, recomputeFan,
   renderHand, renderPileContent, updatePileCount, updatePiles, updateCoinDisplay, updateCardMushroomIcons,
 } from "./player_cards.js";
@@ -604,6 +604,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
             if (gameZone) gameZone.style.display = "none";
             if (finishedZone) finishedZone.style.display = "none";
             isReady = false;
+            clearCardElements();
             if (lobbyZone) {
               lobbyZone.style.display = "";
               renderLobby(room);
