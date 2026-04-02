@@ -47,13 +47,15 @@ npm test -w client
 - Up to 8 players; each starts with the same deck.
 - All players draw 5 cards at game start. All players start on cell 1 (finish line).
 
-### Card Items
+### Items
 Each card contains 1–3 items resolved sequentially from top to bottom:
-- **Mushroom**: Move forward 1 cell (subject to slow counters).
-- **Coin**: Gain 1 coin (temporary, lost at turn end).
-- **Banana**: Drop a banana on current cell.
-- **Green shell**: Throw to an adjacent cell (player chooses forward or backward). Hits: player → slow counter, banana → both destroyed, shell → both destroyed, nothing → shell stays.
-- **Red shell**: Forward — travels entire track until hitting something. Backward — acts like green shell (adjacent only). Same hit priority as green shell.
+- **Mushroom**: Move forward 1 cell (subject to dark mushrooms).
+- **Coin**: Gain 1 coin until end of turn.
+- **Permanent coin**: A permanent coin regenerates at turn end.
+- **Banana**: Drop a banana on your cell. Landing on a banana: discard 1 card.
+- **Green shell**: Throw to adjacent cell, forward or backward. Gives dark mushrooms to players, or destroys bananas and shells.
+- **Red shell**: Forward: travels until it hits something. Backward: one cell only. Same hit effects as green shell.
+- **Dark mushroom**: Each cancels one mushroom, except the first mushroom of the turn.
 
 ### Turns
 - One player is active at a time. The active player can play cards, buy river cards, or end their turn.
@@ -72,14 +74,6 @@ Each card contains 1–3 items resolved sequentially from top to bottom:
   - The last-place player always has access to all rivers, regardless of player count.
 - Bought cards go to discard pile. Slot refills from the river's deck.
 
-### Coins
-- **Regular coins** (gold): earned from card items, spent on river cards, lost at turn end.
-- **Permanent coins** (blue): collected from the racetrack, never decrease. At turn end, coins reset to the permanent coin total (not zero).
-
-### Slow Counters
-- Gained when hit by a shell (green or red) or when landing on a shell.
-- Each slow counter cancels one mushroom movement (except the first move of a turn, which always moves).
-- Consumed one-at-a-time as mushrooms are played.
 
 ### Track
 
