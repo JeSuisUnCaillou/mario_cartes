@@ -608,6 +608,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           currentPermanentCoins = data.permanentCoins || 0;
           currentSlowCounters = data.slowCounters || 0;
           updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton, currentSlowCounters);
+          updateCardMushroomIcons(currentHasMovedThisTurn && currentSlowCounters > 0);
           if (data.pendingDiscard > 0) {
             pendingDiscards = data.pendingDiscard;
             const playZone = document.getElementById("play-zone");
