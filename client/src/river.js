@@ -189,6 +189,10 @@ export function renderRiverRow(river, options = {}) {
 
   const accessible = !isAccessible || isAccessible(river);
 
+  if (!accessible) {
+    row.classList.add("inaccessible");
+  }
+
   for (const card of river.slots) {
     if (card) {
       const cardEl = createRiverCard(card);
