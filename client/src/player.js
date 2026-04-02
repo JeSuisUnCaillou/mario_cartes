@@ -367,7 +367,9 @@ function renderLobby(room) {
       <div class="lobby-hint">All connected players must be ready to start the game</div>
     `;
     const startBtn = document.getElementById("start-btn");
-    startBtn.disabled = !areAllConnectedPlayersReady(room);
+    const allReady = areAllConnectedPlayersReady(room);
+    startBtn.disabled = !allReady;
+    document.querySelector(".lobby-hint").style.display = allReady ? "none" : "";
     startBtn.addEventListener("click", () => {
       room.send("startGame");
     });
