@@ -601,12 +601,13 @@ export function initBoard(gameId) {
     }
 
     async connectToRoom(roomId) {
+      let room;
       try {
-        await colyseusClient.joinById(roomId, { type: "board" });
+        room = await colyseusClient.joinById(roomId, { type: "board" });
       } catch {
         await fetch(`/find-or-create/${roomId}`);
+        room = await colyseusClient.joinById(roomId, { type: "board" });
       }
-      const room = await colyseusClient.joinById(roomId, { type: "board" });
       this.setupRoom(room, roomId);
     }
 
