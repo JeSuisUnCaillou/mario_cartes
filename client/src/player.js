@@ -364,6 +364,7 @@ function renderLobby(room) {
         <button id="start-btn" class="start-btn">Start the game</button>
         <button id="cancel-btn" class="cancel-btn">Cancel</button>
       </div>
+      <div class="lobby-hint">All connected players must be ready to start the game</div>
     `;
     const startBtn = document.getElementById("start-btn");
     startBtn.disabled = !areAllConnectedPlayersReady(room);

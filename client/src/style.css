@@ -530,6 +530,12 @@ input {
   padding: 10px 20px;
 }
 
+.lobby-hint {
+  margin-top: 12px;
+  font-size: 0.9em;
+  color: #aaa;
+}
+
 .game-rejected {
   background: rgba(153, 51, 51, 0.15);
   border: 3px solid #993333;
