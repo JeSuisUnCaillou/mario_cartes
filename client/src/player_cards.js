@@ -298,11 +298,19 @@ export function updatePiles({ drawCount, discardCount, discardTopCard }) {
   updatePileCount("discard-count", discardCount);
 }
 
-export function updateCoinDisplay(coins, updateBuyButton) {
+export function updateCoinDisplay(coins, permanentCoins, updateBuyButton) {
   const coinDisplay = document.getElementById("coin-display");
   if (!coinDisplay) return;
   coinDisplay.innerHTML = "";
-  for (let i = 0; i < coins; i++) {
+  const blueCount = Math.min(coins, permanentCoins);
+  const goldCount = Math.max(0, coins - permanentCoins);
+  for (let i = 0; i < blueCount; i++) {
+    const img = document.createElement("img");
+    img.src = "/permacoin.svg";
+    img.className = "coin-icon";
+    coinDisplay.appendChild(img);
+  }
+  for (let i = 0; i < goldCount; i++) {
     const img = document.createElement("img");
     img.src = "/coin.svg";
     img.className = "coin-icon";

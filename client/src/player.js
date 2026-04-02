@@ -19,6 +19,7 @@ let myPlayerId = null;
 let activePlayerId = null;
 let latestRivers = null;
 let currentCoins = 0;
+let currentPermanentCoins = 0;
 let currentRank = 0;
 let pendingShellChoice = false;
 
@@ -27,7 +28,7 @@ function updateBuyButton() {
 }
 
 function openBuyModal() {
-  _openBuyModal(currentRoom, latestRivers, currentCoins, currentRank);
+  _openBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins);
 }
 
 function showShellModal(shellType) {
@@ -195,8 +196,8 @@ function updatePlayZone() {
     endTurnContainer.innerHTML = `<button id="end-turn-btn" class="end-turn-btn">End turn</button>`;
     document.getElementById("end-turn-btn").addEventListener("click", () => {
       if (playing || animating || pendingDiscards > 0 || pendingShellChoice) return;
-      currentCoins = 0;
-      updateCoinDisplay(0, updateBuyButton);
+      currentCoins = currentPermanentCoins;
+      updateCoinDisplay(currentPermanentCoins, currentPermanentCoins, updateBuyButton);
       if (currentRoom) currentRoom.send("endTurn");
     });
   }
@@ -543,7 +544,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
 
           updatePlayZone();
           updateBuyButton();
-          if (document.querySelector(".buy-modal")) renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank);
+          if (document.querySelector(".buy-modal")) renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins);
           gameStateDirty = false;
           riversDirty = false;
         }
@@ -559,9 +560,10 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
                 isReady = me.ready;
                 renderLobby(room);
               }
-              if (gamePhase === "playing" && me.coins !== currentCoins) {
+              if (gamePhase === "playing" && (me.coins !== currentCoins || me.permanentCoins !== currentPermanentCoins)) {
                 currentCoins = me.coins;
-                updateCoinDisplay(currentCoins, updateBuyButton);
+                currentPermanentCoins = me.permanentCoins;
+                updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton);
               }
               if (gamePhase === "playing") {
                 currentRank = me.rank;
@@ -593,7 +595,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           renderHand(data.hand, addDragListeners);
           updatePiles(data);
           currentCoins = data.coins || 0;
-          updateCoinDisplay(currentCoins, updateBuyButton);
+          currentPermanentCoins = data.permanentCoins || 0;
+          updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton);
           if (data.pendingDiscard > 0) {
             pendingDiscards = data.pendingDiscard;
             const playZone = document.getElementById("play-zone");
@@ -638,7 +641,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
 
         updatePiles(data);
         currentCoins = data.coins || 0;
-        updateCoinDisplay(currentCoins, updateBuyButton);
+        currentPermanentCoins = data.permanentCoins || 0;
+        updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton);
         animating = false;
       });
 
@@ -803,7 +807,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
       room.onMessage("cardBought", (data) => {
         ensureCardElements(data.deck);
         currentCoins = data.coins;
-        updateCoinDisplay(data.coins, updateBuyButton);
+        currentPermanentCoins = data.permanentCoins || 0;
+        updateCoinDisplay(data.coins, currentPermanentCoins, updateBuyButton);
         updatePiles(data);
         updateBuyButton();
 
@@ -834,7 +839,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
             });
           }
           // Re-render modal with updated rivers and coins
-          if (latestRivers) renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank);
+          if (latestRivers) renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins);
         }
       });
 

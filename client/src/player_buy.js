@@ -17,7 +17,7 @@ export function updateBuyButton(activePlayerId, myPlayerId, latestRivers, blocke
   }
 }
 
-export function openBuyModal(currentRoom, latestRivers, currentCoins, currentRank) {
+export function openBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins = 0) {
   if (document.querySelector(".buy-modal")) return;
   const overlay = document.createElement("div");
   overlay.className = "buy-modal";
@@ -36,10 +36,10 @@ export function openBuyModal(currentRoom, latestRivers, currentCoins, currentRan
   overlay.appendChild(content);
 
   document.body.appendChild(overlay);
-  renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank);
+  renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins);
 }
 
-export function renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank) {
+export function renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins = 0) {
   const content = document.querySelector(".buy-modal-content");
   if (!content || !latestRivers) return;
 
@@ -58,7 +58,15 @@ export function renderBuyModal(currentRoom, latestRivers, currentCoins, currentR
   // Coin display on top of rivers
   const coinBar = document.createElement("div");
   coinBar.className = "buy-modal-coins";
-  for (let i = 0; i < currentCoins; i++) {
+  const blueCount = Math.min(currentCoins, currentPermanentCoins);
+  const goldCount = Math.max(0, currentCoins - currentPermanentCoins);
+  for (let i = 0; i < blueCount; i++) {
+    const img = document.createElement("img");
+    img.src = "/permacoin.svg";
+    img.className = "coin-icon";
+    coinBar.appendChild(img);
+  }
+  for (let i = 0; i < goldCount; i++) {
     const img = document.createElement("img");
     img.src = "/coin.svg";
     img.className = "coin-icon";
