@@ -369,7 +369,7 @@ function renderLobby(room) {
     const startBtn = document.getElementById("start-btn");
     const allReady = areAllConnectedPlayersReady(room);
     startBtn.disabled = !allReady;
-    document.querySelector(".lobby-hint").style.display = allReady ? "none" : "";
+    document.querySelector(".lobby-hint").style.visibility = allReady ? "hidden" : "";
     startBtn.addEventListener("click", () => {
       room.send("startGame");
     });
