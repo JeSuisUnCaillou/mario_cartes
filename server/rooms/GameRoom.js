@@ -17,6 +17,10 @@ import {
 } from "./schema.js";
 
 const DISPOSE_DELAY_MS = 10 * 60 * 1000; // 10 minutes
+const PLAYER_COLORS = [
+  "#e10000", "#0074D9", "#2ECC40", "#FF851B",
+  "#B10DC9", "#FFDC00", "#FF69B4", "#00CED1",
+];
 const PATCH_DELAY_MS = 60; // Delay between async steps to guarantee separate schema patches (> patchRate 50ms)
 const MOVE_DELAY_MS = 700; // Delay after a mushroom move to let the board helmet tween complete with a visible pause
 
@@ -666,8 +670,9 @@ class GameRoom extends Room {
       } else if (this.phase === "lobby") {
         const playerId = randomUUID();
         const name = (options.name || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
+        const color = PLAYER_COLORS[this.players.size % PLAYER_COLORS.length];
         this.players.set(playerId, {
-          playerId, name, connected: true,
+          playerId, name, color, connected: true,
           ...this._initialPlayerState(),
         });
         this._addToCell(1, playerId);
@@ -759,6 +764,7 @@ class GameRoom extends Room {
         this.state.players.set(playerId, sp);
       }
       sp.name = p.name;
+      sp.color = p.color;
       sp.cellId = p.cellId;
       sp.connected = p.connected;
       sp.handCount = p.hand.length;

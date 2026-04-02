@@ -2,6 +2,7 @@ import { schema } from "@colyseus/schema";
 
 const PlayerSchema = schema({
   name: "string",
+  color: "string",
   cellId: "number",
   connected: "boolean",
   handCount: "number",
