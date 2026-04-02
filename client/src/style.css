@@ -494,6 +494,11 @@ input {
   font-size: 2em;
   padding: 20px 40px;
   font-weight: bold;
+  background: #888;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 .ready-message {
@@ -527,7 +532,14 @@ input {
 }
 
 .cancel-btn {
-  padding: 10px 20px;
+  font-size: 1.2em;
+  padding: 12px 24px;
+  font-weight: bold;
+  background: #888;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 .lobby-hint {
