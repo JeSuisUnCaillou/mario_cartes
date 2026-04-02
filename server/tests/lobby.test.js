@@ -64,6 +64,7 @@ describe("Joining a room", () => {
     expect(player).toEqual({
       playerId,
       name: "???",
+      color: "#e10000",
       cellId: 1,
       connected: true,
       handCount: 0,
