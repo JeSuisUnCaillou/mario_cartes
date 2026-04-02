@@ -904,6 +904,14 @@ class GameRoom extends Room {
   }
 
   _resolveMushroomStep(player) {
+    if (player.hasMovedThisTurn && player.slowCounters > 0) {
+      player.slowCounters--;
+      this._syncState();
+      this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
+      return;
+    }
+    player.hasMovedThisTurn = true;
+
     if (player.lapCount === 0) player.lapCount = 1;
     const oldCellId = player.cellId;
     player.cellId = this.cells.get(player.cellId).next_cell;
@@ -1016,6 +1024,7 @@ class GameRoom extends Room {
     this._sendToPlayer(player.playerId, "cardsDrawn", drawResult);
     this._syncState();
     player.hasPlayedAllCards = false;
+    player.hasMovedThisTurn = false;
     this._advanceTurn();
   }
 
@@ -1048,6 +1057,7 @@ class GameRoom extends Room {
       player.discardPile.push(...player.hand.splice(0));
     }
     player.hasPlayedAllCards = false;
+    player.hasMovedThisTurn = false;
     this._syncState();
     this._advanceTurn();
   }
