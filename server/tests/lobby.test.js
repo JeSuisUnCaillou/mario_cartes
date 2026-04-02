@@ -72,6 +72,7 @@ describe("Joining a room", () => {
       lapCount: 0,
       pendingShellChoice: false,
       finished: false,
+      rank: 0,
     });
     room.leave();
   });

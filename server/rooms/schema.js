@@ -11,6 +11,7 @@ defineTypes(PlayerSchema, {
   lapCount: "number",
   pendingShellChoice: "boolean",
   finished: "boolean",
+  rank: "number",
 });
 
 class RankEntrySchema extends Schema {}

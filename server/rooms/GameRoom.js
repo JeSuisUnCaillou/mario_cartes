@@ -3,6 +3,7 @@ const { randomUUID } = require("crypto");
 const path = require("path");
 const { MapSchema, ArraySchema } = require("@colyseus/schema");
 const { STARTING_DECK, RIVER_DEFS } = require("./decks");
+const { computeLiveRanks } = require("./ranking");
 const {
   PlayerSchema,
   RankEntrySchema,
@@ -631,6 +632,17 @@ class GameRoom extends Room {
     this.state.currentRound = this.currentRound;
     this.state.activePlayerId = this.activePlayerId || "";
 
+    // Compute live ranks
+    let liveRanks = new Map();
+    if (this.phase === "playing") {
+      const playerList = [];
+      for (const [playerId, p] of this.players) {
+        playerList.push({ playerId, cellId: p.cellId, lapCount: p.lapCount });
+      }
+      const finishedRanks = this.ranking.map((pid, i) => ({ playerId: pid, finalRank: i + 1 }));
+      liveRanks = computeLiveRanks(playerList, finishedRanks, this.cells.size);
+    }
+
     // Sync players
     const activePlayerIds = new Set();
     for (const [playerId, p] of this.players) {
@@ -649,6 +661,7 @@ class GameRoom extends Room {
       sp.lapCount = p.lapCount;
       sp.pendingShellChoice = p.pendingShellChoice;
       sp.finished = this.ranking.includes(playerId);
+      sp.rank = liveRanks.get(playerId) || 0;
     }
     for (const key of this.state.players.keys()) {
       if (!activePlayerIds.has(key)) this.state.players.delete(key);
