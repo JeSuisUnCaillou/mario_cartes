@@ -1075,12 +1075,6 @@ export function initBoard(gameId) {
                 duration: 400,
                 ease: "Power2",
               });
-              this.tweens.add({
-                targets: dcIcon,
-                x, y: y - helmetDisplaySize * 0.3,
-                duration: 400,
-                ease: "Power2",
-              });
               this.playerCells.set(p.playerId, p.cellId);
             } else if (helmet.x !== x || helmet.y !== y) {
               this.tweens.add({
@@ -1092,12 +1086,6 @@ export function initBoard(gameId) {
               this.tweens.add({
                 targets: label,
                 x, y: y - helmetDisplaySize * 0.7,
-                duration: 300,
-                ease: "Power2",
-              });
-              this.tweens.add({
-                targets: dcIcon,
-                x, y: y - helmetDisplaySize * 0.3,
                 duration: 300,
                 ease: "Power2",
               });
