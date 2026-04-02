@@ -504,6 +504,7 @@ input {
 .ready-btn {
   font-size: 2em;
   padding: 20px 40px;
+  background: #4CAF50;
 }
 
 .ready-message {
