@@ -441,26 +441,60 @@ describe("Kick player", () => {
     board.leave();
   });
 
-  it("kick is ignored during playing phase", async () => {
+  it("board can kick a player during playing phase", async () => {
     const roomId = await createRoom(baseUrl);
     const { room: board } = await connectBoard(baseUrl, roomId);
     const { room: player1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
-    const { room: player2 } = await connectPlayer(baseUrl, roomId);
+    const { room: player2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+    const { room: player3 } = await connectPlayer(baseUrl, roomId);
 
     player1.send("setReady", true);
     player2.send("setReady", true);
+    player3.send("setReady", true);
     player1.send("startGame");
-    await waitForMessage(board, "gameState", (gs) => gs.phase === "playing");
+    const gs = await waitForMessage(board, "gameState", (g) => g.phase === "playing");
 
-    board.send("kickPlayer", { playerId: id1 });
-    // Give server time to process
-    await new Promise((r) => setTimeout(r, 100));
+    // Kick a non-active player
+    const nonActive = id1 === gs.activePlayerId ? id2 : id1;
+    const nonActiveRoom = nonActive === id1 ? player1 : player2;
 
-    const players = await waitForPlayers(board, (list) => list.length === 2);
+    board.send("kickPlayer", { playerId: nonActive });
+    await waitForMessage(nonActiveRoom, "kicked");
+
+    const players = await waitForPlayers(board, (list) =>
+      list.length === 2 && !list.some((p) => p.playerId === nonActive),
+    );
     expect(players).toHaveLength(2);
 
     player1.leave();
     player2.leave();
+    player3.leave();
+    board.leave();
+  });
+
+  it("kicking the active player advances the turn", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    const { room: player1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: player2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+    const { room: player3 } = await connectPlayer(baseUrl, roomId);
+
+    player1.send("setReady", true);
+    player2.send("setReady", true);
+    player3.send("setReady", true);
+    player1.send("startGame");
+    const gs = await waitForMessage(board, "gameState", (g) => g.phase === "playing");
+
+    board.send("kickPlayer", { playerId: gs.activePlayerId });
+
+    const gs2 = await waitForMessage(board, "gameState", (g) =>
+      g.activePlayerId !== gs.activePlayerId,
+    );
+    expect(gs2.activePlayerId).not.toBe(gs.activePlayerId);
+
+    player1.leave();
+    player2.leave();
+    player3.leave();
     board.leave();
   });
 

@@ -292,7 +292,7 @@ class GameRoom extends Room {
     this.onMessage("kickPlayer", (client, data) => {
       const info = this.clientsInfo.get(client.sessionId);
       if (!info || info.type !== "board") return;
-      if (this.phase !== "lobby") return;
+      if (this.phase === "finished") return;
       const playerId = data && data.playerId;
       if (!playerId || !this.players.has(playerId)) return;
       this._kickPlayer(playerId);
@@ -690,9 +690,16 @@ class GameRoom extends Room {
   }
 
   _kickPlayer(playerId) {
+    const player = this.players.get(playerId);
+    const wasActive = this.phase === "playing" && this.activePlayerId === playerId;
+
     this._sendToPlayer(playerId, "kicked");
-    this._removeFromCell(1, playerId);
+    this._removeFromCell(player.cellId, playerId);
     this.players.delete(playerId);
+    // Remove from ranking if present
+    const rankIdx = this.ranking.indexOf(playerId);
+    if (rankIdx !== -1) this.ranking.splice(rankIdx, 1);
+
     // Remove clientsInfo entry and leave the client
     for (const [sessionId, info] of this.clientsInfo) {
       if (info.playerId === playerId) {
@@ -702,7 +709,28 @@ class GameRoom extends Room {
         break;
       }
     }
+
     this._syncState();
+
+    if (this.phase === "playing") {
+      if (this.players.size === 0) {
+        this._endGame();
+        return;
+      }
+      // Fix turnIndex after removal
+      const playerIds = Array.from(this.players.keys());
+      if (wasActive) {
+        this.turnIndex = this.turnIndex % playerIds.length;
+        this.activePlayerId = playerIds[this.turnIndex];
+        this.players.get(this.activePlayerId).hasPlayedAllCards = false;
+        this._syncState();
+        if (this._checkRaceOver()) return;
+      } else {
+        // Recalculate turnIndex to keep activePlayerId correct
+        this.turnIndex = playerIds.indexOf(this.activePlayerId);
+        if (this._checkRaceOver()) return;
+      }
+    }
   }
 
   _sendToPlayer(playerId, type, data) {
