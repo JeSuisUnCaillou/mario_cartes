@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { bananaCounts, shellCounts } from "./board.functions.js";
 import { renderRivers as renderRiverRows } from "./river.js";
 import { isDebugModalOpen, setDebugRoom, onDebugState, setupDebugKeyboard } from "./board_debug.js";
+import { rankBadge } from "./rank.js";
 
 const CELL_POSITIONS = [
   null,           // index 0 unused (cells are 1-indexed)
@@ -93,17 +94,6 @@ function schemaToGameState(state) {
   return gs;
 }
 
-function ordinalSuffix(n) {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-
-const RANK_ICONS = ["/1st.svg", "/2nd.svg", "/3rd.svg"];
-function rankImg(n, cssClass) {
-  const src = RANK_ICONS[n - 1];
-  return src ? `<img src="${src}" class="${cssClass}" />` : "";
-}
 
 function createSidebar(gameId) {
   const sidebar = document.createElement("div");
@@ -281,7 +271,7 @@ function updateInfoBarPlayers(players) {
         liveRankEl.className = "board-player-live-rank";
         leftEl.appendChild(liveRankEl);
       }
-      liveRankEl.innerHTML = rankImg(p.rank, "board-rank-icon") + ordinalSuffix(p.rank);
+      liveRankEl.innerHTML = rankBadge(p.rank, "board-rank-icon");
       liveRankEl.style.display = "";
     } else if (liveRankEl) {
       liveRankEl.style.display = "none";
@@ -347,8 +337,7 @@ function showLeaderboard(ranking) {
   for (const entry of ranking) {
     const li = document.createElement("li");
     li.className = "board-leaderboard-entry";
-    const icon = rankImg(entry.finalRank, "board-leaderboard-icon");
-    li.innerHTML = `<span class="board-leaderboard-rank">${icon}${ordinalSuffix(entry.finalRank)}</span><span class="board-leaderboard-name">${entry.name}</span>`;
+    li.innerHTML = `<span class="board-leaderboard-rank">${rankBadge(entry.finalRank, "board-leaderboard-icon")}</span><span class="board-leaderboard-name">${entry.name}</span>`;
     list.appendChild(li);
   }
   overlay.appendChild(list);

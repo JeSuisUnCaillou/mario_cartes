@@ -6,18 +6,7 @@ import {
   renderHand, renderPileContent, updatePileCount, updatePiles, updateCoinDisplay,
 } from "./player_cards.js";
 import { updateBuyButton as _updateBuyButton, openBuyModal as _openBuyModal, renderBuyModal, closeBuyModal } from "./player_buy.js";
-
-function ordinalSuffix(n) {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-
-const RANK_ICONS = ["/1st.svg", "/2nd.svg", "/3rd.svg"];
-function rankImg(n, cssClass) {
-  const src = RANK_ICONS[n - 1];
-  return src ? `<img src="${src}" class="${cssClass}" />` : "";
-}
+import { rankBadge } from "./rank.js";
 
 let playing = false;
 let animating = false;
@@ -402,9 +391,7 @@ function renderFinishedZone(container, ranking, room, { showStartOver = true, my
       <h2 class="finished-title">Race Complete!</h2>
       <ol class="finished-list">
         ${(ranking || []).map((entry) => {
-          const icon = rankImg(entry.finalRank, "finished-rank-icon");
-          const ordinal = ordinalSuffix(entry.finalRank);
-          return `<li class="finished-entry"><span class="finished-rank">${icon} ${ordinal}</span><span class="finished-name">${entry.name}</span></li>`;
+          return `<li class="finished-entry"><span class="finished-rank">${rankBadge(entry.finalRank, "finished-rank-icon")}</span><span class="finished-name">${entry.name}</span></li>`;
         }).join("")}
       </ol>
       <button id="start-over-btn" class="start-over-btn">Start Over</button>
@@ -415,11 +402,9 @@ function renderFinishedZone(container, ranking, room, { showStartOver = true, my
   } else {
     const myEntry = (ranking || []).find((e) => e.playerId === pid);
     const rank = myEntry ? myEntry.finalRank : ranking ? ranking.length : 1;
-    const icon = rankImg(rank, "finished-rank-icon");
-    const ordinal = ordinalSuffix(rank);
     container.innerHTML = `
       <h2 class="finished-title">You finished!</h2>
-      <div class="finished-entry"><span class="finished-rank">${icon} ${ordinal}</span></div>
+      <div class="finished-entry"><span class="finished-rank">${rankBadge(rank, "finished-rank-icon")}</span></div>
       <p class="waiting-message">Waiting for other players…</p>
     `;
   }
@@ -561,7 +546,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           if (rankEl) {
             const me = myPlayerId ? state.players.get(myPlayerId) : null;
             if (me && me.rank > 0 && state.phase === "playing") {
-              rankEl.innerHTML = rankImg(me.rank, "player-rank-icon") + ordinalSuffix(me.rank);
+              rankEl.innerHTML = rankBadge(me.rank, "player-rank-icon");
               rankEl.style.display = "";
             } else {
               rankEl.textContent = "";
