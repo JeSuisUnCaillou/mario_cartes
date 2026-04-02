@@ -1,5 +1,3 @@
-# Red shells
-
 # Aiming a cell containing several items with a shell should prompt the player to choose his target.
 
 # Permanent coins on racetrack

@@ -22,6 +22,7 @@ function schemaPlayersToArray(state) {
       handCount: p.handCount,
       ready: p.ready,
       coins: p.coins,
+      permanentCoins: p.permanentCoins,
       lapCount: p.lapCount,
       pendingShellChoice: p.pendingShellChoice,
       finished: p.finished,

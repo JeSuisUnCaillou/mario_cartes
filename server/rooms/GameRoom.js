@@ -70,6 +70,7 @@ class GameRoom extends Room {
       pendingShellChoice: player.pendingShellChoice,
       pendingShellType: player.pendingShellType,
       coins: player.coins,
+      permanentCoins: player.permanentCoins,
       deck: [...player.hand, ...player.drawPile, ...player.discardPile],
     };
   }
@@ -550,6 +551,7 @@ class GameRoom extends Room {
     }
     if (data.lapCount !== undefined) player.lapCount = data.lapCount;
     if (data.coins !== undefined) player.coins = data.coins;
+    if (data.permanentCoins !== undefined) player.permanentCoins = data.permanentCoins;
     if (data.pendingDiscard !== undefined) player.pendingDiscard = data.pendingDiscard;
     if (data.pendingShellChoice !== undefined) player.pendingShellChoice = data.pendingShellChoice;
     if (data.setHandCard) {
@@ -586,6 +588,7 @@ class GameRoom extends Room {
       connected: p.connected,
       ready: p.ready,
       coins: p.coins,
+      permanentCoins: p.permanentCoins,
       lapCount: p.lapCount,
       rank: liveRanks.get(p.playerId) || 0,
       pendingDiscard: p.pendingDiscard,
@@ -625,7 +628,7 @@ class GameRoom extends Room {
   _initialPlayerState() {
     return {
       cellId: 1, drawPile: this._createDeck(), hand: [], discardPile: [],
-      pendingDiscard: 0, pendingShellChoice: false, pendingItems: [], ready: false, hasPlayedAllCards: false, coins: 0, lapCount: 0,
+      pendingDiscard: 0, pendingShellChoice: false, pendingItems: [], ready: false, hasPlayedAllCards: false, coins: 0, permanentCoins: 0, lapCount: 0,
     };
   }
 
@@ -765,6 +768,7 @@ class GameRoom extends Room {
       sp.handCount = p.hand.length;
       sp.ready = p.ready;
       sp.coins = p.coins;
+      sp.permanentCoins = p.permanentCoins;
       sp.lapCount = p.lapCount;
       sp.pendingShellChoice = p.pendingShellChoice;
       sp.finished = this.ranking.includes(playerId);
@@ -916,9 +920,20 @@ class GameRoom extends Room {
     player.cellId = this.cells.get(player.cellId).next_cell;
     this._removeFromCell(oldCellId, player.playerId);
     this._addToCell(player.cellId, player.playerId);
+
+    const cellData = this.cells.get(player.cellId);
+    if (cellData.permanent_coin) {
+      player.permanentCoins += cellData.permanent_coin;
+      player.coins += cellData.permanent_coin;
+      this.broadcast("permanentCoinPickup", {
+        playerId: player.playerId,
+        cellId: player.cellId,
+      });
+    }
+
     this._syncState();
 
-    if (this.cells.get(player.cellId).finish_line) {
+    if (cellData.finish_line) {
       player.lapCount++;
       if (player.lapCount > 3) {
         this.ranking.push(player.playerId);
@@ -995,7 +1010,7 @@ class GameRoom extends Room {
   }
 
   _endTurnAndAdvance(player) {
-    player.coins = 0;
+    player.coins = player.permanentCoins;
     player.pendingItems = [];
     // Discard remaining hand cards
     if (player.hand.length > 0) {
@@ -1031,7 +1046,7 @@ class GameRoom extends Room {
   }
 
   _endTurnForFinishedPlayer(player) {
-    player.coins = 0;
+    player.coins = player.permanentCoins;
     player.pendingItems = [];
     if (player.hand.length > 0) {
       player.discardPile.push(...player.hand.splice(0));

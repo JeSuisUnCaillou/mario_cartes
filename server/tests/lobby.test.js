@@ -69,6 +69,7 @@ describe("Joining a room", () => {
       handCount: 0,
       ready: false,
       coins: 0,
+      permanentCoins: 0,
       lapCount: 0,
       pendingShellChoice: false,
       finished: false,
@@ -2364,5 +2365,149 @@ describe("Red shell", () => {
     room1.leave();
     room2.leave();
     board.leave();
+  });
+});
+
+describe("Permanent coins", () => {
+  it("permanentCoins starts at 0", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    room.send("startGame");
+    await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const players = await waitForPlayers(room, (list) => list.length === 1);
+    expect(players[0].permanentCoins).toBe(0);
+    room.leave();
+  });
+
+  it("landing on permanent coin cell increments permanentCoins and coins", async () => {
+    // Cell 1→2→3; cell 3 has permanent_coin: 1
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["mushroom", "mushroom"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    room.send("startGame");
+    await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    const mmCard = cards.hand.find((c) => c.items.join(",") === "mushroom,mushroom");
+    room.send("playCard", { cardId: mmCard.id });
+    await waitForMessage(room, "cardPlayed");
+    const players = await waitForPlayers(room, (list) => list[0].permanentCoins === 1);
+    expect(players[0].permanentCoins).toBe(1);
+    expect(players[0].coins).toBe(1);
+    expect(players[0].cellId).toBe(3);
+    room.leave();
+  });
+
+  it("endTurn restores coins to permanentCoins", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["mushroom", "mushroom"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    room.send("startGame");
+    await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    // Play mushroom×2 to land on cell 3 (permanent coin)
+    const mmCard = cards.hand.find((c) => c.items.join(",") === "mushroom,mushroom");
+    room.send("playCard", { cardId: mmCard.id });
+    await waitForMessage(room, "cardPlayed");
+    await waitForPlayers(room, (list) => list[0].permanentCoins === 1);
+    // Play a coin card to earn 1 regular coin (total coins = 2)
+    const coinCard = cards.hand.find((c) => c.items.length === 1 && c.items[0] === "coin");
+    room.send("playCard", { cardId: coinCard.id });
+    await waitForMessage(room, "cardPlayed");
+    await waitForPlayers(room, (list) => list[0].coins === 2);
+    // End turn: regular coins reset, permanent coins restored
+    room.send("endTurn");
+    const players = await waitForPlayers(room, (list) => list[0].coins === 1);
+    expect(players[0].coins).toBe(1);
+    expect(players[0].permanentCoins).toBe(1);
+    room.leave();
+  });
+
+  it("landing on same permanent coin cell again increments again", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["mushroom", "mushroom"], ["coin"], ["coin"], ["coin"], ["coin"],
+        ["mushroom", "mushroom"], ["coin"], ["coin"], ["coin"], ["coin"],
+        ["mushroom", "mushroom"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    room.send("startGame");
+    await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    let cards = await waitForMessage(room, "cardsDrawn");
+
+    // First trip: mushroom×2 → cell 1→2→3 (gain 1 permanent coin)
+    let mmCard = cards.hand.find((c) => c.items.join(",") === "mushroom,mushroom");
+    room.send("playCard", { cardId: mmCard.id });
+    await waitForMessage(room, "cardPlayed");
+    await waitForPlayers(room, (list) => list[0].permanentCoins === 1);
+
+    // End turn to reset
+    room.send("endTurn");
+    cards = await waitForMessage(room, "cardsDrawn");
+
+    // Position back to cell 1 via _testSetState
+    room.send("_testSetState", { cellId: 1 });
+    await waitForPlayers(room, (list) => list[0].cellId === 1);
+
+    // Second trip: mushroom×2 → cell 1→2→3 again
+    mmCard = cards.hand.find((c) => c.items.join(",") === "mushroom,mushroom");
+    room.send("playCard", { cardId: mmCard.id });
+    await waitForMessage(room, "cardPlayed");
+    // After endTurn coins=1 (permanentCoins=1), then gain 1 more permanent = coins 2, permanentCoins 2
+    const players = await waitForPlayers(room, (list) => list[0].permanentCoins === 2);
+    expect(players[0].permanentCoins).toBe(2);
+    expect(players[0].coins).toBe(2);
+    room.leave();
+  });
+
+  it("buying cards spends regular coins first, permanent coins survive turn end", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["mushroom", "mushroom"], ["coin"], ["coin"], ["coin"], ["coin"],
+        ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+      _testRiverDecks: [
+        [["mushroom"], ["banana"], ["coin"], ["mushroom"], ["banana"], ["coin"]],
+        [["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"], ["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"]],
+        [["mushroom", "mushroom", "mushroom"], ["banana", "banana", "banana"], ["coin", "coin", "coin"], ["mushroom", "mushroom", "mushroom"]],
+      ],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    room.send("startGame");
+    const gs = await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+
+    // Play mushroom×2 to land on cell 3 (1 permanent coin)
+    const mmCard = cards.hand.find((c) => c.items.join(",") === "mushroom,mushroom");
+    room.send("playCard", { cardId: mmCard.id });
+    await waitForMessage(room, "cardPlayed");
+    await waitForPlayers(room, (list) => list[0].permanentCoins === 1);
+
+    // Play 2 coin cards to earn 2 regular coins (total coins = 3, permanentCoins = 1)
+    const coinCards = cards.hand.filter((c) => c.items.length === 1 && c.items[0] === "coin");
+    room.send("playCard", { cardId: coinCards[0].id });
+    await waitForMessage(room, "cardPlayed");
+    room.send("playCard", { cardId: coinCards[1].id });
+    await waitForMessage(room, "cardPlayed");
+    await waitForPlayers(room, (list) => list[0].coins === 3);
+
+    // Buy a river 0 card (cost 1) — spends 1 regular coin
+    const river0Card = gs.rivers[0].slots[0];
+    room.send("buyCard", { riverId: 0, cardId: river0Card.id });
+    const bought = await waitForMessage(room, "cardBought");
+    expect(bought.coins).toBe(2); // 3 - 1 = 2
+    expect(bought.permanentCoins).toBe(1);
+
+    // End turn: coins should restore to permanentCoins (1)
+    room.send("endTurn");
+    const players = await waitForPlayers(room, (list) => list[0].coins === 1);
+    expect(players[0].coins).toBe(1);
+    expect(players[0].permanentCoins).toBe(1);
+    room.leave();
   });
 });

@@ -8,6 +8,7 @@ defineTypes(PlayerSchema, {
   handCount: "number",
   ready: "boolean",
   coins: "number",
+  permanentCoins: "number",
   lapCount: "number",
   pendingShellChoice: "boolean",
   finished: "boolean",
