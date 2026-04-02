@@ -272,6 +272,7 @@ function updateInfoBarPlayers(players) {
         leftEl.appendChild(liveRankEl);
       }
       liveRankEl.innerHTML = rankBadge(p.rank, "board-rank-icon");
+      liveRankEl.style.color = p.rank === 1 ? "#FFD700" : "#fff";
       liveRankEl.style.display = "";
     } else if (liveRankEl) {
       liveRankEl.style.display = "none";
