@@ -6,10 +6,10 @@ Aiming a cell containing several items with a shell should prompt the player to 
 
 # Important
 
-la mécanique de slow pour les shells
+✔️ la mécanique de slow pour les shells
 le faux bloc
 les cartes spéciales
-le sing et la tortue
+le singe et la tortue
 faire un meilleur circuit
 
 # tech
