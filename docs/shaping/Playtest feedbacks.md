@@ -22,9 +22,15 @@ The race is over when only one player has not finished the game. He is added to 
 
 The players want to set it to READY right away, even though not everyone has arrived yet. I want the game to not start when everyone is ready. Instead, below the "You are ready" the player's client now needs a button "start the game" next to the cancel one. And even if everyone is ready, the game doesn't start and more players can join. The game starts only when one ready player clicks on "start the game".
 
+we need to be able to kick a player from the board. Clicking on a player should open a small menu with the kick action.
+
+In the debug modal, i want to be able to modify a player's win state, and his ranking.
+
 ---
 
 DOING
+
+the indicator that a player has finished should be bigger (BIG RANKING, Crown, whatever)
 
 ---
 
@@ -35,11 +41,6 @@ We need an explanation of the cards in the player's client.
 l'asset de carapace doit avoir juste un trou (à gauche par exemple), l'autre est censé être derrière
 
 
-the indicator that a player has finished should be bigger (BIG RANKING, Crown, whatever)
-
-we need to be able to kick a player from the board. Clicking on a player should open a small menu with the kick action.
-
-We need to be able to restart the game from the board.
 
 
 
