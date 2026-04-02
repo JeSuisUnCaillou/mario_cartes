@@ -849,6 +849,41 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         localStorage.setItem("playerName", newName);
         room.send("changeName", newName);
       });
+
+      // Auto-reconnect on unexpected disconnection (e.g. phone lock)
+      const reconnectionToken = room.reconnectionToken;
+      room.onLeave((code) => {
+        if (code === 4000) return; // consented leave — no reconnect
+        const serverUrl = import.meta.env.DEV
+          ? "ws://localhost:2567"
+          : `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}`;
+        const reconnectClient = new Client(serverUrl);
+        let attempts = 0;
+        const maxAttempts = 20;
+        const tryReconnect = async () => {
+          // First try Colyseus reconnect (preserves server-side session)
+          while (attempts < maxAttempts) {
+            attempts++;
+            try {
+              const newRoom = await reconnectClient.reconnect(reconnectionToken);
+              setupRoom(newRoom);
+              return;
+            } catch {
+              await new Promise((r) => setTimeout(r, 2000));
+            }
+          }
+          // Fallback: fresh join with existing playerId (server maps it back)
+          try {
+            const newRoom = await joinWithRetry(reconnectClient, gameId, {
+              type: "player", name, playerId: myPlayerId,
+            });
+            setupRoom(newRoom);
+          } catch {
+            // Give up — player will need to reload
+          }
+        };
+        tryReconnect();
+      });
   }
 
   if (existingRoom) {

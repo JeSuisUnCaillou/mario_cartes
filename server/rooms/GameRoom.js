@@ -665,10 +665,6 @@ class GameRoom extends Room {
       if (existingPlayerId && this.players.has(existingPlayerId)) {
         const player = this.players.get(existingPlayerId);
         player.connected = true;
-        if (this._turnAdvanceTimer) {
-          this._turnAdvanceTimer.clear();
-          this._turnAdvanceTimer = null;
-        }
         this.clientsInfo.set(client.sessionId, { type: "player", playerId: existingPlayerId });
         client.send("cardsDrawn", this._cardState(player));
       } else if (this.phase === "lobby") {
