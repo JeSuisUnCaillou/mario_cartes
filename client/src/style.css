@@ -1220,6 +1220,7 @@ input {
   align-items: center;
   gap: 6px;
   padding: 2px 0;
+  color: #fff;
 }
 
 .debug-ranking-add {
