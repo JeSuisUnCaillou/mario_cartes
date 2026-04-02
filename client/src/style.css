@@ -248,7 +248,7 @@ html, body, #app {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  font-size: 3em;
+  font-size: 2.25em;
   font-weight: bold;
   color: #fff;
   flex-shrink: 0;
@@ -256,8 +256,8 @@ html, body, #app {
 }
 
 .river-cost-icon {
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
 }
 
 .river-cards {
