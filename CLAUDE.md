@@ -57,3 +57,4 @@ Monorepo with npm workspaces (`server`, `client`):
 - Plans saved and committed in `/docs/plans/` before implementing.
 - One commit per slice. Don't cite yourself as the author.
 - No `Co-Authored-By` trailer in commits.
+- When changing game rules, update the rules section in `README.md` to match.
