@@ -446,7 +446,7 @@ export function initBoard(gameId) {
     }
 
     create() {
-      this.bg = this.add.image(0, 0, "space").setAlpha(0.6);
+      // this.bg = this.add.image(0, 0, "space").setAlpha(0.6);
       this.track = this.add.image(0, 0, "racetrack");
       this.layoutTrack();
       this.createPermacoinSprites();
@@ -457,10 +457,12 @@ export function initBoard(gameId) {
     layoutTrack() {
       const { width, height } = this.scale;
 
-      this.bg.setPosition(width / 2, height / 2);
-      const bgScaleX = width / this.bg.width;
-      const bgScaleY = height / this.bg.height;
-      this.bg.setScale(Math.max(bgScaleX, bgScaleY));
+      if (this.bg) {
+        this.bg.setPosition(width / 2, height / 2);
+        const bgScaleX = width / this.bg.width;
+        const bgScaleY = height / this.bg.height;
+        this.bg.setScale(Math.max(bgScaleX, bgScaleY));
+      }
 
       this.track.setPosition(width / 2, height / 2);
       const scaleX = (width * 0.9) / this.track.width;
@@ -1128,7 +1130,7 @@ export function initBoard(gameId) {
   new Phaser.Game({
     type: Phaser.AUTO,
     parent: gameContainer,
-    backgroundColor: "#000000",
+    backgroundColor: "#111111",
     scale: {
       mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,
