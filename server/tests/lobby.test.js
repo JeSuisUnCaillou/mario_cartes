@@ -2400,9 +2400,9 @@ describe("Red shell", () => {
     expect(thrown.hit).toBeNull();
     expect(thrown.toCellId).toBe(14);
 
-    // Shell stays on cell 14 as a green_shell occupant
-    const occ = await waitForMessage(board, "cellOccupants", (o) => o[14] && o[14].includes("green_shell"));
-    expect(occ[14]).toContain("green_shell");
+    // Shell stays on cell 14 as a red_shell occupant
+    const occ = await waitForMessage(board, "cellOccupants", (o) => o[14] && o[14].includes("red_shell"));
+    expect(occ[14]).toContain("red_shell");
 
     room1.leave();
     room2.leave();

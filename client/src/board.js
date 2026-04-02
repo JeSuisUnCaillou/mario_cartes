@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { Client } from "colyseus.js";
 import QRCode from "qrcode";
-import { bananaCounts, shellCounts, permacoinCells } from "./board.functions.js";
+import { bananaCounts, shellCounts, redShellCounts, permacoinCells } from "./board.functions.js";
 import { renderRivers as renderRiverRows } from "./river.js";
 import { isDebugModalOpen, setDebugRoom, onDebugState, setupDebugKeyboard } from "./board_debug.js";
 import { rankBadge } from "./rank.js";
@@ -405,6 +405,7 @@ export function initBoard(gameId) {
       this.latestPlayers = [];
       this.bananaSprites = new Map();
       this.shellSprites = new Map();
+      this.redShellSprites = new Map();
       this.permacoinSprites = new Map();
       this._inflightShells = new Map(); // cellId → shell sprite being animated to that cell
       this.latestCellOccupants = {};
@@ -510,7 +511,7 @@ export function initBoard(gameId) {
         const offset = this._slotOffset(cellId);
         const totalSlots = occupants.length + offset;
         occupants.forEach((entry, slotIndex) => {
-          if (entry === "banana" || entry === "green_shell") return;
+          if (entry === "banana" || entry === "green_shell" || entry === "red_shell") return;
           const helmet = this.helmets.get(entry);
           const label = this.nameLabels.get(entry);
           if (!helmet) return;
@@ -534,15 +535,19 @@ export function initBoard(gameId) {
         if (!CELL_POSITIONS[cellId]) continue;
         const bSprites = this.bananaSprites.get(cellId) || [];
         const sSprites = this.shellSprites.get(cellId) || [];
+        const rsSprites = this.redShellSprites.get(cellId) || [];
         let bananaIdx = 0;
         let shellIdx = 0;
+        let redShellIdx = 0;
         const offset = this._slotOffset(cellId);
         const totalSlots = occupants.length + offset;
 
         occupants.forEach((entry, slotIndex) => {
           const { x, y } = this.cellSlotPos(cellId, slotIndex + offset, totalSlots);
-          if (entry === "banana" || entry === "green_shell") {
-            const sprite = entry === "banana" ? bSprites[bananaIdx++] : sSprites[shellIdx++];
+          if (entry === "banana" || entry === "green_shell" || entry === "red_shell") {
+            const sprite = entry === "banana" ? bSprites[bananaIdx++]
+              : entry === "green_shell" ? sSprites[shellIdx++]
+                : rsSprites[redShellIdx++];
             if (sprite && (sprite.x !== x || sprite.y !== y)) {
               this.tweens.add({ targets: sprite, x, y, duration: 300, ease: "Power2" });
             }
@@ -703,6 +708,7 @@ export function initBoard(gameId) {
 
       this._syncItemSprites(this.bananaSprites, bananaCounts(cellOccupants), "banana");
       this._syncItemSprites(this.shellSprites, shellCounts(cellOccupants), "green_shell");
+      this._syncItemSprites(this.redShellSprites, redShellCounts(cellOccupants), "red_shell");
 
       this.tweenCellLayout();
       this.repositionPermacoinSprites();
@@ -721,7 +727,7 @@ export function initBoard(gameId) {
         const cid = Number(cellId);
         // Skip cells with an in-flight shell animation — the animation
         // sprite will be registered when it arrives
-        if (textureKey === "green_shell" && this._inflightShells.has(cid)) {
+        if ((textureKey === "green_shell" || textureKey === "red_shell") && this._inflightShells.has(cid)) {
           continue;
         }
         const existing = spriteMap.get(cid) || [];
@@ -748,14 +754,18 @@ export function initBoard(gameId) {
         if (!CELL_POSITIONS[cellId]) continue;
         const bSprites = this.bananaSprites.get(cellId) || [];
         const sSprites = this.shellSprites.get(cellId) || [];
+        const rsSprites = this.redShellSprites.get(cellId) || [];
         let bananaIdx = 0;
         let shellIdx = 0;
+        let redShellIdx = 0;
         const offset = this._slotOffset(cellId);
         const totalSlots = occupants.length + offset;
 
         occupants.forEach((entry, slotIndex) => {
-          if (entry !== "banana" && entry !== "green_shell") return;
-          const sprite = entry === "banana" ? bSprites[bananaIdx++] : sSprites[shellIdx++];
+          if (entry !== "banana" && entry !== "green_shell" && entry !== "red_shell") return;
+          const sprite = entry === "banana" ? bSprites[bananaIdx++]
+            : entry === "green_shell" ? sSprites[shellIdx++]
+              : rsSprites[redShellIdx++];
           if (!sprite) return;
           const { x, y } = this.cellSlotPos(cellId, slotIndex + offset, totalSlots);
           sprite.setPosition(x, y);
@@ -770,7 +780,9 @@ export function initBoard(gameId) {
       if (!helmet) return;
 
       const moveDelay = 350; // Slightly shorter than the 400ms helmet tween to account for Power2 ease deceleration
-      const spriteMap = itemType === "green_shell" ? this.shellSprites : this.bananaSprites;
+      const spriteMap = itemType === "red_shell" ? this.redShellSprites
+        : itemType === "green_shell" ? this.shellSprites
+          : this.bananaSprites;
 
       // Use the real item sprite from the cell (server hasn't broadcast its removal yet)
       const sprites = spriteMap.get(cellId) || [];
@@ -828,8 +840,10 @@ export function initBoard(gameId) {
 
       // Grab the hit item sprite NOW before updateCellOccupants destroys it
       let hitItem = null;
-      if (data.hit === "banana" || data.hit === "green_shell") {
-        const hitSpriteMap = data.hit === "banana" ? this.bananaSprites : this.shellSprites;
+      if (data.hit === "banana" || data.hit === "green_shell" || data.hit === "red_shell") {
+        const hitSpriteMap = data.hit === "banana" ? this.bananaSprites
+          : data.hit === "green_shell" ? this.shellSprites
+            : this.redShellSprites;
         const hitSprites = hitSpriteMap.get(data.toCellId) || [];
         hitItem = hitSprites.pop();
         if (hitSprites.length === 0) hitSpriteMap.delete(data.toCellId);
@@ -842,15 +856,16 @@ export function initBoard(gameId) {
         }
       }
 
-      // For green shells that land on the cell (no hit), mark cell as
+      // For shells that land on the cell (no hit), mark cell as
       // in-flight so _syncItemSprites won't create a duplicate sprite.
       // The animation sprite becomes the permanent one on arrival.
-      if (!data.hit && textureKey === "green_shell") {
+      if (!data.hit && (textureKey === "green_shell" || textureKey === "red_shell")) {
         // Destroy any sprite _syncItemSprites already created
-        const destSprites = this.shellSprites.get(data.toCellId) || [];
+        const destMap = textureKey === "green_shell" ? this.shellSprites : this.redShellSprites;
+        const destSprites = destMap.get(data.toCellId) || [];
         const synced = destSprites.pop();
         if (synced) synced.destroy();
-        if (destSprites.length === 0) this.shellSprites.delete(data.toCellId);
+        if (destSprites.length === 0) destMap.delete(data.toCellId);
 
         this._inflightShells.set(data.toCellId, shell);
       }
@@ -899,7 +914,7 @@ export function initBoard(gameId) {
               ease: "Power2",
               onComplete: () => { shell.destroy(); },
             });
-          } else if (data.hit === "banana" || data.hit === "green_shell") {
+          } else if (data.hit === "banana" || data.hit === "green_shell" || data.hit === "red_shell") {
             const launchY = to.y - this.scale.height * 0.6;
             const spread = Math.tan(7.5 * Math.PI / 180) * this.scale.height * 0.6;
 
@@ -931,16 +946,16 @@ export function initBoard(gameId) {
             }
 
             this.tweenCellLayout();
-          } else if (!data.hit && textureKey === "green_shell") {
-            // Green shell, no hit — shell stays on cell
+          } else if (!data.hit && (textureKey === "green_shell" || textureKey === "red_shell")) {
+            // Shell, no hit — shell stays on cell
             shell.setDepth(0);
             this._inflightShells.delete(data.toCellId);
-            const existing = this.shellSprites.get(data.toCellId) || [];
+            const destMap = textureKey === "green_shell" ? this.shellSprites : this.redShellSprites;
+            const existing = destMap.get(data.toCellId) || [];
             existing.push(shell);
-            this.shellSprites.set(data.toCellId, existing);
+            destMap.set(data.toCellId, existing);
             this.tweenCellLayout();
           } else {
-            // Red shell or other — clean up
             shell.destroy();
           }
         },

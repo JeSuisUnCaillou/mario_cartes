@@ -114,6 +114,14 @@ class GameRoom extends Room {
     return this._cellOccupants(cellId).filter((e) => e === "green_shell").length;
   }
 
+  _redShellsOnCell(cellId) {
+    return this._cellOccupants(cellId).filter((e) => e === "red_shell").length;
+  }
+
+  _anyShellsOnCell(cellId) {
+    return this._cellOccupants(cellId).filter((e) => e === "green_shell" || e === "red_shell").length;
+  }
+
   _previousCell(cellId) {
     return this.prevCell[cellId];
   }
@@ -122,7 +130,7 @@ class GameRoom extends Room {
     const occupants = this._cellOccupants(targetCellId);
 
     // Priority 1: hit a player (excluding thrower), randomly chosen
-    const playerIds = occupants.filter((e) => e !== "banana" && e !== "green_shell" && e !== thrower.playerId);
+    const playerIds = occupants.filter((e) => e !== "banana" && e !== "green_shell" && e !== "red_shell" && e !== thrower.playerId);
     if (playerIds.length > 0) {
       const hitPlayerId = playerIds[Math.floor(Math.random() * playerIds.length)];
       const hitPlayer = this.players.get(hitPlayerId);
@@ -161,22 +169,25 @@ class GameRoom extends Room {
       return;
     }
 
-    // Priority 3: hit another shell — both destroyed
-    if (this._greenShellsOnCell(targetCellId) > 0) {
-      this._removeFromCell(targetCellId, "green_shell");
+    // Priority 3: hit another shell (green or red) — both destroyed
+    const hitShellType = this._greenShellsOnCell(targetCellId) > 0 ? "green_shell"
+      : this._redShellsOnCell(targetCellId) > 0 ? "red_shell"
+        : null;
+    if (hitShellType) {
+      this._removeFromCell(targetCellId, hitShellType);
       this.broadcast("shellThrown", {
         playerId: thrower.playerId,
         fromCellId: thrower.cellId,
         toCellId: targetCellId,
         shellType,
-        hit: "green_shell",
+        hit: hitShellType,
       });
       this._syncState();
       return;
     }
 
-    // Nothing to hit — shell stays on cell as a green shell
-    this._addToCell(targetCellId, "green_shell");
+    // Nothing to hit — shell stays on cell
+    this._addToCell(targetCellId, shellType);
     this.broadcast("shellThrown", {
       playerId: thrower.playerId,
       fromCellId: thrower.cellId,
@@ -203,7 +214,7 @@ class GameRoom extends Room {
 
       // Priority 1: hit a player (exclude thrower unless last step)
       const playerIds = occupants.filter(
-        (e) => e !== "banana" && e !== "green_shell" && (isLastStep || e !== thrower.playerId),
+        (e) => e !== "banana" && e !== "green_shell" && e !== "red_shell" && (isLastStep || e !== thrower.playerId),
       );
       if (playerIds.length > 0) {
         const hitPlayerId = playerIds[Math.floor(Math.random() * playerIds.length)];
@@ -245,16 +256,19 @@ class GameRoom extends Room {
         return;
       }
 
-      // Priority 3: hit a green shell
-      if (this._greenShellsOnCell(currentCellId) > 0) {
-        this._removeFromCell(currentCellId, "green_shell");
+      // Priority 3: hit a shell (green or red)
+      const hitShellType = this._greenShellsOnCell(currentCellId) > 0 ? "green_shell"
+        : this._redShellsOnCell(currentCellId) > 0 ? "red_shell"
+          : null;
+      if (hitShellType) {
+        this._removeFromCell(currentCellId, hitShellType);
         this.broadcast("shellThrown", {
           playerId: thrower.playerId,
           fromCellId: thrower.cellId,
           toCellId: currentCellId,
           shellType: "red_shell",
           path,
-          hit: "green_shell",
+          hit: hitShellType,
         });
         this._syncState();
         return;
@@ -946,7 +960,8 @@ class GameRoom extends Room {
 
     const hitType = this._bananasOnCell(player.cellId) > 0 ? "banana"
       : this._greenShellsOnCell(player.cellId) > 0 ? "green_shell"
-        : null;
+        : this._redShellsOnCell(player.cellId) > 0 ? "red_shell"
+          : null;
 
     if (hitType) {
       this._removeFromCell(player.cellId, hitType);

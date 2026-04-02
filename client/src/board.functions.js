@@ -19,3 +19,12 @@ export function shellCounts(cellOccupants) {
   }
   return counts;
 }
+
+export function redShellCounts(cellOccupants) {
+  const counts = {};
+  for (const [cellIdStr, occupants] of Object.entries(cellOccupants)) {
+    const count = occupants.filter((e) => e === "red_shell").length;
+    if (count > 0) counts[Number(cellIdStr)] = count;
+  }
+  return counts;
+}

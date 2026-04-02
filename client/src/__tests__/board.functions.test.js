@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { bananaCounts, shellCounts, permacoinCells } from "../board.functions.js";
+import { bananaCounts, shellCounts, redShellCounts, permacoinCells } from "../board.functions.js";
 
 describe("bananaCounts", () => {
   it("returns empty object for empty occupants", () => {
@@ -38,6 +38,20 @@ describe("shellCounts", () => {
 
   it("ignores bananas and players", () => {
     expect(shellCounts({ 3: ["banana", "player1"] })).toEqual({});
+  });
+});
+
+describe("redShellCounts", () => {
+  it("returns empty object for empty occupants", () => {
+    expect(redShellCounts({})).toEqual({});
+  });
+
+  it("counts red_shell entries", () => {
+    expect(redShellCounts({ 2: ["red_shell", "player1"], 5: ["banana", "red_shell", "green_shell"] })).toEqual({ 2: 1, 5: 1 });
+  });
+
+  it("ignores green shells, bananas, and players", () => {
+    expect(redShellCounts({ 3: ["banana", "green_shell", "player1"] })).toEqual({});
   });
 });
 
