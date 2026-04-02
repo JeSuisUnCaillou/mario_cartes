@@ -645,7 +645,7 @@ class GameRoom extends Room {
   _initialPlayerState() {
     return {
       cellId: 1, drawPile: this._createDeck(), hand: [], discardPile: [],
-      pendingDiscard: 0, pendingShellChoice: false, pendingItems: [], ready: false, hasPlayedAllCards: false, coins: 0, permanentCoins: 0, lapCount: 0,
+      pendingDiscard: 0, pendingShellChoice: false, pendingItems: [], ready: false, hasPlayedAllCards: false, coins: 0, permanentCoins: 0, lapCount: 0, slowCounters: 0, hasMovedThisTurn: false,
     };
   }
 
@@ -773,6 +773,8 @@ class GameRoom extends Room {
       sp.coins = p.coins;
       sp.permanentCoins = p.permanentCoins;
       sp.lapCount = p.lapCount;
+      sp.slowCounters = p.slowCounters;
+      sp.hasMovedThisTurn = p.hasMovedThisTurn;
       sp.pendingShellChoice = p.pendingShellChoice;
       sp.finished = this.ranking.includes(playerId);
       sp.rank = liveRanks.get(playerId) || 0;

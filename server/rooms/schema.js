@@ -9,6 +9,8 @@ const PlayerSchema = schema({
   coins: "number",
   permanentCoins: "number",
   lapCount: "number",
+  slowCounters: "number",
+  hasMovedThisTurn: "boolean",
   pendingShellChoice: "boolean",
   finished: "boolean",
   rank: "number",
