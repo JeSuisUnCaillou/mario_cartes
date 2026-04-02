@@ -490,15 +490,20 @@ input {
   gap: 16px;
 }
 
-.ready-btn {
-  font-size: 2em;
-  padding: 20px 40px;
+.lobby-btn {
+  font-size: 1.2em;
+  padding: 12px 24px;
   font-weight: bold;
   background: #888;
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
+}
+
+.ready-btn {
+  font-size: 2em;
+  padding: 20px 40px;
 }
 
 .ready-message {
@@ -515,31 +520,13 @@ input {
 }
 
 .start-btn {
-  font-size: 1.2em;
-  padding: 12px 24px;
-  font-weight: bold;
   background: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
 }
 
 .start-btn:disabled {
   background: #888;
   cursor: not-allowed;
   opacity: 0.6;
-}
-
-.cancel-btn {
-  font-size: 1.2em;
-  padding: 12px 24px;
-  font-weight: bold;
-  background: #888;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
 }
 
 .lobby-hint {

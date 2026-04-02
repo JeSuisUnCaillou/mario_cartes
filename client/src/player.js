@@ -361,8 +361,8 @@ function renderLobby(room) {
     lobbyZone.innerHTML = `
       <div class="ready-message">You are ready</div>
       <div class="lobby-buttons">
-        <button id="start-btn" class="start-btn">Start the game</button>
-        <button id="cancel-btn" class="cancel-btn">Cancel</button>
+        <button id="start-btn" class="lobby-btn start-btn">Start the game</button>
+        <button id="cancel-btn" class="lobby-btn cancel-btn">Cancel</button>
       </div>
       <div class="lobby-hint">All connected players must be ready to start the game</div>
     `;
@@ -378,7 +378,7 @@ function renderLobby(room) {
     });
   } else {
     lobbyZone.innerHTML = `
-      <button id="ready-btn" class="ready-btn">READY</button>
+      <button id="ready-btn" class="lobby-btn ready-btn">READY</button>
     `;
     document.getElementById("ready-btn").addEventListener("click", () => {
       isReady = true;
