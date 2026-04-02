@@ -698,13 +698,6 @@ class GameRoom extends Room {
       if (player) {
         player.connected = false;
       }
-      if (this.phase === "playing" && info.playerId === this.activePlayerId) {
-        this._turnAdvanceTimer = this.clock.setTimeout(() => {
-          if (!player.connected && this.activePlayerId === info.playerId) {
-            this._advanceTurn();
-          }
-        }, DISPOSE_DELAY_MS);
-      }
       this.clientsInfo.delete(client.sessionId);
       this._syncState();
 
@@ -714,10 +707,6 @@ class GameRoom extends Room {
           await this.allowReconnection(client, 60);
           // Client reconnected — restore connection state
           if (player) player.connected = true;
-          if (this._turnAdvanceTimer) {
-            this._turnAdvanceTimer.clear();
-            this._turnAdvanceTimer = null;
-          }
           this.clientsInfo.set(client.sessionId, { type: "player", playerId: info.playerId });
           this._syncState();
           return;
@@ -1050,7 +1039,7 @@ class GameRoom extends Room {
       this.activePlayerId = playerIds[this.turnIndex];
       attempts++;
     } while (
-      (!this.players.get(this.activePlayerId).connected || this.ranking.includes(this.activePlayerId))
+      this.ranking.includes(this.activePlayerId)
       && attempts < playerIds.length
     );
 
