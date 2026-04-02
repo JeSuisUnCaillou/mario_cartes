@@ -2160,3 +2160,209 @@ describe("Green shell", () => {
     board.leave();
   });
 });
+
+describe("Red shell", () => {
+  it("playing a red_shell card sets pendingShellChoice and pendingShellType", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["red_shell"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    room.send("startGame");
+    await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+    const shellCard = cards.hand.find((c) => c.items.includes("red_shell"));
+    expect(shellCard).toBeDefined();
+
+    room.send("playCard", { cardId: shellCard.id });
+    const played = await waitForMessage(room, "cardPlayed", (p) => p.pendingShellChoice === true);
+    expect(played.pendingShellChoice).toBe(true);
+    expect(played.pendingShellType).toBe("red_shell");
+
+    room.leave();
+  });
+
+  it("red shell forward hits player on non-adjacent cell", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["red_shell"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    room1.send("startGame");
+    const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
+    const cards1 = await waitForMessage(room1, "cardsDrawn");
+    const cards2 = await waitForMessage(room2, "cardsDrawn");
+    const activeId = gs.activePlayerId;
+    const activeRoom = activeId === id1 ? room1 : room2;
+    const passiveRoom = activeId === id1 ? room2 : room1;
+    const passiveId = activeId === id1 ? id2 : id1;
+    const activeCards = activeId === id1 ? cards1 : cards2;
+
+    // Move passive player to cell 5 via debug
+    board.send("_testSetState", { playerId: passiveId, cellId: 5 });
+    await waitForMessage(board, "cellOccupants", (o) => o[5] && o[5].includes(passiveId));
+
+    // Play red shell forward
+    const shellCard = activeCards.hand.find((c) => c.items.includes("red_shell"));
+    activeRoom.send("playCard", { cardId: shellCard.id });
+    await waitForMessage(activeRoom, "cardPlayed", (p) => p.pendingShellChoice === true);
+
+    activeRoom.send("shellChoice", { direction: "forward" });
+    const thrown = await waitForMessage(board, "shellThrown");
+    expect(thrown.shellType).toBe("red_shell");
+    expect(thrown.hit).toBe("player");
+    expect(thrown.hitPlayerId).toBe(passiveId);
+    expect(thrown.toCellId).toBe(5);
+    expect(thrown.path).toEqual([2, 3, 4, 5]);
+
+    // Passive player should receive discardHit with source red_shell
+    const discardHit = await waitForMessage(passiveRoom, "discardHit");
+    expect(discardHit.source).toBe("red_shell");
+    expect(discardHit.mustDiscard).toBe(1);
+
+    room1.leave();
+    room2.leave();
+    board.leave();
+  });
+
+  it("red shell hits banana on intermediate cell", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["red_shell"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room.send("setReady", true);
+    room.send("startGame");
+    await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+
+    // Place banana on cell 4
+    board.send("_debugSetGameState", { addBanana: { cellId: 4 } });
+    await waitForMessage(board, "cellOccupants", (o) => o[4] && o[4].includes("banana"));
+
+    const shellCard = cards.hand.find((c) => c.items.includes("red_shell"));
+    room.send("playCard", { cardId: shellCard.id });
+    await waitForMessage(room, "cardPlayed", (p) => p.pendingShellChoice === true);
+
+    room.send("shellChoice", { direction: "forward" });
+    const thrown = await waitForMessage(board, "shellThrown");
+    expect(thrown.shellType).toBe("red_shell");
+    expect(thrown.toCellId).toBe(4);
+    expect(thrown.hit).toBe("banana");
+    expect(thrown.path).toEqual([2, 3, 4]);
+
+    // Banana should be removed
+    const occ = await waitForMessage(board, "cellOccupants", (o) => !o[4] || !o[4].includes("banana"));
+    expect(occ[4] || []).not.toContain("banana");
+
+    room.leave();
+    board.leave();
+  });
+
+  it("red shell hits green shell on cell", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["red_shell"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room.send("setReady", true);
+    room.send("startGame");
+    await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+
+    // Place green shell on cell 6
+    board.send("_debugSetGameState", { addShell: { cellId: 6 } });
+    await waitForMessage(board, "cellOccupants", (o) => o[6] && o[6].includes("green_shell"));
+
+    const shellCard = cards.hand.find((c) => c.items.includes("red_shell"));
+    room.send("playCard", { cardId: shellCard.id });
+    await waitForMessage(room, "cardPlayed", (p) => p.pendingShellChoice === true);
+
+    room.send("shellChoice", { direction: "forward" });
+    const thrown = await waitForMessage(board, "shellThrown");
+    expect(thrown.shellType).toBe("red_shell");
+    expect(thrown.toCellId).toBe(6);
+    expect(thrown.hit).toBe("green_shell");
+    expect(thrown.path).toEqual([2, 3, 4, 5, 6]);
+
+    // Green shell should be removed
+    const occ = await waitForMessage(board, "cellOccupants", (o) => !o[6] || !o[6].includes("green_shell"));
+    expect(occ[6] || []).not.toContain("green_shell");
+
+    room.leave();
+    board.leave();
+  });
+
+  it("red shell with no other target hits the thrower", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["red_shell"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room, playerId } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room.send("setReady", true);
+    room.send("startGame");
+    await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+
+    const shellCard = cards.hand.find((c) => c.items.includes("red_shell"));
+    room.send("playCard", { cardId: shellCard.id });
+    await waitForMessage(room, "cardPlayed", (p) => p.pendingShellChoice === true);
+
+    room.send("shellChoice", { direction: "forward" });
+    const thrown = await waitForMessage(board, "shellThrown");
+    expect(thrown.shellType).toBe("red_shell");
+    expect(thrown.hit).toBe("player");
+    expect(thrown.hitPlayerId).toBe(playerId);
+    expect(thrown.path).toHaveLength(14);
+
+    // Thrower should receive discardHit
+    const discardHit = await waitForMessage(room, "discardHit");
+    expect(discardHit.source).toBe("red_shell");
+    expect(discardHit.mustDiscard).toBe(1);
+
+    room.leave();
+    board.leave();
+  });
+
+  it("red shell backward hits target behind thrower", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["red_shell"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    room1.send("startGame");
+    const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
+    const cards1 = await waitForMessage(room1, "cardsDrawn");
+    const cards2 = await waitForMessage(room2, "cardsDrawn");
+    const activeId = gs.activePlayerId;
+    const activeRoom = activeId === id1 ? room1 : room2;
+    const passiveId = activeId === id1 ? id2 : id1;
+    const activeCards = activeId === id1 ? cards1 : cards2;
+
+    // Move passive to cell 12
+    board.send("_testSetState", { playerId: passiveId, cellId: 12 });
+    await waitForMessage(board, "cellOccupants", (o) => o[12] && o[12].includes(passiveId));
+
+    const shellCard = activeCards.hand.find((c) => c.items.includes("red_shell"));
+    activeRoom.send("playCard", { cardId: shellCard.id });
+    await waitForMessage(activeRoom, "cardPlayed", (p) => p.pendingShellChoice === true);
+
+    activeRoom.send("shellChoice", { direction: "backward" });
+    const thrown = await waitForMessage(board, "shellThrown");
+    expect(thrown.shellType).toBe("red_shell");
+    expect(thrown.hit).toBe("player");
+    expect(thrown.hitPlayerId).toBe(passiveId);
+    expect(thrown.toCellId).toBe(12);
+    expect(thrown.path).toEqual([14, 13, 12]);
+
+    room1.leave();
+    room2.leave();
+    board.leave();
+  });
+});
