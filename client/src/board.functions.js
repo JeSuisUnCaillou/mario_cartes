@@ -1,3 +1,7 @@
+import cellsData from "../../assets/racetrack_0_cells.json";
+
+export const permacoinCells = new Set(cellsData.filter((c) => c.permanent_coin).map((c) => c.id));
+
 export function bananaCounts(cellOccupants) {
   const counts = {};
   for (const [cellIdStr, occupants] of Object.entries(cellOccupants)) {

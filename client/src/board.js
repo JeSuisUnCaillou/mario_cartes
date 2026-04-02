@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { Client } from "colyseus.js";
 import QRCode from "qrcode";
-import { bananaCounts, shellCounts } from "./board.functions.js";
+import { bananaCounts, shellCounts, permacoinCells } from "./board.functions.js";
 import { renderRivers as renderRiverRows } from "./river.js";
 import { isDebugModalOpen, setDebugRoom, onDebugState, setupDebugKeyboard } from "./board_debug.js";
 import { rankBadge } from "./rank.js";
@@ -391,6 +391,7 @@ export function initBoard(gameId) {
       this.latestPlayers = [];
       this.bananaSprites = new Map();
       this.shellSprites = new Map();
+      this.permacoinSprites = new Map();
       this.latestCellOccupants = {};
       this._cellOccupantsQueue = [];
       this._processingQueue = false;
@@ -406,6 +407,7 @@ export function initBoard(gameId) {
       this.load.svg("banana", "/banana.svg", { width: 128, height: 128 });
       this.load.svg("green_shell", "/green_shell.svg", { width: 128, height: 128 });
       this.load.svg("red_shell", "/red_shell.svg", { width: 128, height: 128 });
+      this.load.svg("permacoin", "/permacoin.svg", { width: 128, height: 128 });
       this.load.image("space", "/space.jpg");
     }
 
@@ -413,6 +415,7 @@ export function initBoard(gameId) {
       this.bg = this.add.image(0, 0, "space").setAlpha(0.6);
       this.track = this.add.image(0, 0, "racetrack");
       this.layoutTrack();
+      this.createPermacoinSprites();
       this.scale.on("resize", this.onResize, this);
       this.connectToRoom(gameId);
     }
@@ -431,10 +434,32 @@ export function initBoard(gameId) {
       this.track.setScale(Math.min(scaleX, scaleY));
     }
 
+    createPermacoinSprites() {
+      for (const cellId of permacoinCells) {
+        const center = this.cellPixelPos(cellId);
+        const sprite = this.add.image(center.x, center.y, "permacoin");
+        sprite.setDepth(0);
+        this.permacoinSprites.set(cellId, sprite);
+      }
+    }
+
+    repositionPermacoinSprites() {
+      const cellW = this.track.displayWidth / 5;
+      const itemSize = (cellW / 4.5) * 0.9;
+      for (const [cellId, sprite] of this.permacoinSprites) {
+        const occupants = this.latestCellOccupants[cellId] || [];
+        const total = occupants.length + 1; // +1 for permacoin at slot 0
+        const { x, y } = this.cellSlotPos(cellId, 0, total);
+        sprite.setPosition(x, y);
+        sprite.setScale(itemSize / sprite.width);
+      }
+    }
+
     onResize() {
       this.layoutTrack();
       this.refreshPlayerPositions();
       this.snapCellLayout();
+      this.repositionPermacoinSprites();
     }
 
     cellSlotPos(cellId, slotIndex, totalSlots) {
@@ -452,6 +477,10 @@ export function initBoard(gameId) {
       };
     }
 
+    _slotOffset(cellId) {
+      return permacoinCells.has(cellId) ? 1 : 0;
+    }
+
     refreshPlayerPositions() {
       const cellW = this.track.displayWidth / 5;
       const helmetSlot = cellW / 4.5;
@@ -460,12 +489,14 @@ export function initBoard(gameId) {
       for (const [cellIdStr, occupants] of Object.entries(this.latestCellOccupants)) {
         const cellId = Number(cellIdStr);
         if (!CELL_POSITIONS[cellId]) continue;
+        const offset = this._slotOffset(cellId);
+        const totalSlots = occupants.length + offset;
         occupants.forEach((entry, slotIndex) => {
           if (entry === "banana" || entry === "green_shell") return;
           const helmet = this.helmets.get(entry);
           const label = this.nameLabels.get(entry);
           if (!helmet) return;
-          const { x, y } = this.cellSlotPos(cellId, slotIndex, occupants.length);
+          const { x, y } = this.cellSlotPos(cellId, slotIndex + offset, totalSlots);
           helmet.setPosition(x, y);
           helmet.setScale(helmetDisplaySize / helmet.width);
           label.setPosition(x, y - helmetDisplaySize * 0.7);
@@ -487,9 +518,11 @@ export function initBoard(gameId) {
         const sSprites = this.shellSprites.get(cellId) || [];
         let bananaIdx = 0;
         let shellIdx = 0;
+        const offset = this._slotOffset(cellId);
+        const totalSlots = occupants.length + offset;
 
         occupants.forEach((entry, slotIndex) => {
-          const { x, y } = this.cellSlotPos(cellId, slotIndex, occupants.length);
+          const { x, y } = this.cellSlotPos(cellId, slotIndex + offset, totalSlots);
           if (entry === "banana" || entry === "green_shell") {
             const sprite = entry === "banana" ? bSprites[bananaIdx++] : sSprites[shellIdx++];
             if (sprite && (sprite.x !== x || sprite.y !== y)) {
@@ -615,6 +648,7 @@ export function initBoard(gameId) {
       this._syncItemSprites(this.shellSprites, shellCounts(cellOccupants), "green_shell");
 
       this.tweenCellLayout();
+      this.repositionPermacoinSprites();
     }
 
     _syncItemSprites(spriteMap, countsByCell, textureKey) {
@@ -653,12 +687,14 @@ export function initBoard(gameId) {
         const sSprites = this.shellSprites.get(cellId) || [];
         let bananaIdx = 0;
         let shellIdx = 0;
+        const offset = this._slotOffset(cellId);
+        const totalSlots = occupants.length + offset;
 
         occupants.forEach((entry, slotIndex) => {
           if (entry !== "banana" && entry !== "green_shell") return;
           const sprite = entry === "banana" ? bSprites[bananaIdx++] : sSprites[shellIdx++];
           if (!sprite) return;
-          const { x, y } = this.cellSlotPos(cellId, slotIndex, occupants.length);
+          const { x, y } = this.cellSlotPos(cellId, slotIndex + offset, totalSlots);
           sprite.setPosition(x, y);
           sprite.setScale(bananaSize / sprite.width);
         });
@@ -860,11 +896,13 @@ export function initBoard(gameId) {
 
       for (const [cellId, cellPlayers] of byCell) {
         const occupants = this.latestCellOccupants[cellId] || [];
+        const offset = this._slotOffset(cellId);
+        const totalSlots = occupants.length + offset;
 
         cellPlayers.forEach((p) => {
           const slotIndex = occupants.indexOf(p.playerId);
           const slot = slotIndex !== -1
-            ? this.cellSlotPos(cellId, slotIndex, occupants.length)
+            ? this.cellSlotPos(cellId, slotIndex + offset, totalSlots)
             : this.cellPixelPos(cellId);
           const { x, y } = slot;
           const alpha = p.connected ? 1 : 0.5;
