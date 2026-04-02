@@ -214,6 +214,7 @@ function updateInfoBarPlayers(players) {
     el.classList.toggle("disconnected", !p.connected);
     el.querySelector(".board-player-name").textContent = p.name || "???";
 
+    const leftEl = el.querySelector(".board-player-left");
     const rightEl = el.querySelector(".board-player-right");
     const statusEl = el.querySelector(".board-player-status");
     const coinsEl = el.querySelector(".board-player-coins");
@@ -272,7 +273,7 @@ function updateInfoBarPlayers(players) {
       if (!liveRankEl) {
         liveRankEl = document.createElement("div");
         liveRankEl.className = "board-player-live-rank";
-        rightEl.appendChild(liveRankEl);
+        leftEl.appendChild(liveRankEl);
       }
       liveRankEl.textContent = ordinalSuffix(p.rank);
       liveRankEl.style.display = "";
