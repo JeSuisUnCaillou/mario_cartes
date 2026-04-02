@@ -7,7 +7,7 @@ Aiming a cell containing several items with a shell should prompt the player to 
 # Important
 
 ✔️ la mécanique de slow pour les shells
-Home page
+✔️ Home page
 Explication des règles
 le faux bloc
 les cartes spéciales
