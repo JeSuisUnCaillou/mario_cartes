@@ -11,3 +11,7 @@ le faux bloc
 les cartes spéciales
 le sing et la tortue
 faire un meilleur circuit
+
+# tech
+
+Redo the CLAUDE.md with the correct and complete game description
