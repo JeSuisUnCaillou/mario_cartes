@@ -659,34 +659,17 @@ export function initBoard(gameId) {
         onDebugState(data);
       });
 
-      // Auto-reconnect on unexpected disconnection
-      const reconnectionToken = room.reconnectionToken;
+      // Built-in auto-reconnect (Colyseus 0.17)
+      room.reconnection.maxRetries = 30;
+      room.reconnection.maxDelay = 5000;
+
       const scene = this;
       room.onLeave((code) => {
-        if (code === 4000) return;
-        const reconnectClient = new Client(serverUrl);
-        let attempts = 0;
-        const maxAttempts = 20;
-        const tryReconnect = async () => {
-          while (attempts < maxAttempts) {
-            attempts++;
-            try {
-              const newRoom = await reconnectClient.reconnect(reconnectionToken);
-              scene.setupRoom(newRoom, roomId);
-              return;
-            } catch {
-              await new Promise((r) => setTimeout(r, 2000));
-            }
-          }
-          // Fallback: fresh join
-          try {
-            const newRoom = await reconnectClient.joinById(roomId, { type: "board" });
-            scene.setupRoom(newRoom, roomId);
-          } catch {
-            // Give up
-          }
-        };
-        tryReconnect();
+        if (code === 4003) {
+          // Reconnection failed — fallback: fresh join
+          colyseusClient.joinById(roomId, { type: "board" })
+            .then((newRoom) => scene.setupRoom(newRoom, roomId));
+        }
       });
     }
 
