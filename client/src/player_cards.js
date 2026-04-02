@@ -298,7 +298,7 @@ export function updatePiles({ drawCount, discardCount, discardTopCard }) {
   updatePileCount("discard-count", discardCount);
 }
 
-export function updateCoinDisplay(coins, permanentCoins, updateBuyButton) {
+export function updateCoinDisplay(coins, permanentCoins, updateBuyButton, slowCounters = 0) {
   const coinDisplay = document.getElementById("coin-display");
   if (!coinDisplay) return;
   coinDisplay.innerHTML = "";
@@ -313,6 +313,12 @@ export function updateCoinDisplay(coins, permanentCoins, updateBuyButton) {
   for (let i = 0; i < goldCount; i++) {
     const img = document.createElement("img");
     img.src = "/coin.svg";
+    img.className = "coin-icon";
+    coinDisplay.appendChild(img);
+  }
+  for (let i = 0; i < slowCounters; i++) {
+    const img = document.createElement("img");
+    img.src = "/dark_mushroom.svg";
     img.className = "coin-icon";
     coinDisplay.appendChild(img);
   }

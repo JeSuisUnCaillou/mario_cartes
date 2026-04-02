@@ -73,6 +73,7 @@ class GameRoom extends Room {
       pendingShellType: player.pendingShellType,
       coins: player.coins,
       permanentCoins: player.permanentCoins,
+      slowCounters: player.slowCounters,
       deck: [...player.hand, ...player.drawPile, ...player.discardPile],
     };
   }

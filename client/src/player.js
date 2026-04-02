@@ -20,6 +20,7 @@ let activePlayerId = null;
 let latestRivers = null;
 let currentCoins = 0;
 let currentPermanentCoins = 0;
+let currentSlowCounters = 0;
 let currentRank = 0;
 let pendingShellChoice = false;
 
@@ -197,7 +198,7 @@ function updatePlayZone() {
     document.getElementById("end-turn-btn").addEventListener("click", () => {
       if (playing || animating || pendingDiscards > 0 || pendingShellChoice) return;
       currentCoins = currentPermanentCoins;
-      updateCoinDisplay(currentPermanentCoins, currentPermanentCoins, updateBuyButton);
+      updateCoinDisplay(currentPermanentCoins, currentPermanentCoins, updateBuyButton, currentSlowCounters);
       if (currentRoom) currentRoom.send("endTurn");
     });
   }
@@ -562,10 +563,11 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
                 isReady = me.ready;
                 renderLobby(room);
               }
-              if (gamePhase === "playing" && (me.coins !== currentCoins || me.permanentCoins !== currentPermanentCoins)) {
+              if (gamePhase === "playing" && (me.coins !== currentCoins || me.permanentCoins !== currentPermanentCoins || me.slowCounters !== currentSlowCounters)) {
                 currentCoins = me.coins;
                 currentPermanentCoins = me.permanentCoins;
-                updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton);
+                currentSlowCounters = me.slowCounters;
+                updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton, currentSlowCounters);
               }
               if (gamePhase === "playing") {
                 currentRank = me.rank;
@@ -598,7 +600,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           updatePiles(data);
           currentCoins = data.coins || 0;
           currentPermanentCoins = data.permanentCoins || 0;
-          updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton);
+          currentSlowCounters = data.slowCounters || 0;
+          updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton, currentSlowCounters);
           if (data.pendingDiscard > 0) {
             pendingDiscards = data.pendingDiscard;
             const playZone = document.getElementById("play-zone");
@@ -644,7 +647,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         updatePiles(data);
         currentCoins = data.coins || 0;
         currentPermanentCoins = data.permanentCoins || 0;
-        updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton);
+        currentSlowCounters = data.slowCounters || 0;
+        updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton, currentSlowCounters);
         animating = false;
       });
 
@@ -810,7 +814,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         ensureCardElements(data.deck);
         currentCoins = data.coins;
         currentPermanentCoins = data.permanentCoins || 0;
-        updateCoinDisplay(data.coins, currentPermanentCoins, updateBuyButton);
+        updateCoinDisplay(data.coins, currentPermanentCoins, updateBuyButton, currentSlowCounters);
         updatePiles(data);
         updateBuyButton();
 
