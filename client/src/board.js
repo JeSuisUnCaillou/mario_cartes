@@ -354,7 +354,7 @@ function removeLeaderboard() {
 function renderRivers(rivers) {
   const container = document.getElementById("board-rivers");
   if (!container) return;
-  renderRiverRows(container, rivers);
+  renderRiverRows(container, rivers, { rankIndicators: true, riverCount: rivers.length });
 }
 
 export function initBoard(gameId) {

@@ -350,6 +350,46 @@ html, body, #app {
   pointer-events: none;
 }
 
+.river-card.inaccessible {
+  opacity: 0.2;
+  filter: grayscale(1);
+  cursor: default;
+  pointer-events: none;
+}
+
+.river-rank-indicators {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.river-rank-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.river-rank-denied {
+  position: relative;
+  display: inline-flex;
+}
+
+.river-rank-denied .river-rank-icon {
+  filter: grayscale(1);
+  opacity: 0.4;
+}
+
+.river-rank-denied::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -1px;
+  right: -1px;
+  height: 2px;
+  background: #e33;
+  transform: rotate(-45deg);
+}
+
 /* Rivers in top bar: compact overrides for board */
 .board-rivers {
   display: flex;
@@ -403,6 +443,15 @@ html, body, #app {
   gap: 0.3vh;
   align-items: flex-start;
   min-width: 0;
+}
+
+.board-rivers .river-rank-icon {
+  width: 1.4vh;
+  height: 1.4vh;
+}
+
+.board-rivers .river-rank-denied::after {
+  height: 1px;
 }
 
 .board-rivers .river-card {

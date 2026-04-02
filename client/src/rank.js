@@ -1,4 +1,4 @@
-const RANK_ICONS = ["/1st.svg", "/2nd.svg", "/3rd.svg"];
+export const RANK_ICONS = ["/1st.svg", "/2nd.svg", "/3rd.svg"];
 
 export function ordinalSuffix(n) {
   const s = ["th", "st", "nd", "rd"];

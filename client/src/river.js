@@ -1,4 +1,6 @@
 import { cardItemPositions } from "./player.functions.js";
+import { RANK_ICONS } from "./rank.js";
+import { canBuyFromRiver } from "./river.functions.js";
 
 const ITEM_ICONS = {
   coin: "/coin.svg",
@@ -139,8 +141,26 @@ function detectRefills(prevRivers, newRivers) {
  * @param {function} [options.onCardClick] - (river, card) => void
  * @param {function} [options.isAffordable] - (river) => boolean
  */
+function renderRankIndicators(riverId, riverCount) {
+  const container = document.createElement("div");
+  container.className = "river-rank-indicators";
+  for (let rank = 1; rank <= RANK_ICONS.length; rank++) {
+    const wrapper = document.createElement("span");
+    const icon = document.createElement("img");
+    icon.src = RANK_ICONS[rank - 1];
+    icon.className = "river-rank-icon";
+    icon.draggable = false;
+    if (!canBuyFromRiver(rank, riverCount, riverId)) {
+      wrapper.className = "river-rank-denied";
+    }
+    wrapper.appendChild(icon);
+    container.appendChild(wrapper);
+  }
+  return container;
+}
+
 export function renderRiverRow(river, options = {}) {
-  const { onCardClick, isAffordable } = options;
+  const { onCardClick, isAffordable, isAccessible, rankIndicators, riverCount } = options;
 
   const row = document.createElement("div");
   row.className = "river-row";
@@ -149,6 +169,9 @@ export function renderRiverRow(river, options = {}) {
   const costLabel = document.createElement("div");
   costLabel.className = "river-cost";
   costLabel.innerHTML = `<span>${river.cost}</span><img src="/coin.svg" class="river-cost-icon" />`;
+  if (rankIndicators) {
+    costLabel.appendChild(renderRankIndicators(river.id, riverCount));
+  }
   row.appendChild(costLabel);
 
   const cardsRow = document.createElement("div");
@@ -159,10 +182,14 @@ export function renderRiverRow(river, options = {}) {
   const slotsContainer = document.createElement("div");
   slotsContainer.className = "river-slots";
 
+  const accessible = !isAccessible || isAccessible(river);
+
   for (const card of river.slots) {
     if (card) {
       const cardEl = createRiverCard(card);
-      if (isAffordable && !isAffordable(river)) {
+      if (!accessible) {
+        cardEl.classList.add("inaccessible");
+      } else if (isAffordable && !isAffordable(river)) {
         cardEl.classList.add("unaffordable");
       } else if (onCardClick) {
         cardEl.style.cursor = "pointer";

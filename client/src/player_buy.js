@@ -1,5 +1,6 @@
 import { renderRivers } from "./river.js";
 import { rankBadge } from "./rank.js";
+import { canBuyFromRiver } from "./river.functions.js";
 
 export function updateBuyButton(activePlayerId, myPlayerId, latestRivers, blocked, openBuyModal) {
   const container = document.getElementById("buy-btn-container");
@@ -49,6 +50,9 @@ export function renderBuyModal(currentRoom, latestRivers, currentCoins, currentR
       }
     },
     isAffordable: (river) => currentCoins >= river.cost,
+    isAccessible: (river) => canBuyFromRiver(currentRank, latestRivers.length, river.id),
+    rankIndicators: true,
+    riverCount: latestRivers.length,
   });
 
   // Coin display on top of rivers
