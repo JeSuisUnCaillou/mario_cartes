@@ -660,7 +660,7 @@ export function initBoard(gameId) {
         this.time.delayedCall(travelTime + 1000, () => this._processNextCellOccupants());
       } else if (entry._permanentCoinPickup) {
         this.animatePermacoinPickup(entry._permanentCoinPickup.cellId);
-        this.time.delayedCall(1000, () => this._processNextCellOccupants());
+        this.time.delayedCall(700, () => this._processNextCellOccupants());
       }
     }
 
@@ -674,7 +674,7 @@ export function initBoard(gameId) {
       this.tweens.add({
         targets: sprite,
         y: origY - jumpHeight,
-        duration: 500,
+        duration: 300,
         ease: "Power2",
         yoyo: true,
         onComplete: () => {
@@ -684,7 +684,7 @@ export function initBoard(gameId) {
       this.tweens.add({
         targets: sprite,
         angle: 720,
-        duration: 1000,
+        duration: 600,
         ease: "Linear",
         onComplete: () => {
           sprite.setAngle(0);
