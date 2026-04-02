@@ -768,7 +768,7 @@ input {
   justify-content: center;
   gap: 4px;
   padding: 4px 8px;
-  min-height: 24px;
+  min-height: 40px;
   flex-shrink: 0;
 }
 
@@ -1002,6 +1002,7 @@ input {
   justify-content: center;
   gap: 4px;
   padding: 8px;
+  min-height: 40px;
 }
 
 .buy-modal-content {
