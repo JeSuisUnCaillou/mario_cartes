@@ -690,32 +690,33 @@ class GameRoom extends Room {
     this._syncState();
   }
 
-  async onLeave(client, consented) {
+  onDrop(client) {
     const info = this.clientsInfo.get(client.sessionId);
     if (info && info.type === "player" && info.playerId) {
       const player = this.players.get(info.playerId);
-      if (player) {
-        player.connected = false;
-      }
-      this.clientsInfo.delete(client.sessionId);
+      if (player) player.connected = false;
       this._syncState();
-
-      // Allow reconnection for 60s — Colyseus buffers schema patches during this window
-      if (!consented) {
-        try {
-          await this.allowReconnection(client, 60);
-          // Client reconnected — restore connection state
-          if (player) player.connected = true;
-          this.clientsInfo.set(client.sessionId, { type: "player", playerId: info.playerId });
-          this._syncState();
-          return;
-        } catch {
-          // Reconnection timed out — player stays disconnected
-        }
-      }
-    } else {
-      this.clientsInfo.delete(client.sessionId);
     }
+    this.allowReconnection(client, 120);
+  }
+
+  onReconnect(client) {
+    const info = this.clientsInfo.get(client.sessionId);
+    if (info && info.type === "player" && info.playerId) {
+      const player = this.players.get(info.playerId);
+      if (player) player.connected = true;
+      this._syncState();
+    }
+  }
+
+  onLeave(client) {
+    const info = this.clientsInfo.get(client.sessionId);
+    if (info && info.type === "player" && info.playerId) {
+      const player = this.players.get(info.playerId);
+      if (player) player.connected = false;
+      this._syncState();
+    }
+    if (info) this.clientsInfo.delete(client.sessionId);
     if (this.clients.length === 0) {
       this._disposeTimer = setTimeout(() => this.disconnect(), DISPOSE_DELAY_MS);
     }
