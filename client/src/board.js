@@ -407,6 +407,7 @@ export function initBoard(gameId) {
       super("GameScene");
       this.helmets = new Map();
       this.nameLabels = new Map();
+      this.disconnectedIcons = new Map();
       this.playerCells = new Map();
       this.latestPlayers = [];
       this.bananaSprites = new Map();
@@ -430,6 +431,7 @@ export function initBoard(gameId) {
       this.load.svg("green_shell", "/green_shell.svg", { width: 128, height: 128 });
       this.load.svg("red_shell", "/red_shell.svg", { width: 128, height: 128 });
       this.load.svg("permacoin", "/permacoin.svg", { width: 128, height: 128 });
+      this.load.svg("disconnected", "/disconnected.svg", { width: 64, height: 64 });
       this.load.image("space", "/space.jpg");
     }
 
@@ -1028,10 +1030,12 @@ export function initBoard(gameId) {
           if (this.helmets.has(p.playerId)) {
             const helmet = this.helmets.get(p.playerId);
             const label = this.nameLabels.get(p.playerId);
+            const dcIcon = this.disconnectedIcons.get(p.playerId);
             const prevCell = this.playerCells.get(p.playerId);
             label.setText(p.name || "???");
             helmet.setAlpha(alpha);
             label.setAlpha(alpha);
+            dcIcon.setVisible(!p.connected);
 
             if (prevCell !== p.cellId) {
               this.tweens.add({
@@ -1046,6 +1050,12 @@ export function initBoard(gameId) {
                 duration: 400,
                 ease: "Power2",
               });
+              this.tweens.add({
+                targets: dcIcon,
+                x, y: y - helmetDisplaySize * 0.3,
+                duration: 400,
+                ease: "Power2",
+              });
               this.playerCells.set(p.playerId, p.cellId);
             } else if (helmet.x !== x || helmet.y !== y) {
               this.tweens.add({
@@ -1057,6 +1067,12 @@ export function initBoard(gameId) {
               this.tweens.add({
                 targets: label,
                 x, y: y - helmetDisplaySize * 0.7,
+                duration: 300,
+                ease: "Power2",
+              });
+              this.tweens.add({
+                targets: dcIcon,
+                x, y: y - helmetDisplaySize * 0.3,
                 duration: 300,
                 ease: "Power2",
               });
@@ -1079,6 +1095,13 @@ export function initBoard(gameId) {
             label.setAlpha(alpha);
             label.setDepth(5);
             this.nameLabels.set(p.playerId, label);
+
+            const dcIcon = this.add.image(x, y - helmetDisplaySize * 0.3, "disconnected");
+            dcIcon.setScale(helmetDisplaySize * 0.6 / dcIcon.width);
+            dcIcon.setDepth(6);
+            dcIcon.setVisible(!p.connected);
+            this.disconnectedIcons.set(p.playerId, dcIcon);
+
             this.playerCells.set(p.playerId, p.cellId);
           }
         });
@@ -1090,6 +1113,8 @@ export function initBoard(gameId) {
           this.helmets.delete(playerId);
           this.nameLabels.get(playerId).destroy();
           this.nameLabels.delete(playerId);
+          this.disconnectedIcons.get(playerId)?.destroy();
+          this.disconnectedIcons.delete(playerId);
           this.playerCells.delete(playerId);
         }
       }
