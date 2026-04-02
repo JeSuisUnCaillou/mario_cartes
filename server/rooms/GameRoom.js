@@ -513,7 +513,7 @@ class GameRoom extends Room {
       if (slotIndex === -1) return;
       if (player.coins < river.cost) return;
       const rank = this._getLiveRank(player.playerId);
-      if (!canBuyFromRiver(rank, this.rivers.length, river.id)) return;
+      if (!canBuyFromRiver(rank, this.rivers.length, river.id, this.players.size)) return;
       player.coins -= river.cost;
       const card = river.slots[slotIndex];
       player.discardPile.push(card);
