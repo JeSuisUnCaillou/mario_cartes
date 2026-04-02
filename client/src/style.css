@@ -137,6 +137,26 @@ html, body, #app {
   opacity: 0.5;
 }
 
+.board-player-helmet-wrapper {
+  position: relative;
+  width: 4vh;
+  height: 4vh;
+}
+
+.board-player-dc-icon {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 3vh;
+  height: 3vh;
+}
+
+.board-player.disconnected .board-player-dc-icon {
+  display: block;
+}
+
 .board-player-name {
   font-size: 1.5vh;
   font-weight: bold;

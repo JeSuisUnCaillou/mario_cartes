@@ -175,10 +175,17 @@ function updateInfoBarPlayers(players) {
       const name = document.createElement("div");
       name.className = "board-player-name";
       left.appendChild(name);
+      const helmetWrapper = document.createElement("div");
+      helmetWrapper.className = "board-player-helmet-wrapper";
       const helmet = document.createElement("img");
       helmet.className = "board-player-helmet";
       helmet.src = "/helmet.svg";
-      left.appendChild(helmet);
+      helmetWrapper.appendChild(helmet);
+      const dcIcon = document.createElement("img");
+      dcIcon.className = "board-player-dc-icon";
+      dcIcon.src = "/disconnected.svg";
+      helmetWrapper.appendChild(dcIcon);
+      left.appendChild(helmetWrapper);
       el.appendChild(left);
 
       const right = document.createElement("div");
