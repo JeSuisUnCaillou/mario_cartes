@@ -6,6 +6,7 @@ html, body, #app {
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: "Roboto", sans-serif;
 }
 
 /* Board screen layout */
@@ -453,13 +454,6 @@ html, body, #app {
   justify-content: center;
 }
 
-.board-rivers .river-row {
-  padding: 0.5vh;
-  border-color: #333;
-  gap: 0.4vh;
-  min-height: 0;
-}
-
 .board-rivers .river-cards {
   --river-card-w: calc(6vh);
   gap: 0.4vh;
@@ -492,7 +486,6 @@ html, body, #app {
 
 .board-rivers .river-cost {
   font-size: 2vh;
-  padding: 0.5vh;
   gap: 0.3vh;
 }
 

@@ -27,7 +27,11 @@ const gameServer = new Server({
       res.json({ id: room.roomId });
     });
 
-    app.get("*", (req, res) => {
+    app.get("/", (req, res) => {
+      res.sendFile(path.join(clientDist, "home.html"));
+    });
+
+    app.get("/game/*", (req, res) => {
       res.sendFile(path.join(clientDist, "index.html"));
     });
   },
