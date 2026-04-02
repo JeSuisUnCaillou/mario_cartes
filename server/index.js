@@ -8,6 +8,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const clientDist = path.join(__dirname, "../client/dist");
 
 const gameServer = new Server({
+  pingInterval: 5000,
+  pingMaxRetries: 5,
   express: (app) => {
     app.use(express.json());
     app.use(express.static(clientDist));
