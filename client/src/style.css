@@ -476,26 +476,9 @@ input {
 }
 
 .top-zone {
-  position: relative;
   text-align: center;
   padding: 12px;
   flex-shrink: 0;
-}
-
-.player-rank {
-  position: absolute;
-  display: inline-flex;
-  align-items: center;
-  font-size: 1.2em;
-  font-weight: bold;
-  color: #000;
-  margin-left: 8px;
-}
-
-.player-rank-icon {
-  width: 1.4em;
-  height: 1.4em;
-  margin-right: 2px;
 }
 
 .finished-rank-icon {
