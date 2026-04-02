@@ -20,6 +20,7 @@ let currentRoom = null;
 let pendingDiscards = 0;
 let gamePhase = "lobby";
 let isReady = false;
+let allConnectedReady = false;
 let myPlayerId = null;
 let activePlayerId = null;
 let latestRivers = null;
@@ -355,7 +356,9 @@ function renderLobby(room) {
         <button id="cancel-btn" class="cancel-btn">Cancel</button>
       </div>
     `;
-    document.getElementById("start-btn").addEventListener("click", () => {
+    const startBtn = document.getElementById("start-btn");
+    startBtn.disabled = !allConnectedReady;
+    startBtn.addEventListener("click", () => {
       room.send("startGame");
     });
     document.getElementById("cancel-btn").addEventListener("click", () => {
@@ -529,6 +532,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
             if (gameZone) gameZone.style.display = "none";
             if (finishedZone) finishedZone.style.display = "none";
             isReady = false;
+            allConnectedReady = false;
             if (lobbyZone) {
               lobbyZone.style.display = "";
               renderLobby(room);
@@ -543,6 +547,16 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         }
 
         if (playersDirty) {
+          if (gamePhase === "lobby") {
+            let allReady = true;
+            state.players.forEach((p) => {
+              if (p.connected && !p.ready) allReady = false;
+            });
+            if (allReady !== allConnectedReady) {
+              allConnectedReady = allReady;
+              renderLobby(room);
+            }
+          }
           if (myPlayerId) {
             const me = state.players.get(myPlayerId);
             if (me) {
