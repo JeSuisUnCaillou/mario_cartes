@@ -7,6 +7,7 @@ const ITEM_ICONS = {
   banana: "/banana.svg",
   mushroom: "/mushroom.svg",
   green_shell: "/green_shell.svg",
+  red_shell: "/red_shell.svg",
 };
 
 function createRiverCard(card) {

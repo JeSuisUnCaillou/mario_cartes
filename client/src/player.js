@@ -30,7 +30,7 @@ function openBuyModal() {
   _openBuyModal(currentRoom, latestRivers, currentCoins, currentRank);
 }
 
-function showShellModal() {
+function showShellModal(shellType) {
   closeShellModal();
   const overlay = document.createElement("div");
   overlay.className = "shell-modal";
@@ -40,7 +40,7 @@ function showShellModal() {
 
   const title = document.createElement("h2");
   title.className = "shell-modal-title";
-  title.textContent = "Throw the green shell";
+  title.textContent = shellType === "red_shell" ? "Throw the red shell" : "Throw the green shell";
   content.appendChild(title);
 
   const buttons = document.createElement("div");
@@ -606,7 +606,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           }
           if (data.pendingShellChoice) {
             pendingShellChoice = true;
-            showShellModal();
+            showShellModal(data.pendingShellType);
             updatePlayZone();
             updateBuyButton();
           }
@@ -647,7 +647,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           // State-only update (e.g. after green_shell resolves pendingShellChoice)
           if (data.pendingShellChoice) {
             pendingShellChoice = true;
-            showShellModal();
+            showShellModal(data.pendingShellType);
             updatePlayZone();
             updateBuyButton();
           }
@@ -666,7 +666,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         recomputeFan(positions);
 
         // Sequentially throw each item icon (top to bottom, 400ms apart)
-        const ITEM_ICON = { banana: "/banana.svg", coin: "/coin.svg", mushroom: "/mushroom.svg", green_shell: "/green_shell.svg" };
+        const ITEM_ICON = { banana: "/banana.svg", coin: "/coin.svg", mushroom: "/mushroom.svg", green_shell: "/green_shell.svg", red_shell: "/red_shell.svg" };
         const playZone = document.getElementById("play-zone");
         items.forEach((item, i) => {
           if (ITEM_ICON[item]) {
@@ -702,10 +702,12 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         const playZone = document.getElementById("play-zone");
         const zoneRect = playZone.getBoundingClientRect();
 
-        const isShell = data.source === "green_shell";
-        const crashSrc = isShell ? "/green_shell.svg" : "/banana.svg";
-        const hitLabel = isShell ? "Green shell!" : "Banana!";
-        const hitClass = isShell ? "discard-hit-shell" : "discard-hit-banana";
+        const crashSrc = data.source === "red_shell" ? "/red_shell.svg"
+          : data.source === "green_shell" ? "/green_shell.svg" : "/banana.svg";
+        const hitLabel = data.source === "red_shell" ? "Red shell!"
+          : data.source === "green_shell" ? "Green shell!" : "Banana!";
+        const hitClass = data.source === "red_shell" ? "discard-hit-redshell"
+          : data.source === "green_shell" ? "discard-hit-shell" : "discard-hit-banana";
 
         // Crash animation: item falls from above into the play zone
         const crashItem = document.createElement("img");
