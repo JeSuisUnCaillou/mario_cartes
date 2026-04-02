@@ -38,11 +38,6 @@ TODO
 
 We need an explanation of the cards in the player's client.
 
-l'asset de carapace doit avoir juste un trou (à gauche par exemple), l'autre est censé être derrière
-
-
-
-
 
 ---
 
