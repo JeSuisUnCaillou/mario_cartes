@@ -20,6 +20,7 @@ If a player has finished, his screen should display his ranking while he waits f
 
 The race is over when only one player has not finished the game. He is added to the ranking as if he finished last.
 
+The players want to set it to READY right away, even though not everyone has arrived yet. I want the game to not start when everyone is ready. Instead, below the "You are ready" the player's client now needs a button "start the game" next to the cancel one. And even if everyone is ready, the game doesn't start and more players can join. The game starts only when one ready player clicks on "start the game".
 
 ---
 
@@ -28,8 +29,6 @@ DOING
 ---
 
 TODO
-
-The players want to set it to READY right away, even though not everyone has arrived yet.
 
 We need an explanation of the cards in the player's client.
 
