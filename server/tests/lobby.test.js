@@ -1306,7 +1306,7 @@ describe("Card buying (rivers)", () => {
     board.leave();
   });
 
-  it("buyCard fails for rank 2 trying to buy from river 2", async () => {
+  it("last-place player in 2-player game can buy from all rivers", async () => {
     const roomId = await createRoom(baseUrl, {
       _testDeck: [["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
       _testRiverDecks: [
@@ -1328,18 +1328,14 @@ describe("Card buying (rivers)", () => {
     board.send("_testSetState", { playerId: pid1, cellId: 5, lapCount: 1 });
     // Switch active player to player 2 and give them coins
     board.send("_debugSetGameState", { activePlayerId: pid2 });
-    board.send("_testSetState", { playerId: pid2, coins: 5 });
+    board.send("_testSetState", { playerId: pid2, coins: 10 });
     await waitForMessage(board, "gameState");
 
-    // Player 2 (rank 2) tries to buy from river 2 — should be rejected
+    // Player 2 (rank 2, last place in 2-player game) can buy from river 2
     const river2Card = gs.rivers[2].slots[0];
     room2.send("buyCard", { riverId: 2, cardId: river2Card.id });
-
-    // Buy from river 1 should still work for rank 2
-    const river1Card = gs.rivers[1].slots[0];
-    room2.send("buyCard", { riverId: 1, cardId: river1Card.id });
     const bought = await waitForMessage(room2, "cardBought");
-    expect(bought.cardId).toBe(river1Card.id);
+    expect(bought.cardId).toBe(river2Card.id);
 
     room1.leave();
     room2.leave();

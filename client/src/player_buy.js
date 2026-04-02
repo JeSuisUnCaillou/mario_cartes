@@ -17,7 +17,7 @@ export function updateBuyButton(activePlayerId, myPlayerId, latestRivers, blocke
   }
 }
 
-export function openBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins = 0) {
+export function openBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins = 0, playerCount = 0) {
   if (document.querySelector(".buy-modal")) return;
   const overlay = document.createElement("div");
   overlay.className = "buy-modal";
@@ -36,10 +36,10 @@ export function openBuyModal(currentRoom, latestRivers, currentCoins, currentRan
   overlay.appendChild(content);
 
   document.body.appendChild(overlay);
-  renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins);
+  renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins, playerCount);
 }
 
-export function renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins = 0) {
+export function renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins = 0, playerCount = 0) {
   const content = document.querySelector(".buy-modal-content");
   if (!content || !latestRivers) return;
 
@@ -50,9 +50,10 @@ export function renderBuyModal(currentRoom, latestRivers, currentCoins, currentR
       }
     },
     isAffordable: (river) => currentCoins >= river.cost,
-    isAccessible: (river) => canBuyFromRiver(currentRank, latestRivers.length, river.id),
+    isAccessible: (river) => canBuyFromRiver(currentRank, latestRivers.length, river.id, playerCount),
     rankIndicators: true,
     riverCount: latestRivers.length,
+    playerCount,
   });
 
   // Coin display on top of rivers

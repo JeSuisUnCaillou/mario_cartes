@@ -378,10 +378,10 @@ function removeLeaderboard() {
   if (overlay) overlay.remove();
 }
 
-function renderRivers(rivers) {
+function renderRivers(rivers, playerCount) {
   const container = document.getElementById("board-rivers");
   if (!container) return;
-  renderRiverRows(container, rivers, { rankIndicators: true, riverCount: rivers.length });
+  renderRiverRows(container, rivers, { rankIndicators: true, riverCount: rivers.length, playerCount });
 }
 
 export function initBoard(gameId) {
@@ -644,7 +644,7 @@ export function initBoard(gameId) {
         if (gameStateDirty || riversDirty) {
           const gameState = schemaToGameState(state);
           updateBoardGameState(gameState);
-          if (riversDirty && gameState.rivers) renderRivers(gameState.rivers);
+          if (riversDirty && gameState.rivers) renderRivers(gameState.rivers, state.players.size);
           gameStateDirty = false;
           riversDirty = false;
         }

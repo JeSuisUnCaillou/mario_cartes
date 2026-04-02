@@ -23,6 +23,7 @@ let currentPermanentCoins = 0;
 let currentSlowCounters = 0;
 let currentHasMovedThisTurn = false;
 let currentRank = 0;
+let currentPlayerCount = 0;
 let pendingShellChoice = false;
 
 function updateBuyButton() {
@@ -30,7 +31,7 @@ function updateBuyButton() {
 }
 
 function openBuyModal() {
-  _openBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins);
+  _openBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins, currentPlayerCount);
 }
 
 function showShellModal(shellType) {
@@ -548,12 +549,13 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
 
           updatePlayZone();
           updateBuyButton();
-          if (document.querySelector(".buy-modal")) renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins);
+          if (document.querySelector(".buy-modal")) renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins, currentPlayerCount);
           gameStateDirty = false;
           riversDirty = false;
         }
 
         if (playersDirty) {
+          currentPlayerCount = state.players.size;
           if (gamePhase === "lobby" && isReady) {
             renderLobby(room);
           }
@@ -854,7 +856,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
             });
           }
           // Re-render modal with updated rivers and coins
-          if (latestRivers) renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins);
+          if (latestRivers) renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins, currentPlayerCount);
         }
       });
 

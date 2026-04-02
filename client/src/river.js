@@ -142,16 +142,17 @@ function detectRefills(prevRivers, newRivers) {
  * @param {function} [options.onCardClick] - (river, card) => void
  * @param {function} [options.isAffordable] - (river) => boolean
  */
-function renderRankIndicators(riverId, riverCount) {
+function renderRankIndicators(riverId, riverCount, playerCount) {
   const container = document.createElement("div");
   container.className = "river-rank-indicators";
-  for (let rank = 1; rank <= RANK_ICONS.length; rank++) {
+  const maxRank = playerCount > 0 ? Math.min(RANK_ICONS.length, playerCount) : RANK_ICONS.length;
+  for (let rank = 1; rank <= maxRank; rank++) {
     const wrapper = document.createElement("span");
     const icon = document.createElement("img");
     icon.src = RANK_ICONS[rank - 1];
     icon.className = "river-rank-icon";
     icon.draggable = false;
-    if (!canBuyFromRiver(rank, riverCount, riverId)) {
+    if (!canBuyFromRiver(rank, riverCount, riverId, playerCount)) {
       wrapper.className = "river-rank-denied";
     }
     wrapper.appendChild(icon);
@@ -166,7 +167,7 @@ function renderRankIndicators(riverId, riverCount) {
 }
 
 export function renderRiverRow(river, options = {}) {
-  const { onCardClick, isAffordable, isAccessible, rankIndicators, riverCount } = options;
+  const { onCardClick, isAffordable, isAccessible, rankIndicators, riverCount, playerCount } = options;
 
   const row = document.createElement("div");
   row.className = "river-row";
@@ -176,7 +177,7 @@ export function renderRiverRow(river, options = {}) {
   costLabel.className = "river-cost";
   costLabel.innerHTML = `<span class="river-cost-badge"><span>${river.cost}</span><img src="/coin.svg" class="river-cost-icon" /></span>`;
   if (rankIndicators) {
-    costLabel.appendChild(renderRankIndicators(river.id, riverCount));
+    costLabel.appendChild(renderRankIndicators(river.id, riverCount, playerCount));
   }
   row.appendChild(costLabel);
 
