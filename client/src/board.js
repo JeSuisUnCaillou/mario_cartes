@@ -48,6 +48,7 @@ function schemaPlayersToArray(state) {
       lapCount: p.lapCount,
       pendingShellChoice: p.pendingShellChoice,
       finished: p.finished,
+      rank: p.rank,
     });
   });
   return players;
