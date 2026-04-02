@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { bananaCounts, shellCounts } from "../board.functions.js";
+import { bananaCounts, shellCounts, permacoinCells } from "../board.functions.js";
 
 describe("bananaCounts", () => {
   it("returns empty object for empty occupants", () => {
@@ -38,5 +38,20 @@ describe("shellCounts", () => {
 
   it("ignores bananas and players", () => {
     expect(shellCounts({ 3: ["banana", "player1"] })).toEqual({});
+  });
+});
+
+describe("permacoinCells", () => {
+  it("is a Set of cell IDs with permanent coins", () => {
+    expect(permacoinCells).toBeInstanceOf(Set);
+    expect(permacoinCells.has(3)).toBe(true);
+    expect(permacoinCells.has(7)).toBe(true);
+    expect(permacoinCells.has(12)).toBe(true);
+  });
+
+  it("does not include cells without permanent coins", () => {
+    expect(permacoinCells.has(1)).toBe(false);
+    expect(permacoinCells.has(2)).toBe(false);
+    expect(permacoinCells.has(4)).toBe(false);
   });
 });
