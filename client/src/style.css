@@ -247,11 +247,9 @@ html, body, #app {
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: 2.25em;
   font-weight: bold;
   color: #fff;
   flex-shrink: 0;
-  padding: 15px;
 }
 
 .river-cost-badge {
@@ -263,8 +261,8 @@ html, body, #app {
 }
 
 .river-cost-icon {
-  width: 36px;
-  height: 36px;
+  width: 20px;
+  height: 20px;
 }
 
 .river-cards {
@@ -380,8 +378,8 @@ html, body, #app {
 }
 
 .river-rank-icon {
-  width: 32px;
-  height: 32px;
+  width: 20px;
+  height: 20px;
 }
 
 .river-rank-label {
@@ -988,10 +986,6 @@ input {
 /* Buy modal river overrides */
 .buy-modal-content .river-row {
   background: black;
-}
-
-.buy-modal-content .river-cost {
-  width: 80px;
 }
 
 .buy-modal-content .river-slots {
