@@ -1,7 +1,6 @@
-import { Schema, defineTypes, MapSchema, ArraySchema } from "@colyseus/schema";
+import { schema } from "@colyseus/schema";
 
-class PlayerSchema extends Schema {}
-defineTypes(PlayerSchema, {
+const PlayerSchema = schema({
   name: "string",
   cellId: "number",
   connected: "boolean",
@@ -15,34 +14,29 @@ defineTypes(PlayerSchema, {
   rank: "number",
 });
 
-class RankEntrySchema extends Schema {}
-defineTypes(RankEntrySchema, {
+const RankEntrySchema = schema({
   playerId: "string",
   name: "string",
   finalRank: "number",
 });
 
-class RiverSlotSchema extends Schema {}
-defineTypes(RiverSlotSchema, {
+const RiverSlotSchema = schema({
   id: "string",
   items: "string",
 });
 
-class RiverSchema extends Schema {}
-defineTypes(RiverSchema, {
+const RiverSchema = schema({
   id: "number",
   cost: "number",
   deckCount: "number",
   slots: [RiverSlotSchema],
 });
 
-class CellOccupantsSchema extends Schema {}
-defineTypes(CellOccupantsSchema, {
+const CellOccupantsSchema = schema({
   entries: ["string"],
 });
 
-class GameState extends Schema {}
-defineTypes(GameState, {
+const GameState = schema({
   phase: "string",
   currentRound: "number",
   activePlayerId: "string",
