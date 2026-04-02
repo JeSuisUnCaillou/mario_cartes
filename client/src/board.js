@@ -674,12 +674,19 @@ export function initBoard(gameId) {
       this.tweens.add({
         targets: sprite,
         y: origY - jumpHeight,
-        angle: 720,
         duration: 500,
         ease: "Power2",
         yoyo: true,
         onComplete: () => {
           sprite.setDepth(0);
+        },
+      });
+      this.tweens.add({
+        targets: sprite,
+        angle: 720,
+        duration: 1000,
+        ease: "Linear",
+        onComplete: () => {
           sprite.setAngle(0);
         },
       });
