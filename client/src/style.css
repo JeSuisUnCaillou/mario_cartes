@@ -923,11 +923,12 @@ input {
   margin-top: 4px;
 }
 
-.board-player-rank {
-  font-size: 4vh;
+.board-player-live-rank {
+  font-size: 1.3vh;
   font-weight: bold;
   color: #FFD700;
   text-align: center;
+  margin-top: 4px;
 }
 
 /* Leaderboard overlay (board screen) */

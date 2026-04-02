@@ -217,73 +217,66 @@ function updateInfoBarPlayers(players) {
     const statusEl = el.querySelector(".board-player-status");
     const coinsEl = el.querySelector(".board-player-coins");
     let lapEl = el.querySelector(".board-player-lap");
-    let rankEl = el.querySelector(".board-player-rank");
+    let liveRankEl = el.querySelector(".board-player-live-rank");
 
-    const isFinished = p.finished && latestGameState && latestGameState.ranking;
-
-    if (isFinished) {
-      // Show big rank, hide hand/coins/lap
-      statusEl.style.display = "none";
-      coinsEl.style.display = "none";
-      if (lapEl) lapEl.style.display = "none";
-      if (!rankEl) {
-        rankEl = document.createElement("div");
-        rankEl.className = "board-player-rank";
-        rightEl.appendChild(rankEl);
-      }
-      const entry = latestGameState.ranking.find((r) => r.playerId === p.playerId);
-      rankEl.textContent = entry ? ordinalSuffix(entry.finalRank) : "🏁";
-      rankEl.style.display = "";
+    statusEl.style.display = "";
+    if (boardPhase === "lobby") {
+      statusEl.className = "board-player-status board-player-ready";
+      statusEl.textContent = p.ready ? "✅" : "⏳";
+      statusEl.classList.toggle("board-player-waiting", !p.ready);
+      statusEl.style.visibility = "visible";
     } else {
-      // Hide rank if it exists
-      if (rankEl) rankEl.style.display = "none";
-
-      statusEl.style.display = "";
-      if (boardPhase === "lobby") {
-        statusEl.className = "board-player-status board-player-ready";
-        statusEl.textContent = p.ready ? "✅" : "⏳";
-        statusEl.classList.toggle("board-player-waiting", !p.ready);
-        statusEl.style.visibility = "visible";
-      } else {
-        statusEl.className = "board-player-status board-player-cards";
-        const currentCount = statusEl.querySelectorAll(".board-card-mini").length;
-        if (currentCount !== p.handCount) {
-          statusEl.innerHTML = "";
-          const n = p.handCount;
-          for (let i = 0; i < n; i++) {
-            const card = document.createElement("div");
-            card.className = "board-card-mini";
-            const offset = i - (n - 1) / 2;
-            const rotation = offset * 10;
-            const lift = Math.abs(offset) * 1.5;
-            card.style.transform = `rotate(${rotation}deg) translateY(${lift}px)`;
-            statusEl.appendChild(card);
-          }
+      statusEl.className = "board-player-status board-player-cards";
+      const currentCount = statusEl.querySelectorAll(".board-card-mini").length;
+      if (currentCount !== p.handCount) {
+        statusEl.innerHTML = "";
+        const n = p.handCount;
+        for (let i = 0; i < n; i++) {
+          const card = document.createElement("div");
+          card.className = "board-card-mini";
+          const offset = i - (n - 1) / 2;
+          const rotation = offset * 10;
+          const lift = Math.abs(offset) * 1.5;
+          card.style.transform = `rotate(${rotation}deg) translateY(${lift}px)`;
+          statusEl.appendChild(card);
         }
       }
+    }
 
-      // Lap counter
-      if (boardPhase !== "lobby") {
-        if (!lapEl) {
-          lapEl = document.createElement("div");
-          lapEl.className = "board-player-lap";
-          rightEl.appendChild(lapEl);
-        }
-        lapEl.style.display = "";
-        const lap = Math.min(p.lapCount, 3);
-        lapEl.textContent = `Lap ${lap}/3`;
-      } else if (lapEl) {
-        lapEl.style.display = "none";
+    // Lap counter
+    if (boardPhase !== "lobby") {
+      if (!lapEl) {
+        lapEl = document.createElement("div");
+        lapEl.className = "board-player-lap";
+        rightEl.appendChild(lapEl);
       }
+      lapEl.style.display = "";
+      const lap = Math.min(p.lapCount, 3);
+      lapEl.textContent = `Lap ${lap}/3`;
+    } else if (lapEl) {
+      lapEl.style.display = "none";
+    }
 
-      if (boardPhase !== "lobby") {
-        const coinCount = p.coins || 0;
-        const zeroClass = coinCount === 0 ? " board-coin-zero" : "";
-        coinsEl.innerHTML = `<span class="board-coin-count${zeroClass}">${coinCount}</span><img src="/coin.svg" class="board-coin-icon${zeroClass}" />`;
-        coinsEl.style.display = "";
-      } else {
-        coinsEl.style.display = "none";
+    if (boardPhase !== "lobby") {
+      const coinCount = p.coins || 0;
+      const zeroClass = coinCount === 0 ? " board-coin-zero" : "";
+      coinsEl.innerHTML = `<span class="board-coin-count${zeroClass}">${coinCount}</span><img src="/coin.svg" class="board-coin-icon${zeroClass}" />`;
+      coinsEl.style.display = "";
+    } else {
+      coinsEl.style.display = "none";
+    }
+
+    // Live rank
+    if (boardPhase !== "lobby" && p.rank > 0) {
+      if (!liveRankEl) {
+        liveRankEl = document.createElement("div");
+        liveRankEl.className = "board-player-live-rank";
+        rightEl.appendChild(liveRankEl);
       }
+      liveRankEl.textContent = ordinalSuffix(p.rank);
+      liveRankEl.style.display = "";
+    } else if (liveRankEl) {
+      liveRankEl.style.display = "none";
     }
   }
 }
