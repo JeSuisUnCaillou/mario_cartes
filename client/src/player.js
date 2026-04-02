@@ -51,7 +51,7 @@ function showRulesModal() {
 
   const title = document.createElement("h2");
   title.className = "rules-modal-title";
-  title.textContent = "Rules";
+  title.textContent = "Items";
   content.appendChild(title);
 
   const rules = [
