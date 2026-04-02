@@ -1230,6 +1230,118 @@ describe("Card buying (rivers)", () => {
     room.leave();
     board.leave();
   });
+  it("buyCard fails when rank 1 tries to buy from river 1", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+      _testRiverDecks: [
+        [["mushroom"], ["banana"], ["coin"], ["mushroom"], ["banana"], ["coin"]],
+        [["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"], ["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"]],
+        [["mushroom", "mushroom", "mushroom"], ["banana", "banana", "banana"], ["coin", "coin", "coin"], ["mushroom", "mushroom", "mushroom"]],
+      ],
+    });
+    const { room: room1, playerId: pid1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    room1.send("startGame");
+    const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
+    await waitForMessage(room1, "cardsDrawn");
+
+    // Move player 1 ahead so they become rank 1
+    board.send("_testSetState", { playerId: pid1, cellId: 5, lapCount: 1, coins: 3 });
+    await waitForMessage(board, "gameState");
+
+    // Player 1 (rank 1) tries to buy from river 1 — should be rejected
+    const river1Card = gs.rivers[1].slots[0];
+    room1.send("buyCard", { riverId: 1, cardId: river1Card.id });
+
+    // Buy from river 0 should still work
+    const river0Card = gs.rivers[0].slots[0];
+    room1.send("buyCard", { riverId: 0, cardId: river0Card.id });
+    const bought = await waitForMessage(room1, "cardBought");
+    expect(bought.cardId).toBe(river0Card.id);
+
+    room1.leave();
+    room2.leave();
+    board.leave();
+  });
+
+  it("buyCard succeeds when rank 2 buys from river 1", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+      _testRiverDecks: [
+        [["mushroom"], ["banana"], ["coin"], ["mushroom"], ["banana"], ["coin"]],
+        [["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"], ["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"]],
+        [["mushroom", "mushroom", "mushroom"], ["banana", "banana", "banana"], ["coin", "coin", "coin"], ["mushroom", "mushroom", "mushroom"]],
+      ],
+    });
+    const { room: room1, playerId: pid1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: pid2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    room1.send("startGame");
+    const gs = await waitForMessage(room2, "gameState", (g) => g.phase === "playing");
+    await waitForMessage(room2, "cardsDrawn");
+
+    // Move player 1 ahead so player 2 becomes rank 2
+    board.send("_testSetState", { playerId: pid1, cellId: 5, lapCount: 1 });
+    // Switch active player to player 2 and give them coins
+    board.send("_debugSetGameState", { activePlayerId: pid2 });
+    board.send("_testSetState", { playerId: pid2, coins: 3 });
+    await waitForMessage(board, "gameState");
+
+    // Player 2 (rank 2) buys from river 1 — should succeed
+    const river1Card = gs.rivers[1].slots[0];
+    room2.send("buyCard", { riverId: 1, cardId: river1Card.id });
+    const bought = await waitForMessage(room2, "cardBought");
+    expect(bought.cardId).toBe(river1Card.id);
+
+    room1.leave();
+    room2.leave();
+    board.leave();
+  });
+
+  it("buyCard fails for rank 2 trying to buy from river 2", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+      _testRiverDecks: [
+        [["mushroom"], ["banana"], ["coin"], ["mushroom"], ["banana"], ["coin"]],
+        [["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"], ["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"]],
+        [["mushroom", "mushroom", "mushroom"], ["banana", "banana", "banana"], ["coin", "coin", "coin"], ["mushroom", "mushroom", "mushroom"]],
+      ],
+    });
+    const { room: room1, playerId: pid1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: pid2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    room1.send("startGame");
+    const gs = await waitForMessage(room2, "gameState", (g) => g.phase === "playing");
+    await waitForMessage(room2, "cardsDrawn");
+
+    // Move player 1 ahead so player 2 becomes rank 2
+    board.send("_testSetState", { playerId: pid1, cellId: 5, lapCount: 1 });
+    // Switch active player to player 2 and give them coins
+    board.send("_debugSetGameState", { activePlayerId: pid2 });
+    board.send("_testSetState", { playerId: pid2, coins: 5 });
+    await waitForMessage(board, "gameState");
+
+    // Player 2 (rank 2) tries to buy from river 2 — should be rejected
+    const river2Card = gs.rivers[2].slots[0];
+    room2.send("buyCard", { riverId: 2, cardId: river2Card.id });
+
+    // Buy from river 1 should still work for rank 2
+    const river1Card = gs.rivers[1].slots[0];
+    room2.send("buyCard", { riverId: 1, cardId: river1Card.id });
+    const bought = await waitForMessage(room2, "cardBought");
+    expect(bought.cardId).toBe(river1Card.id);
+
+    room1.leave();
+    room2.leave();
+    board.leave();
+  });
 });
 
 describe("Win condition and laps", () => {

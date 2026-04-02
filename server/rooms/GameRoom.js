@@ -4,6 +4,7 @@ const path = require("path");
 const { MapSchema, ArraySchema } = require("@colyseus/schema");
 const { STARTING_DECK, RIVER_DEFS } = require("./decks");
 const { computeLiveRanks } = require("./ranking");
+const { canBuyFromRiver } = require("./riverRules");
 const {
   PlayerSchema,
   RankEntrySchema,
@@ -422,6 +423,8 @@ class GameRoom extends Room {
       const slotIndex = river.slots.findIndex((c) => c && c.id === data.cardId);
       if (slotIndex === -1) return;
       if (player.coins < river.cost) return;
+      const rank = this._getLiveRank(player.playerId);
+      if (!canBuyFromRiver(rank, this.rivers.length, river.id)) return;
       player.coins -= river.cost;
       const card = river.slots[slotIndex];
       player.discardPile.push(card);
@@ -627,6 +630,16 @@ class GameRoom extends Room {
     }
   }
 
+
+  _getLiveRank(playerId) {
+    const playerList = [];
+    for (const [pid, p] of this.players) {
+      playerList.push({ playerId: pid, cellId: p.cellId, lapCount: p.lapCount });
+    }
+    const finishedRanks = this.ranking.map((pid, i) => ({ playerId: pid, finalRank: i + 1 }));
+    const liveRanks = computeLiveRanks(playerList, finishedRanks, this.cells.size);
+    return liveRanks.get(playerId) || 0;
+  }
 
   _syncState() {
     // Sync fields then send patch immediately (don't wait for patchRate interval)
