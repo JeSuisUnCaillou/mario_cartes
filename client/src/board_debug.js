@@ -117,6 +117,13 @@ function renderDebugModal(state) {
     });
   });
   gameForm.appendChild(gameApply);
+
+  const restartBtn = el("button", "debug-apply-btn debug-restart-btn", "Restart game");
+  restartBtn.addEventListener("click", () => {
+    boardRoom.send("_debugRestart");
+  });
+  gameForm.appendChild(restartBtn);
+
   gameSection.appendChild(gameForm);
   content.appendChild(gameSection);
 

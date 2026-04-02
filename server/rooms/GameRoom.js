@@ -268,6 +268,23 @@ class GameRoom extends Room {
       this._syncState();
     });
 
+    this.onMessage("_debugRestart", (client) => {
+      const info = this.clientsInfo.get(client.sessionId);
+      if (!info || info.type !== "board") return;
+      this.phase = "lobby";
+      this.ranking = [];
+      this.currentRound = 0;
+      this.turnIndex = -1;
+      this.activePlayerId = null;
+      this.rivers = null;
+      this.cellOccupants = {};
+      for (const player of this.players.values()) {
+        Object.assign(player, this._initialPlayerState());
+        this._addToCell(1, player.playerId);
+      }
+      this._syncState();
+    });
+
     this.onMessage("_debugGetState", (client) => {
       const info = this.clientsInfo.get(client.sessionId);
       if (!info || info.type !== "board") return;
