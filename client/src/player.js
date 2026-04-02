@@ -794,7 +794,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         if (data.remaining <= 0) {
           pendingDiscards = 0;
           const playZone = document.getElementById("play-zone");
-          playZone.classList.remove("discard-hit", "discard-hit-banana", "discard-hit-shell");
+          playZone.classList.remove("discard-hit", "discard-hit-banana", "discard-hit-shell", "discard-hit-redshell");
           updatePlayZone();
           updateBuyButton();
         }

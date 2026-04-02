@@ -709,6 +709,11 @@ input {
   background: rgba(45, 140, 45, 0.1);
 }
 
+.play-zone.discard-hit-redshell {
+  border-color: #cc2222;
+  background: rgba(204, 34, 34, 0.1);
+}
+
 .play-zone-banana {
   width: 60px;
   height: auto;
