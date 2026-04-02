@@ -136,6 +136,7 @@ function createTopBar() {
   exitBtn.className = "board-exit-btn";
   exitBtn.textContent = "Exit";
   exitBtn.addEventListener("click", () => {
+    if (boardRoom) boardRoom.send("destroyRoom");
     window.location.href = "/";
   });
   bar.appendChild(exitBtn);
@@ -317,6 +318,10 @@ function updateBoardGameState(data) {
   boardPhase = data.phase;
   latestGameState = data;
 
+  const gameEl = document.getElementById("board-game");
+  const hideCanvas = data.phase === "lobby" && latestPlayersData.length === 0;
+  if (gameEl) gameEl.style.visibility = hideCanvas ? "hidden" : "";
+
   if (data.phase === "playing") {
     // Replace scan label with round card
     const scanLabel = container.querySelector(".board-scan-label");
@@ -402,6 +407,8 @@ export function initBoard(gameId) {
 
   const gameContainer = document.createElement("div");
   gameContainer.className = "board-game";
+  gameContainer.id = "board-game";
+  gameContainer.style.visibility = "hidden";
   rightSide.appendChild(gameContainer);
 
   app.appendChild(rightSide);

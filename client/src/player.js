@@ -867,11 +867,19 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         room.send("changeName", newName);
       });
 
+      let roomDestroyed = false;
+      room.onMessage("roomDestroyed", () => {
+        roomDestroyed = true;
+        document.getElementById("app").innerHTML =
+          '<div class="player-container" style="justify-content:center;"><h2>The game has been closed</h2></div>';
+      });
+
       // Built-in auto-reconnect (Colyseus 0.17)
       room.reconnection.maxRetries = 30;
       room.reconnection.maxDelay = 5000;
 
       room.onLeave((code) => {
+        if (roomDestroyed) return;
         if (code === 4003) {
           // Reconnection failed — fallback: fresh join with existing playerId
           const serverUrl = import.meta.env.DEV
