@@ -376,7 +376,7 @@ function showNameForm(gameId, room) {
   const existingName = localStorage.getItem("playerName");
   document.getElementById("app").innerHTML = `
     <div class="player-container">
-      <h1>Game ${gameId}</h1>
+      <h1>Join game</h1>
       <form id="name-form">
         <label for="name-input">Enter your player name, 3 letters.</label>
         <div class="mt-1">
