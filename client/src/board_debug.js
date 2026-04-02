@@ -130,7 +130,6 @@ function renderDebugModal(state) {
   // --- Players section ---
   const playersSection = el("div", "debug-section");
   playersSection.appendChild(el("h3", "debug-section-title", "Players"));
-  const rankingInputs = [];
   for (const p of state.players) {
     const pCard = el("div", "debug-player-card");
     const pTitle = el("div", "debug-player-title", `${p.name} (${p.playerId.slice(0, 8)})`);
@@ -154,21 +153,6 @@ function renderDebugModal(state) {
     discardInput.readOnly = true;
     discardInput.classList.add("debug-readonly");
     pForm.appendChild(labeledField("Discard", discardInput));
-
-    const finishedCheck = document.createElement("input");
-    finishedCheck.type = "checkbox";
-    finishedCheck.checked = !!p.finished;
-    finishedCheck.className = "debug-checkbox";
-    pForm.appendChild(labeledField("Finished", finishedCheck));
-
-    const rankInput = numInput(p.rank || 0, 0);
-    rankInput.disabled = !p.finished;
-    finishedCheck.addEventListener("change", () => {
-      rankInput.disabled = !finishedCheck.checked;
-      if (!finishedCheck.checked) rankInput.value = 0;
-    });
-    pForm.appendChild(labeledField("Rank", rankInput));
-    rankingInputs.push({ playerId: p.playerId, finishedCheck, rankInput });
 
     const pApply = el("button", "debug-apply-btn", "Apply");
     pApply.addEventListener("click", () => {
@@ -220,15 +204,6 @@ function renderDebugModal(state) {
 
     playersSection.appendChild(pCard);
   }
-  const rankApply = el("button", "debug-apply-btn", "Apply ranking");
-  rankApply.addEventListener("click", () => {
-    const ranked = rankingInputs
-      .filter((r) => r.finishedCheck.checked)
-      .sort((a, b) => Number(a.rankInput.value) - Number(b.rankInput.value))
-      .map((r) => r.playerId);
-    boardRoom.send("_debugSetGameState", { setRanking: ranked });
-  });
-  playersSection.appendChild(rankApply);
   content.appendChild(playersSection);
 
   // --- Circuit section ---

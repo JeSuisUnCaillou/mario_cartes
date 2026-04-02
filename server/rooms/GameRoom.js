@@ -252,9 +252,6 @@ class GameRoom extends Room {
       if (data.removeShell) {
         this._removeFromCell(data.removeShell.cellId, "green_shell");
       }
-      if (data.setRanking) {
-        this.ranking = data.setRanking.filter((id) => this.players.has(id));
-      }
       if (data.setRiverSlot && this.rivers) {
         const river = this.rivers.find((r) => r.id === data.setRiverSlot.riverId);
         if (river && data.setRiverSlot.slotIndex >= 0 && data.setRiverSlot.slotIndex < 3) {
@@ -482,28 +479,23 @@ class GameRoom extends Room {
   }
 
   _fullState() {
-    const players = Array.from(this.players.values()).map((p) => {
-      const rankIdx = this.ranking.indexOf(p.playerId);
-      return {
-        playerId: p.playerId,
-        name: p.name,
-        cellId: p.cellId,
-        connected: p.connected,
-        ready: p.ready,
-        coins: p.coins,
-        lapCount: p.lapCount,
-        pendingDiscard: p.pendingDiscard,
-        pendingShellChoice: p.pendingShellChoice,
-        finished: rankIdx !== -1,
-        rank: rankIdx !== -1 ? rankIdx + 1 : null,
-        handCount: p.hand.length,
-        drawCount: p.drawPile.length,
-        discardCount: p.discardPile.length,
-        hand: p.hand,
-        drawPile: p.drawPile,
-        discardPile: p.discardPile,
-      };
-    });
+    const players = Array.from(this.players.values()).map((p) => ({
+      playerId: p.playerId,
+      name: p.name,
+      cellId: p.cellId,
+      connected: p.connected,
+      ready: p.ready,
+      coins: p.coins,
+      lapCount: p.lapCount,
+      pendingDiscard: p.pendingDiscard,
+      pendingShellChoice: p.pendingShellChoice,
+      handCount: p.hand.length,
+      drawCount: p.drawPile.length,
+      discardCount: p.discardPile.length,
+      hand: p.hand,
+      drawPile: p.drawPile,
+      discardPile: p.discardPile,
+    }));
     const state = {
       phase: this.phase,
       currentRound: this.currentRound,
