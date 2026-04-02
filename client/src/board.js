@@ -272,6 +272,11 @@ function updateInfoBarPlayers(players) {
       if (coinCount === 0) {
         html = `<span class="board-coin-count board-coin-zero">0</span><img src="/coin.svg" class="board-coin-icon board-coin-zero" />`;
       }
+      const slowCount = p.slowCounters || 0;
+      if (slowCount > 0) {
+        html += `<span class="board-coin-sep"></span>`;
+        html += `<span class="board-coin-count">${slowCount}</span><img src="/dark_mushroom.svg" class="board-coin-icon" />`;
+      }
       coinsEl.innerHTML = html;
       coinsEl.style.display = "";
     } else {
