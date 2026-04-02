@@ -871,7 +871,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
       room.onMessage("roomDestroyed", () => {
         roomDestroyed = true;
         document.getElementById("app").innerHTML =
-          '<div class="player-container" style="justify-content:center;"><h2>The game has been closed</h2></div>';
+          '<div class="player-container" style="justify-content:center;"><h2>The game has been ended</h2></div>';
       });
 
       // Built-in auto-reconnect (Colyseus 0.17)

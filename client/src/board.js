@@ -134,7 +134,7 @@ function createTopBar() {
 
   const exitBtn = document.createElement("button");
   exitBtn.className = "board-exit-btn";
-  exitBtn.textContent = "Exit";
+  exitBtn.textContent = "End the game";
   exitBtn.addEventListener("click", () => {
     if (boardRoom) boardRoom.send("destroyRoom");
     window.location.href = "/";

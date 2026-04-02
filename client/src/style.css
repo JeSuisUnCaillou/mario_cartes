@@ -257,7 +257,7 @@ html, body, #app {
   top: 0.5vh;
   right: 0.5vh;
   background: transparent;
-  border: 1px solid #555;
+  border: 1px solid transparent;
   color: #999;
   font-size: 1.4vh;
   padding: 0.3vh 0.8vh;
@@ -267,7 +267,7 @@ html, body, #app {
 
 .board-exit-btn:hover {
   color: #fff;
-  border-color: #999;
+  border: 1px solid #555;
 }
 
 /* Shared river styles (used by board and buy modal) */
