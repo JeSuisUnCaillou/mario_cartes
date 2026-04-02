@@ -287,7 +287,14 @@ class GameRoom extends Room {
       if (this.phase !== "lobby") return;
       player.ready = !!ready;
       this._syncState();
-      this._checkAllReady();
+    });
+
+    this.onMessage("startGame", (client) => {
+      const player = this._getPlayer(client);
+      if (!player) return;
+      if (this.phase !== "lobby") return;
+      if (!player.ready) return;
+      this._startGame();
     });
 
     this.onMessage("drawCards", (client) => {
@@ -775,14 +782,6 @@ class GameRoom extends Room {
   _resolveCoinStep(player) {
     player.coins += 1;
     this._syncState();
-  }
-
-  _checkAllReady() {
-    if (this.players.size === 0) return;
-    for (const player of this.players.values()) {
-      if (!player.ready) return;
-    }
-    this._startGame();
   }
 
   _startGame() {

@@ -339,8 +339,14 @@ function renderLobby(room) {
   if (isReady) {
     lobbyZone.innerHTML = `
       <div class="ready-message">You are ready</div>
-      <button id="cancel-btn" class="cancel-btn">Cancel</button>
+      <div class="lobby-buttons">
+        <button id="start-btn" class="start-btn">Start the game</button>
+        <button id="cancel-btn" class="cancel-btn">Cancel</button>
+      </div>
     `;
+    document.getElementById("start-btn").addEventListener("click", () => {
+      room.send("startGame");
+    });
     document.getElementById("cancel-btn").addEventListener("click", () => {
       isReady = false;
       room.send("setReady", false);

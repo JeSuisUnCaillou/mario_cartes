@@ -481,6 +481,24 @@ input {
   color: #4CAF50;
 }
 
+.lobby-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.start-btn {
+  font-size: 1.2em;
+  padding: 12px 24px;
+  font-weight: bold;
+  background: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
 .cancel-btn {
   padding: 10px 20px;
 }

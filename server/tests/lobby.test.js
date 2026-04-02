@@ -173,6 +173,7 @@ describe("Reconnection (page reload)", () => {
     room1.send("setReady", true);
     room2.send("setReady", true);
 
+    room1.send("startGame");
     await waitForMessage(room1, "gameState");
     const cardsBeforeDisconnect = await waitForMessage(room1, "cardsDrawn");
 
@@ -200,6 +201,7 @@ describe("Rejection after game started", () => {
     room1.send("setReady", true);
     room2.send("setReady", true);
 
+    room1.send("startGame");
     await waitForMessage(room1, "gameState");
 
     const { room: lateRoom } = await connectRaw(baseUrl, roomId);
@@ -315,12 +317,41 @@ describe("Ready state and game start", () => {
     board.leave();
   });
 
-  it("single player ready starts the game", async () => {
+  it("single player ready does not auto-start the game", async () => {
     const roomId = await createRoom(baseUrl);
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    await waitForPlayers(room, (list) =>
+      list.some((p) => p.ready),
+    );
+    const buffered = room._messageBuffers["gameState"];
+    const playingState = buffered.find((gs) => gs.phase === "playing");
+    expect(playingState).toBeUndefined();
+    room.leave();
+  });
+
+  it("ready player can start the game", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    await waitForPlayers(room, (list) =>
+      list.some((p) => p.ready),
+    );
+    room.send("startGame");
     const gameState = await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     expect(gameState.phase).toBe("playing");
+    room.leave();
+  });
+
+  it("non-ready player cannot start the game", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("startGame");
+    // Give server time to process
+    await new Promise((r) => setTimeout(r, 100));
+    const buffered = room._messageBuffers["gameState"];
+    const playingState = buffered.find((gs) => gs.phase === "playing");
+    expect(playingState).toBeUndefined();
     room.leave();
   });
 
@@ -342,13 +373,18 @@ describe("Ready state and game start", () => {
     room2.leave();
   });
 
-  it("two players both ready starts the game", async () => {
+  it("two players both ready, one starts the game", async () => {
     const roomId = await createRoom(baseUrl);
     const { room: room1 } = await connectPlayer(baseUrl, roomId);
     const { room: room2 } = await connectPlayer(baseUrl, roomId);
 
     room1.send("setReady", true);
     room2.send("setReady", true);
+    await waitForPlayers(room1, (list) =>
+      list.every((p) => p.ready),
+    );
+
+    room1.send("startGame");
 
     const gameState = await waitForMessage(room1, "gameState", (gs) => gs.phase === "playing");
     expect(gameState.phase).toBe("playing");
@@ -369,6 +405,10 @@ describe("Ready state and game start", () => {
 
     room1.send("setReady", true);
     room2.send("setReady", true);
+    await waitForPlayers(room1, (list) =>
+      list.every((p) => p.ready),
+    );
+    room1.send("startGame");
 
     const gameState = await waitForMessage(room1, "gameState", (gs) => gs.phase === "playing");
     expect(gameState.phase).toBe("playing");
@@ -385,6 +425,7 @@ describe("Deck and coins", () => {
     const roomId = await createRoom(baseUrl);
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     expect(cards.hand).toHaveLength(5);
@@ -397,6 +438,7 @@ describe("Deck and coins", () => {
     const roomId = await createRoom(baseUrl);
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     const coinCard = cards.hand.find((c) => c.items.length === 1 && c.items[0] === "coin");
@@ -414,6 +456,7 @@ describe("Deck and coins", () => {
     const roomId = await createRoom(baseUrl);
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     const coinCard = cards.hand.find((c) => c.items.length === 2 && c.items.every((i) => i === "coin"));
@@ -433,6 +476,7 @@ describe("End turn", () => {
     const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
     room1.send("setReady", true);
     room2.send("setReady", true);
+    room1.send("startGame");
     const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
     await waitForMessage(room1, "cardsDrawn");
     await waitForMessage(room2, "cardsDrawn");
@@ -450,6 +494,7 @@ describe("End turn", () => {
     const roomId = await createRoom(baseUrl);
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     const coinCard = cards.hand.find((c) => c.items.length === 1 && c.items[0] === "coin");
@@ -470,6 +515,7 @@ describe("End turn", () => {
     });
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     // Play all 5 cards
@@ -489,6 +535,7 @@ describe("End turn", () => {
     const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
     room1.send("setReady", true);
     room2.send("setReady", true);
+    room1.send("startGame");
     const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
     await waitForMessage(room1, "cardsDrawn");
     await waitForMessage(room2, "cardsDrawn");
@@ -512,6 +559,7 @@ describe("End turn", () => {
     const { room: room2 } = await connectPlayer(baseUrl, roomId);
     room1.send("setReady", true);
     room2.send("setReady", true);
+    room1.send("startGame");
     const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
     const cards1 = await waitForMessage(room1, "cardsDrawn");
     await waitForMessage(room2, "cardsDrawn");
@@ -537,6 +585,7 @@ describe("End turn", () => {
     });
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     // Play all cards to empty hand, then if banana is hit, penalty should be skipped
@@ -564,6 +613,7 @@ describe("Mushroom movement and banana collision", () => {
     });
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     const mushroomCard = cards.hand.find((c) => c.items.length === 1 && c.items[0] === "mushroom");
@@ -581,6 +631,7 @@ describe("Mushroom movement and banana collision", () => {
     });
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     const multiCard = cards.hand.find((c) => c.items.includes("banana") && c.items.includes("coin") && c.items.includes("mushroom"));
@@ -601,6 +652,7 @@ describe("Mushroom movement and banana collision", () => {
     const { room } = await connectPlayer(baseUrl, roomId);
     const { room: board } = await connectBoard(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     const card = cards.hand.find((c) => c.items[0] === "mushroom" && c.items[1] === "banana");
@@ -621,6 +673,7 @@ describe("Mushroom movement and banana collision", () => {
     const { room } = await connectPlayer(baseUrl, roomId);
     const { room: board } = await connectBoard(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     const card = cards.hand.find((c) => c.items[0] === "banana" && c.items[1] === "mushroom");
@@ -642,6 +695,7 @@ describe("Mushroom movement and banana collision", () => {
     const { room } = await connectPlayer(baseUrl, roomId);
     const { room: board } = await connectBoard(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     const bananaCard = cards.hand.find((c) => c.items.length === 1 && c.items[0] === "banana");
@@ -665,6 +719,7 @@ describe("Mushroom movement and banana collision", () => {
     const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
     room1.send("setReady", true);
     room2.send("setReady", true);
+    room1.send("startGame");
     const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
     const cards1 = await waitForMessage(room1, "cardsDrawn");
     const cards2 = await waitForMessage(room2, "cardsDrawn");
@@ -716,6 +771,7 @@ describe("Mushroom movement and banana collision", () => {
     const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
     room1.send("setReady", true);
     room2.send("setReady", true);
+    room1.send("startGame");
     const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
     const cards1 = await waitForMessage(room1, "cardsDrawn");
     const cards2 = await waitForMessage(room2, "cardsDrawn");
@@ -786,6 +842,7 @@ describe("Mushroom movement and banana collision", () => {
     const { room: board } = await connectBoard(baseUrl, roomId);
     room1.send("setReady", true);
     room2.send("setReady", true);
+    room1.send("startGame");
     const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
     const cards1 = await waitForMessage(room1, "cardsDrawn");
     const cards2 = await waitForMessage(room2, "cardsDrawn");
@@ -845,6 +902,7 @@ describe("Card buying (rivers)", () => {
     const roomId = await createRoom(baseUrl);
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     const gs = await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     const rivers = gs.rivers;
     expect(rivers).toHaveLength(3);
@@ -866,6 +924,7 @@ describe("Card buying (rivers)", () => {
     const roomId = await createRoom(baseUrl);
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     const { room: board } = await connectBoard(baseUrl, roomId);
     const gs = await waitForMessage(board, "gameState");
@@ -885,6 +944,7 @@ describe("Card buying (rivers)", () => {
     });
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     const gs = await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
 
@@ -912,6 +972,7 @@ describe("Card buying (rivers)", () => {
     });
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     const gs = await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
 
@@ -939,6 +1000,7 @@ describe("Card buying (rivers)", () => {
     });
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     const gs = await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
 
@@ -968,6 +1030,7 @@ describe("Card buying (rivers)", () => {
     });
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     const gs = await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     await waitForMessage(room, "cardsDrawn");
 
@@ -993,6 +1056,7 @@ describe("Card buying (rivers)", () => {
     const { room: room2 } = await connectPlayer(baseUrl, roomId);
     room1.send("setReady", true);
     room2.send("setReady", true);
+    room1.send("startGame");
     const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
     await waitForMessage(room1, "cardsDrawn");
     await waitForMessage(room2, "cardsDrawn");
@@ -1019,6 +1083,7 @@ describe("Card buying (rivers)", () => {
     const { room } = await connectPlayer(baseUrl, roomId);
     const { room: board } = await connectBoard(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     const gs = await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     expect(gs.rivers[0].deckCount).toBe(3);
@@ -1050,6 +1115,7 @@ describe("Card buying (rivers)", () => {
     const { room } = await connectPlayer(baseUrl, roomId);
     const { room: board } = await connectBoard(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     const gs = await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     expect(gs.rivers[0].deckCount).toBe(0);
@@ -1074,6 +1140,7 @@ describe("Win condition and laps", () => {
 
   async function startGame(rooms) {
     for (const r of rooms) r.send("setReady", true);
+    rooms[0].send("startGame");
     await waitForMessage(rooms[0], "gameState", (gs) => gs.phase === "playing");
   }
 
@@ -1146,6 +1213,7 @@ describe("Win condition and laps", () => {
     const { room: board } = await connectBoard(baseUrl, roomId);
 
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
 
     room.send("_testSetState", { cellId: 13, lapCount: 3 });
@@ -1315,6 +1383,7 @@ describe("Start over", () => {
 
     room1.send("setReady", true);
     room2.send("setReady", true);
+    room1.send("startGame");
     await waitForMessage(room1, "gameState", (gs) => gs.phase === "playing");
 
     // Place both players near finish on last lap
@@ -1389,6 +1458,7 @@ describe("Start over", () => {
 
     room1.send("setReady", true);
     room2.send("setReady", true);
+    room1.send("startGame");
     await waitForMessage(board, "gameState", (gs) => gs.phase === "playing");
 
     // Drain buffer so we can check nothing new arrives
@@ -1465,6 +1535,7 @@ describe("Debug mode", () => {
 
     p1.send("setReady", true);
     p2.send("setReady", true);
+    p1.send("startGame");
     await waitForMessage(board, "gameState", (gs) => gs.phase === "playing");
 
     board.send("_debugSetGameState", { addBanana: { cellId: 5 } });
@@ -1492,6 +1563,7 @@ describe("Debug mode", () => {
 
     p1.send("setReady", true);
     p2.send("setReady", true);
+    p1.send("startGame");
     await waitForMessage(board, "gameState", (gs) => gs.phase === "playing");
 
     board.send("_debugSetGameState", {
@@ -1518,6 +1590,7 @@ describe("Debug mode", () => {
 
     p1.send("setReady", true);
     p2.send("setReady", true);
+    p1.send("startGame");
     await waitForMessage(board, "gameState", (gs) => gs.phase === "playing");
 
     board.send("_debugGetState");
@@ -1541,6 +1614,7 @@ describe("Debug mode", () => {
 
     p1.send("setReady", true);
     p2.send("setReady", true);
+    p1.send("startGame");
     await waitForMessage(board, "gameState", (gs) => gs.phase === "playing");
 
     // Get initial state
@@ -1587,6 +1661,7 @@ describe("Debug mode", () => {
 
     p1.send("setReady", true);
     p2.send("setReady", true);
+    p1.send("startGame");
     await waitForMessage(board, "gameState", (gs) => gs.phase === "playing");
     // Wait for game start, then clear cardsDrawn buffer
     await waitForMessage(p1, "cardsDrawn");
@@ -1636,6 +1711,7 @@ describe("Green shell", () => {
     });
     const { room } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     const shellCard = cards.hand.find((c) => c.items.includes("green_shell"));
@@ -1655,6 +1731,7 @@ describe("Green shell", () => {
     });
     const { room, playerId } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     const shellCard = cards.hand.find((c) => c.items.includes("green_shell"));
@@ -1687,6 +1764,7 @@ describe("Green shell", () => {
     const { room } = await connectPlayer(baseUrl, roomId);
     const { room: board } = await connectBoard(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     const shellCard = cards.hand.find((c) => c.items.includes("green_shell"));
@@ -1715,6 +1793,7 @@ describe("Green shell", () => {
     const { room } = await connectPlayer(baseUrl, roomId);
     const { room: board } = await connectBoard(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     const shellCard = cards.hand.find((c) => c.items.includes("green_shell"));
@@ -1741,6 +1820,7 @@ describe("Green shell", () => {
     const { room: board } = await connectBoard(baseUrl, roomId);
     room1.send("setReady", true);
     room2.send("setReady", true);
+    room1.send("startGame");
     const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
     const cards1 = await waitForMessage(room1, "cardsDrawn");
     const cards2 = await waitForMessage(room2, "cardsDrawn");
@@ -1782,6 +1862,7 @@ describe("Green shell", () => {
     const { room } = await connectPlayer(baseUrl, roomId);
     const { room: board } = await connectBoard(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
 
@@ -1813,6 +1894,7 @@ describe("Green shell", () => {
     });
     const { room, playerId } = await connectPlayer(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
     const shellCard = cards.hand.find((c) => c.items.includes("green_shell"));
@@ -1839,6 +1921,7 @@ describe("Green shell", () => {
     const { room } = await connectPlayer(baseUrl, roomId);
     const { room: board } = await connectBoard(baseUrl, roomId);
     room.send("setReady", true);
+    room.send("startGame");
     await waitForMessage(room, "gameState", (g) => g.phase === "playing");
     const cards = await waitForMessage(room, "cardsDrawn");
 
