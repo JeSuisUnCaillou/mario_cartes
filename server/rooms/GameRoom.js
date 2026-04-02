@@ -556,6 +556,7 @@ class GameRoom extends Room {
     if (data.permanentCoins !== undefined) player.permanentCoins = data.permanentCoins;
     if (data.pendingDiscard !== undefined) player.pendingDiscard = data.pendingDiscard;
     if (data.pendingShellChoice !== undefined) player.pendingShellChoice = data.pendingShellChoice;
+    if (data.slowCounters !== undefined) player.slowCounters = data.slowCounters;
     if (data.setHandCard) {
       const { index, items } = data.setHandCard;
       if (index >= 0 && index < player.hand.length) {
