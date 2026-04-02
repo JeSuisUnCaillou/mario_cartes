@@ -205,6 +205,10 @@ html, body, #app {
   filter: grayscale(1);
 }
 
+.board-coin-sep {
+  width: 4px;
+}
+
 /* Right side: top bar + game canvas */
 .board-right {
   flex: 1;

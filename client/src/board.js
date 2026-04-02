@@ -46,6 +46,7 @@ function schemaPlayersToArray(state) {
       handCount: p.handCount,
       ready: p.ready,
       coins: p.coins,
+      permanentCoins: p.permanentCoins,
       lapCount: p.lapCount,
       pendingShellChoice: p.pendingShellChoice,
       finished: p.finished,
@@ -257,8 +258,21 @@ function updateInfoBarPlayers(players) {
 
     if (boardPhase !== "lobby") {
       const coinCount = p.coins || 0;
-      const zeroClass = coinCount === 0 ? " board-coin-zero" : "";
-      coinsEl.innerHTML = `<span class="board-coin-count${zeroClass}">${coinCount}</span><img src="/coin.svg" class="board-coin-icon${zeroClass}" />`;
+      const permCount = p.permanentCoins || 0;
+      const blueCount = Math.min(coinCount, permCount);
+      const goldCount = Math.max(0, coinCount - permCount);
+      let html = "";
+      if (blueCount > 0) {
+        html += `<span class="board-coin-count">${blueCount}</span><img src="/permacoin.svg" class="board-coin-icon" />`;
+      }
+      if (goldCount > 0) {
+        if (blueCount > 0) html += `<span class="board-coin-sep"></span>`;
+        html += `<span class="board-coin-count">${goldCount}</span><img src="/coin.svg" class="board-coin-icon" />`;
+      }
+      if (coinCount === 0) {
+        html = `<span class="board-coin-count board-coin-zero">0</span><img src="/coin.svg" class="board-coin-icon board-coin-zero" />`;
+      }
+      coinsEl.innerHTML = html;
       coinsEl.style.display = "";
     } else {
       coinsEl.style.display = "none";
