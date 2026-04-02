@@ -24,9 +24,11 @@ export async function loadHelmetTexture(scene, color) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
+      const dpr = window.devicePixelRatio || 1;
       const aspect = img.naturalWidth / img.naturalHeight;
-      const w = Math.round(64 * aspect);
-      const h = 64;
+      const baseH = Math.round(64 * dpr);
+      const w = Math.round(baseH * aspect);
+      const h = baseH;
       const canvas = document.createElement("canvas");
       canvas.width = w;
       canvas.height = h;
