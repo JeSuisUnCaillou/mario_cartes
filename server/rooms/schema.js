@@ -17,7 +17,7 @@ class RankEntrySchema extends Schema {}
 defineTypes(RankEntrySchema, {
   playerId: "string",
   name: "string",
-  rank: "number",
+  finalRank: "number",
 });
 
 class RiverSlotSchema extends Schema {}

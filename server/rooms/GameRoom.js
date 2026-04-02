@@ -518,7 +518,7 @@ class GameRoom extends Room {
       state.ranking = this.ranking.map((playerId, i) => ({
         playerId,
         name: this.players.get(playerId).name,
-        rank: i + 1,
+        finalRank: i + 1,
       }));
     }
     return state;
@@ -661,7 +661,7 @@ class GameRoom extends Room {
       const entry = new RankEntrySchema();
       entry.playerId = playerId;
       entry.name = this.players.get(playerId).name;
-      entry.rank = i + 1;
+      entry.finalRank = i + 1;
       this.state.ranking.push(entry);
     }
 

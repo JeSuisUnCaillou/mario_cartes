@@ -63,7 +63,7 @@ function schemaToGameState(state) {
   if (state.ranking.length > 0) {
     gs.ranking = [];
     state.ranking.forEach((r) => {
-      gs.ranking.push({ playerId: r.playerId, name: r.name, rank: r.rank });
+      gs.ranking.push({ playerId: r.playerId, name: r.name, finalRank: r.finalRank });
     });
   }
   return gs;

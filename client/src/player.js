@@ -397,8 +397,8 @@ function renderFinishedZone(container, ranking, room, { showStartOver = true, my
       <h2 class="finished-title">Race Complete!</h2>
       <ol class="finished-list">
         ${(ranking || []).map((entry) => {
-          const medal = medals[entry.rank - 1] || "";
-          const ordinal = ordinalSuffix(entry.rank);
+          const medal = medals[entry.finalRank - 1] || "";
+          const ordinal = ordinalSuffix(entry.finalRank);
           return `<li class="finished-entry"><span class="finished-rank">${medal} ${ordinal}</span><span class="finished-name">${entry.name}</span></li>`;
         }).join("")}
       </ol>
@@ -409,7 +409,7 @@ function renderFinishedZone(container, ranking, room, { showStartOver = true, my
     });
   } else {
     const myEntry = (ranking || []).find((e) => e.playerId === pid);
-    const rank = myEntry ? myEntry.rank : ranking ? ranking.length : 1;
+    const rank = myEntry ? myEntry.finalRank : ranking ? ranking.length : 1;
     const medal = medals[rank - 1] || "";
     const ordinal = ordinalSuffix(rank);
     container.innerHTML = `
@@ -518,7 +518,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
                 finishedZone.style.display = "";
                 const ranking = [];
                 state.ranking.forEach((r) => {
-                  ranking.push({ playerId: r.playerId, name: r.name, rank: r.rank });
+                  ranking.push({ playerId: r.playerId, name: r.name, rank: r.finalRank });
                 });
                 renderFinishedZone(finishedZone, ranking, room, { showStartOver: false, myPlayerId });
               }
@@ -536,7 +536,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
               finishedZone.style.display = "";
               const ranking = [];
               state.ranking.forEach((r) => {
-                ranking.push({ playerId: r.playerId, name: r.name, rank: r.rank });
+                ranking.push({ playerId: r.playerId, name: r.name, rank: r.finalRank });
               });
               renderFinishedZone(finishedZone, ranking, room);
             }
@@ -580,7 +580,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
                   finishedZone.style.display = "";
                   const ranking = [];
                   state.ranking.forEach((r) => {
-                    ranking.push({ playerId: r.playerId, name: r.name, rank: r.rank });
+                    ranking.push({ playerId: r.playerId, name: r.name, rank: r.finalRank });
                   });
                   renderFinishedZone(finishedZone, ranking, room, { showStartOver: false, myPlayerId });
                 }

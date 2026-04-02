@@ -1327,7 +1327,7 @@ describe("Win condition and laps", () => {
     const gs = await waitForMessage(board, "gameState", (g) => g.phase === "finished");
     expect(gs.ranking).toHaveLength(1);
     expect(gs.ranking[0].playerId).toBe(playerId);
-    expect(gs.ranking[0].rank).toBe(1);
+    expect(gs.ranking[0].finalRank).toBe(1);
 
     room.leave();
     board.leave();
@@ -1359,9 +1359,9 @@ describe("Win condition and laps", () => {
     expect(gs.phase).toBe("finished");
     expect(gs.ranking).toHaveLength(2);
     expect(gs.ranking[0].playerId).toBe(id1);
-    expect(gs.ranking[0].rank).toBe(1);
+    expect(gs.ranking[0].finalRank).toBe(1);
     expect(gs.ranking[1].playerId).toBe(id2);
-    expect(gs.ranking[1].rank).toBe(2);
+    expect(gs.ranking[1].finalRank).toBe(2);
 
     room1.leave();
     room2.leave();
@@ -1407,7 +1407,7 @@ describe("Win condition and laps", () => {
     expect(gs.ranking[0].playerId).toBe(id1);
     expect(gs.ranking[1].playerId).toBe(id2);
     expect(gs.ranking[2].playerId).toBe(id3);
-    expect(gs.ranking[2].rank).toBe(3);
+    expect(gs.ranking[2].finalRank).toBe(3);
 
     room1.leave();
     room2.leave();

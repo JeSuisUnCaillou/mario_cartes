@@ -86,7 +86,7 @@ function schemaToGameState(state) {
   if (state.ranking.length > 0) {
     gs.ranking = [];
     state.ranking.forEach((r) => {
-      gs.ranking.push({ playerId: r.playerId, name: r.name, rank: r.rank });
+      gs.ranking.push({ playerId: r.playerId, name: r.name, finalRank: r.finalRank });
     });
   }
   return gs;
@@ -232,7 +232,7 @@ function updateInfoBarPlayers(players) {
         rightEl.appendChild(rankEl);
       }
       const entry = latestGameState.ranking.find((r) => r.playerId === p.playerId);
-      rankEl.textContent = entry ? ordinalSuffix(entry.rank) : "🏁";
+      rankEl.textContent = entry ? ordinalSuffix(entry.finalRank) : "🏁";
       rankEl.style.display = "";
     } else {
       // Hide rank if it exists
@@ -347,7 +347,7 @@ function showLeaderboard(ranking) {
   for (const entry of ranking) {
     const li = document.createElement("li");
     li.className = "board-leaderboard-entry";
-    const medal = medals[entry.rank - 1] || `#${entry.rank}`;
+    const medal = medals[entry.finalRank - 1] || `#${entry.finalRank}`;
     li.innerHTML = `<span class="board-leaderboard-rank">${medal}</span><span class="board-leaderboard-name">${entry.name}</span>`;
     list.appendChild(li);
   }
