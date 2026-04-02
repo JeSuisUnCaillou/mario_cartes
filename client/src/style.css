@@ -476,12 +476,14 @@ input {
 }
 
 .top-zone {
+  position: relative;
   text-align: center;
   padding: 12px;
   flex-shrink: 0;
 }
 
 .player-rank {
+  position: absolute;
   display: inline-flex;
   align-items: center;
   font-size: 1.2em;
