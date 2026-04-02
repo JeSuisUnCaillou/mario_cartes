@@ -20,7 +20,6 @@ let currentRoom = null;
 let pendingDiscards = 0;
 let gamePhase = "lobby";
 let isReady = false;
-let allConnectedReady = false;
 let myPlayerId = null;
 let activePlayerId = null;
 let latestRivers = null;
@@ -345,6 +344,16 @@ function showNameForm(gameId, room) {
   });
 }
 
+function areAllConnectedPlayersReady(room) {
+  let allReady = true;
+  if (room.state && room.state.players) {
+    room.state.players.forEach((p) => {
+      if (p.connected && !p.ready) allReady = false;
+    });
+  }
+  return allReady;
+}
+
 function renderLobby(room) {
   const lobbyZone = document.getElementById("lobby-zone");
   if (!lobbyZone) return;
@@ -357,7 +366,7 @@ function renderLobby(room) {
       </div>
     `;
     const startBtn = document.getElementById("start-btn");
-    startBtn.disabled = !allConnectedReady;
+    startBtn.disabled = !areAllConnectedPlayersReady(room);
     startBtn.addEventListener("click", () => {
       room.send("startGame");
     });
@@ -532,7 +541,6 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
             if (gameZone) gameZone.style.display = "none";
             if (finishedZone) finishedZone.style.display = "none";
             isReady = false;
-            allConnectedReady = false;
             if (lobbyZone) {
               lobbyZone.style.display = "";
               renderLobby(room);
@@ -547,15 +555,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         }
 
         if (playersDirty) {
-          if (gamePhase === "lobby") {
-            let allReady = true;
-            state.players.forEach((p) => {
-              if (p.connected && !p.ready) allReady = false;
-            });
-            if (allReady !== allConnectedReady) {
-              allConnectedReady = allReady;
-              renderLobby(room);
-            }
+          if (gamePhase === "lobby" && isReady) {
+            renderLobby(room);
           }
           if (myPlayerId) {
             const me = state.players.get(myPlayerId);
