@@ -69,52 +69,54 @@ function createDeckPile(river) {
 }
 
 function animateCardFlip(deckEl, cardEl) {
-  const deckRect = deckEl.getBoundingClientRect();
-  const cardRect = cardEl.getBoundingClientRect();
-
   cardEl.style.visibility = "hidden";
 
-  const flyer = document.createElement("div");
-  flyer.className = "card-flyer";
-  flyer.style.position = "fixed";
-  flyer.style.width = deckRect.width + "px";
-  flyer.style.aspectRatio = "54 / 86";
-  flyer.style.left = deckRect.left + "px";
-  flyer.style.top = deckRect.top + "px";
-  flyer.style.zIndex = "999";
-  flyer.style.pointerEvents = "none";
-  flyer.style.perspective = "600px";
+  requestAnimationFrame(() => {
+    const deckRect = deckEl.getBoundingClientRect();
+    const cardRect = cardEl.getBoundingClientRect();
 
-  const inner = document.createElement("div");
-  inner.className = "card-flyer-inner";
-  inner.style.transition = "transform 0.25s ease-in-out";
-  inner.style.transform = "rotateY(0deg)";
+    const flyer = document.createElement("div");
+    flyer.className = "card-flyer";
+    flyer.style.position = "fixed";
+    flyer.style.width = deckRect.width + "px";
+    flyer.style.aspectRatio = "54 / 86";
+    flyer.style.left = deckRect.left + "px";
+    flyer.style.top = deckRect.top + "px";
+    flyer.style.zIndex = "999";
+    flyer.style.pointerEvents = "none";
+    flyer.style.perspective = "600px";
 
-  const backFace = document.createElement("img");
-  backFace.src = "/card - back.svg";
-  backFace.className = "card-flyer-face card-flyer-back";
+    const inner = document.createElement("div");
+    inner.className = "card-flyer-inner";
+    inner.style.transition = "transform 0.25s ease-in-out";
+    inner.style.transform = "rotateY(0deg)";
 
-  const frontFace = cardEl.cloneNode(true);
-  frontFace.className = "card-flyer-face card-flyer-front";
-  frontFace.style.cssText = "";
+    const backFace = document.createElement("img");
+    backFace.src = "/card - back.svg";
+    backFace.className = "card-flyer-face card-flyer-back";
 
-  inner.appendChild(backFace);
-  inner.appendChild(frontFace);
-  flyer.appendChild(inner);
-  document.body.appendChild(flyer);
+    const frontFace = cardEl.cloneNode(true);
+    frontFace.className = "card-flyer-face card-flyer-front";
+    frontFace.style.cssText = "";
 
-  flyer.getBoundingClientRect();
-  const flyDuration = 250;
-  flyer.style.transition = `left ${flyDuration}ms ease-out, top ${flyDuration}ms ease-out, width ${flyDuration}ms ease-out`;
-  flyer.style.left = cardRect.left + "px";
-  flyer.style.top = cardRect.top + "px";
-  flyer.style.width = cardRect.width + "px";
-  inner.style.transform = "rotateY(180deg)";
+    inner.appendChild(backFace);
+    inner.appendChild(frontFace);
+    flyer.appendChild(inner);
+    document.body.appendChild(flyer);
 
-  flyer.addEventListener("transitionend", () => {
-    cardEl.style.visibility = "";
-    flyer.remove();
-  }, { once: true });
+    flyer.getBoundingClientRect();
+    const flyDuration = 250;
+    flyer.style.transition = `left ${flyDuration}ms ease-out, top ${flyDuration}ms ease-out, width ${flyDuration}ms ease-out`;
+    flyer.style.left = cardRect.left + "px";
+    flyer.style.top = cardRect.top + "px";
+    flyer.style.width = cardRect.width + "px";
+    inner.style.transform = "rotateY(180deg)";
+
+    flyer.addEventListener("transitionend", () => {
+      cardEl.style.visibility = "";
+      flyer.remove();
+    }, { once: true });
+  });
 }
 
 /**
