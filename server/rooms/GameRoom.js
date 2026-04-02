@@ -118,7 +118,7 @@ class GameRoom extends Room {
     return this.prevCell[cellId];
   }
 
-  _resolveShell(thrower, throwerClient, targetCellId) {
+  _resolveShell(thrower, throwerClient, targetCellId, shellType = "green_shell") {
     const occupants = this._cellOccupants(targetCellId);
 
     // Priority 1: hit a player (excluding thrower), randomly chosen
@@ -130,7 +130,7 @@ class GameRoom extends Room {
       if (mustDiscard > 0) {
         hitPlayer.pendingDiscard = mustDiscard;
         this._sendToPlayer(hitPlayerId, "discardHit", {
-          source: "green_shell",
+          source: shellType,
           mustDiscard,
           ...this._cardState(hitPlayer),
         });
@@ -139,7 +139,7 @@ class GameRoom extends Room {
         playerId: thrower.playerId,
         fromCellId: thrower.cellId,
         toCellId: targetCellId,
-        shellType: "green_shell",
+        shellType,
         hit: "player",
         hitPlayerId,
       });
@@ -154,7 +154,7 @@ class GameRoom extends Room {
         playerId: thrower.playerId,
         fromCellId: thrower.cellId,
         toCellId: targetCellId,
-        shellType: "green_shell",
+        shellType,
         hit: "banana",
       });
       this._syncState();
@@ -168,20 +168,20 @@ class GameRoom extends Room {
         playerId: thrower.playerId,
         fromCellId: thrower.cellId,
         toCellId: targetCellId,
-        shellType: "green_shell",
+        shellType,
         hit: "green_shell",
       });
       this._syncState();
       return;
     }
 
-    // Nothing to hit — shell stays on cell
+    // Nothing to hit — shell stays on cell as a green shell
     this._addToCell(targetCellId, "green_shell");
     this.broadcast("shellThrown", {
       playerId: thrower.playerId,
       fromCellId: thrower.cellId,
       toCellId: targetCellId,
-      shellType: "green_shell",
+      shellType,
       hit: null,
     });
     this._syncState();
@@ -472,13 +472,13 @@ class GameRoom extends Room {
       const shellType = player.pendingShellType;
       player.pendingShellType = null;
 
-      if (shellType === "red_shell") {
+      if (shellType === "red_shell" && data.direction === "forward") {
         this._resolveRedShell(player, client, data.direction);
       } else {
         const targetCellId = data.direction === "forward"
           ? this.cells.get(player.cellId).next_cell
           : this._previousCell(player.cellId);
-        this._resolveShell(player, client, targetCellId);
+        this._resolveShell(player, client, targetCellId, shellType);
       }
 
       if (player.pendingItems.length > 0) {
