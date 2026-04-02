@@ -143,6 +143,10 @@ function renderDebugModal(state) {
     pForm.appendChild(labeledField("Lap", lapInput));
     const coinsInput = numInput(p.coins, 0);
     pForm.appendChild(labeledField("Coins", coinsInput));
+    const rankInput = numInput(p.rank);
+    rankInput.readOnly = true;
+    rankInput.classList.add("debug-readonly");
+    pForm.appendChild(labeledField("Rank", rankInput));
     const bananaDiscInput = numInput(p.pendingDiscard, 0);
     pForm.appendChild(labeledField("Pending discards", bananaDiscInput));
     const drawInput = numInput(p.drawCount);
@@ -208,7 +212,7 @@ function renderDebugModal(state) {
 
   // --- Ranking section ---
   const rankingSection = el("div", "debug-section");
-  rankingSection.appendChild(el("h3", "debug-section-title", "Ranking"));
+  rankingSection.appendChild(el("h3", "debug-section-title", "Final Ranking"));
   const currentRanking = state.ranking || [];
   const rankedIds = currentRanking.map((r) => r.playerId);
   const rankingList = el("div", "debug-ranking-list");

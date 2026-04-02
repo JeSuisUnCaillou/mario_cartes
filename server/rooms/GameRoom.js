@@ -483,6 +483,13 @@ class GameRoom extends Room {
   }
 
   _fullState() {
+    const liveRanks = this.phase === "playing"
+      ? computeLiveRanks(
+        Array.from(this.players.values()).map((p) => ({ playerId: p.playerId, cellId: p.cellId, lapCount: p.lapCount })),
+        this.ranking.map((pid, i) => ({ playerId: pid, finalRank: i + 1 })),
+        this.cells.size,
+      )
+      : new Map();
     const players = Array.from(this.players.values()).map((p) => ({
       playerId: p.playerId,
       name: p.name,
@@ -491,6 +498,7 @@ class GameRoom extends Room {
       ready: p.ready,
       coins: p.coins,
       lapCount: p.lapCount,
+      rank: liveRanks.get(p.playerId) || 0,
       pendingDiscard: p.pendingDiscard,
       pendingShellChoice: p.pendingShellChoice,
       handCount: p.hand.length,
