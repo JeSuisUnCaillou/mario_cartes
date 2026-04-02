@@ -1,7 +1,9 @@
-const fs = require("fs");
-const path = require("path");
-const yaml = require("js-yaml");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import yaml from "js-yaml";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const raw = yaml.load(fs.readFileSync(path.join(__dirname, "../../assets/decks.yaml"), "utf8"));
 
 // Parse "6x coin banana" → 6 copies of ["coin", "banana"]
@@ -26,4 +28,4 @@ const RIVER_DEFS = [raw.river_1, raw.river_2, raw.river_3].map((river) => ({
   cards: parseCardLines(river.deck || []),
 }));
 
-module.exports = { STARTING_DECK, RIVER_DEFS };
+export { STARTING_DECK, RIVER_DEFS };

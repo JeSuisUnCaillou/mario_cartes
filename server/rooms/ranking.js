@@ -27,4 +27,4 @@ function computeLiveRanks(players, finishedRanks, cellCount) {
   return ranks;
 }
 
-module.exports = { computeLiveRanks };
+export { computeLiveRanks };

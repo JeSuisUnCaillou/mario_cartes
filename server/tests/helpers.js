@@ -1,12 +1,7 @@
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-
-const express = require("express");
-const { createServer } = require("http");
-const { Server, matchMaker } = require("colyseus");
-const { WebSocketTransport } = require("@colyseus/ws-transport");
-const { Client } = require("colyseus.js");
-const { GameRoom } = require("../rooms/GameRoom");
+import express from "express";
+import { Server, matchMaker } from "colyseus";
+import { Client } from "@colyseus/sdk";
+import { GameRoom } from "../rooms/GameRoom.js";
 
 // "players", "cellOccupants", "gameState" are synthesized from schema state (not broadcast messages)
 const BUFFERED_TYPES = ["players", "cellOccupants", "gameState", "cardsDrawn", "gameAlreadyStarted", "kicked", "cardPlayed", "discardHit", "cardDiscarded", "cardBought", "shellThrown", "itemHitBoard", "_debugState"];
@@ -94,43 +89,41 @@ function bufferMessages(room) {
 }
 
 export async function startServer() {
-  const app = express();
-  app.use(express.json());
-
-  const httpServer = createServer(app);
   const gameServer = new Server({
-    transport: new WebSocketTransport({ server: httpServer }),
+    greet: false,
+    express: (app) => {
+      app.use(express.json());
+
+      app.get("/create", async (req, res) => {
+        const room = await matchMaker.createRoom("game", {});
+        res.json({ id: room.roomId });
+      });
+
+      app.post("/create", async (req, res) => {
+        const room = await matchMaker.createRoom("game", req.body || {});
+        res.json({ id: room.roomId });
+      });
+
+      app.get("/find-or-create/:gameId", async (req, res) => {
+        const { gameId } = req.params;
+        const rooms = await matchMaker.query({ roomId: gameId });
+        if (rooms.length > 0) {
+          return res.json({ id: gameId });
+        }
+        const room = await matchMaker.createRoom("game", { _roomId: gameId });
+        res.json({ id: room.roomId });
+      });
+    },
   });
 
   gameServer.define("game", GameRoom);
 
-  app.get("/create", async (req, res) => {
-    const room = await matchMaker.createRoom("game", {});
-    res.json({ id: room.roomId });
-  });
-
-  app.post("/create", async (req, res) => {
-    const room = await matchMaker.createRoom("game", req.body || {});
-    res.json({ id: room.roomId });
-  });
-
-  app.get("/find-or-create/:gameId", async (req, res) => {
-    const { gameId } = req.params;
-    const rooms = await matchMaker.query({ roomId: gameId });
-    if (rooms.length > 0) {
-      return res.json({ id: gameId });
-    }
-    const room = await matchMaker.createRoom("game", { _roomId: gameId });
-    res.json({ id: room.roomId });
-  });
-
-  await new Promise((resolve) => httpServer.listen(0, resolve));
-  const port = httpServer.address().port;
+  await gameServer.listen(0);
+  const port = gameServer.transport.server.address().port;
   const baseUrl = `http://localhost:${port}`;
 
   async function cleanup() {
     await gameServer.gracefullyShutdown(false);
-    await new Promise((resolve) => httpServer.close(resolve));
   }
 
   return { baseUrl, cleanup };

@@ -4,4 +4,4 @@ function canBuyFromRiver(rank, riverCount, riverId) {
   return riverId < rank;
 }
 
-module.exports = { canBuyFromRiver };
+export { canBuyFromRiver };

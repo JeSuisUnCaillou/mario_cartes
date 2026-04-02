@@ -1,4 +1,4 @@
-import { Client } from "colyseus.js";
+import { Client } from "@colyseus/sdk";
 import { isPointInRect, splitDrawBatches, initialDrawPileCount, normalizeName } from "./player.functions.js";
 import {
   ensureCardElements, getCardElement, spawnThrowAnimation,

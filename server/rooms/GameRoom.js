@@ -1,18 +1,20 @@
-const { Room } = require("colyseus");
-const { randomUUID } = require("crypto");
-const path = require("path");
-const { MapSchema, ArraySchema } = require("@colyseus/schema");
-const { STARTING_DECK, RIVER_DEFS } = require("./decks");
-const { computeLiveRanks } = require("./ranking");
-const { canBuyFromRiver } = require("./riverRules");
-const {
+import { Room } from "colyseus";
+import { randomUUID } from "crypto";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { MapSchema, ArraySchema } from "@colyseus/schema";
+import { STARTING_DECK, RIVER_DEFS } from "./decks.js";
+import { computeLiveRanks } from "./ranking.js";
+import { canBuyFromRiver } from "./riverRules.js";
+import {
   PlayerSchema,
   RankEntrySchema,
   RiverSlotSchema,
   RiverSchema,
   CellOccupantsSchema,
   GameState,
-} = require("./schema");
+} from "./schema.js";
 
 const DISPOSE_DELAY_MS = 10 * 60 * 1000; // 10 minutes
 const PATCH_DELAY_MS = 60; // Delay between async steps to guarantee separate schema patches (> patchRate 50ms)
@@ -304,7 +306,8 @@ class GameRoom extends Room {
     this.state.rivers = new ArraySchema();
     this.state.cellOccupants = new MapSchema();
 
-    const cellsData = require(path.join(__dirname, "../../assets/racetrack_0_cells.json"));
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const cellsData = JSON.parse(fs.readFileSync(path.join(__dirname, "../../assets/racetrack_0_cells.json"), "utf8"));
     this.cells = new Map(cellsData.map((cell) => [cell.id, cell]));
     this.prevCell = {};
     for (const cell of cellsData) {
@@ -1074,4 +1077,4 @@ class GameRoom extends Room {
   }
 }
 
-module.exports = { GameRoom };
+export { GameRoom };

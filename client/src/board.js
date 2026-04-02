@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { Client } from "colyseus.js";
+import { Client } from "@colyseus/sdk";
 import QRCode from "qrcode";
 import { bananaCounts, shellCounts, redShellCounts, permacoinCells } from "./board.functions.js";
 import { renderRivers as renderRiverRows } from "./river.js";

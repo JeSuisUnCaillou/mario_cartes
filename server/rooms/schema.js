@@ -1,4 +1,4 @@
-const { Schema, defineTypes, MapSchema, ArraySchema } = require("@colyseus/schema");
+import { Schema, defineTypes, MapSchema, ArraySchema } from "@colyseus/schema";
 
 class PlayerSchema extends Schema {}
 defineTypes(PlayerSchema, {
@@ -52,7 +52,7 @@ defineTypes(GameState, {
   cellOccupants: { map: CellOccupantsSchema },
 });
 
-module.exports = {
+export {
   PlayerSchema,
   RankEntrySchema,
   RiverSlotSchema,
