@@ -618,6 +618,12 @@ export function initBoard(gameId) {
           this._processNextCellOccupants();
         }
       });
+      room.onMessage("permanentCoinPickup", (data) => {
+        this._cellOccupantsQueue.push({ _permanentCoinPickup: data });
+        if (!this._processingQueue) {
+          this._processNextCellOccupants();
+        }
+      });
       room.onMessage("_debugState", (data) => {
         onDebugState(data);
       });
@@ -638,7 +644,31 @@ export function initBoard(gameId) {
         const travelTime = pathLen > 1 ? pathLen * 200 : 400;
         this.animateShellThrow(entry._shellThrown);
         this.time.delayedCall(travelTime + 1000, () => this._processNextCellOccupants());
+      } else if (entry._permanentCoinPickup) {
+        this.animatePermacoinPickup(entry._permanentCoinPickup.cellId);
+        this.time.delayedCall(1000, () => this._processNextCellOccupants());
       }
+    }
+
+    animatePermacoinPickup(cellId) {
+      const sprite = this.permacoinSprites.get(cellId);
+      if (!sprite) return;
+      const origY = sprite.y;
+      const cellW = this.track.displayWidth / 5;
+      const jumpHeight = cellW / 3;
+      sprite.setDepth(10);
+      this.tweens.add({
+        targets: sprite,
+        y: origY - jumpHeight,
+        angle: 720,
+        duration: 500,
+        ease: "Power2",
+        yoyo: true,
+        onComplete: () => {
+          sprite.setDepth(0);
+          sprite.setAngle(0);
+        },
+      });
     }
 
     updateCellOccupants(cellOccupants) {
