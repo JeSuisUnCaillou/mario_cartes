@@ -68,6 +68,7 @@ class GameRoom extends Room {
       discardTopCard: dp.length > 0 ? dp[dp.length - 1] : null,
       pendingDiscard: player.pendingDiscard,
       pendingShellChoice: player.pendingShellChoice,
+      pendingShellType: player.pendingShellType,
       coins: player.coins,
       deck: [...player.hand, ...player.drawPile, ...player.discardPile],
     };
@@ -137,6 +138,7 @@ class GameRoom extends Room {
         playerId: thrower.playerId,
         fromCellId: thrower.cellId,
         toCellId: targetCellId,
+        shellType: "green_shell",
         hit: "player",
         hitPlayerId,
       });
@@ -151,6 +153,7 @@ class GameRoom extends Room {
         playerId: thrower.playerId,
         fromCellId: thrower.cellId,
         toCellId: targetCellId,
+        shellType: "green_shell",
         hit: "banana",
       });
       this._syncState();
@@ -164,6 +167,7 @@ class GameRoom extends Room {
         playerId: thrower.playerId,
         fromCellId: thrower.cellId,
         toCellId: targetCellId,
+        shellType: "green_shell",
         hit: "green_shell",
       });
       this._syncState();
@@ -176,9 +180,85 @@ class GameRoom extends Room {
       playerId: thrower.playerId,
       fromCellId: thrower.cellId,
       toCellId: targetCellId,
+      shellType: "green_shell",
       hit: null,
     });
     this._syncState();
+  }
+
+  _resolveRedShell(thrower, throwerClient, direction) {
+    const path = [];
+    let currentCellId = thrower.cellId;
+    const totalCells = this.cells.size;
+
+    for (let step = 0; step < totalCells; step++) {
+      currentCellId = direction === "forward"
+        ? this.cells.get(currentCellId).next_cell
+        : this._previousCell(currentCellId);
+      path.push(currentCellId);
+
+      const occupants = this._cellOccupants(currentCellId);
+      const isLastStep = step === totalCells - 1;
+
+      // Priority 1: hit a player (exclude thrower unless last step)
+      const playerIds = occupants.filter(
+        (e) => e !== "banana" && e !== "green_shell" && (isLastStep || e !== thrower.playerId),
+      );
+      if (playerIds.length > 0) {
+        const hitPlayerId = playerIds[Math.floor(Math.random() * playerIds.length)];
+        const hitPlayer = this.players.get(hitPlayerId);
+        const mustDiscard = Math.min(1, hitPlayer.hand.length);
+        if (mustDiscard > 0) {
+          hitPlayer.pendingDiscard = mustDiscard;
+          this._sendToPlayer(hitPlayerId, "discardHit", {
+            source: "red_shell",
+            mustDiscard,
+            ...this._cardState(hitPlayer),
+          });
+        }
+        this.broadcast("shellThrown", {
+          playerId: thrower.playerId,
+          fromCellId: thrower.cellId,
+          toCellId: currentCellId,
+          shellType: "red_shell",
+          path,
+          hit: "player",
+          hitPlayerId,
+        });
+        this._syncState();
+        return;
+      }
+
+      // Priority 2: hit a banana
+      if (this._bananasOnCell(currentCellId) > 0) {
+        this._removeFromCell(currentCellId, "banana");
+        this.broadcast("shellThrown", {
+          playerId: thrower.playerId,
+          fromCellId: thrower.cellId,
+          toCellId: currentCellId,
+          shellType: "red_shell",
+          path,
+          hit: "banana",
+        });
+        this._syncState();
+        return;
+      }
+
+      // Priority 3: hit a green shell
+      if (this._greenShellsOnCell(currentCellId) > 0) {
+        this._removeFromCell(currentCellId, "green_shell");
+        this.broadcast("shellThrown", {
+          playerId: thrower.playerId,
+          fromCellId: thrower.cellId,
+          toCellId: currentCellId,
+          shellType: "red_shell",
+          path,
+          hit: "green_shell",
+        });
+        this._syncState();
+        return;
+      }
+    }
   }
 
   onCreate(options) {
@@ -388,11 +468,17 @@ class GameRoom extends Room {
       if (data.direction !== "forward" && data.direction !== "backward") return;
 
       player.pendingShellChoice = false;
-      const targetCellId = data.direction === "forward"
-        ? this.cells.get(player.cellId).next_cell
-        : this._previousCell(player.cellId);
+      const shellType = player.pendingShellType;
+      player.pendingShellType = null;
 
-      this._resolveShell(player, client, targetCellId);
+      if (shellType === "red_shell") {
+        this._resolveRedShell(player, client, data.direction);
+      } else {
+        const targetCellId = data.direction === "forward"
+          ? this.cells.get(player.cellId).next_cell
+          : this._previousCell(player.cellId);
+        this._resolveShell(player, client, targetCellId);
+      }
 
       if (player.pendingItems.length > 0) {
         this._processNextItem(player);
@@ -813,8 +899,9 @@ class GameRoom extends Room {
       this._resolveBananaStep(player);
     } else if (item === "coin") {
       this._resolveCoinStep(player);
-    } else if (item === "green_shell") {
+    } else if (item === "green_shell" || item === "red_shell") {
       player.pendingShellChoice = true;
+      player.pendingShellType = item;
       this._sendToPlayer(player.playerId, "cardPlayed", { ...this._cardState(player) });
       this._syncState();
       return;
