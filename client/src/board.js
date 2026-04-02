@@ -405,6 +405,7 @@ export function initBoard(gameId) {
       this.load.svg("helmet", "/helmet.svg", { width: 64, height: 64 });
       this.load.svg("banana", "/banana.svg", { width: 128, height: 128 });
       this.load.svg("green_shell", "/green_shell.svg", { width: 128, height: 128 });
+      this.load.svg("red_shell", "/red_shell.svg", { width: 128, height: 128 });
       this.load.image("space", "/space.jpg");
     }
 
@@ -600,8 +601,10 @@ export function initBoard(gameId) {
         this.animateItemHit(entry._itemHit.playerId, entry._itemHit.cellId, entry._itemHit.type || "banana");
         this.time.delayedCall(1400, () => this._processNextCellOccupants());
       } else if (entry._shellThrown) {
+        const pathLen = entry._shellThrown.path ? entry._shellThrown.path.length : 0;
+        const travelTime = pathLen > 1 ? pathLen * 200 : 400;
         this.animateShellThrow(entry._shellThrown);
-        this.time.delayedCall(1400, () => this._processNextCellOccupants());
+        this.time.delayedCall(travelTime + 1000, () => this._processNextCellOccupants());
       }
     }
 
@@ -717,9 +720,10 @@ export function initBoard(gameId) {
       const to = this.cellPixelPos(data.toCellId);
       const cellW = this.track.displayWidth / 5;
       const itemSize = cellW / 4.5 * 0.9;
+      const textureKey = data.shellType || "green_shell";
 
       // Create shell sprite at thrower position
-      const shell = this.add.image(from.x, from.y, "green_shell");
+      const shell = this.add.image(from.x, from.y, textureKey);
       shell.setScale(itemSize / shell.width);
       shell.setDepth(10);
 
@@ -739,14 +743,29 @@ export function initBoard(gameId) {
         }
       }
 
-      // Tween shell to target cell
-      this.tweens.add({
-        targets: shell,
-        x: to.x,
-        y: to.y,
-        duration: 400,
-        ease: "Power2",
-        onComplete: () => {
+      // Build waypoints for the shell travel path
+      const waypoints = data.path && data.path.length > 1
+        ? data.path.map((cellId) => this.cellPixelPos(cellId))
+        : [to];
+      const perCell = waypoints.length > 1 ? 200 : 400;
+      const totalTravelTime = waypoints.length * perCell;
+
+      // Create a timeline that moves the shell through all waypoints smoothly
+      const events = waypoints.map((wp, i) => ({
+        at: i * perCell,
+        tween: {
+          targets: shell,
+          x: wp.x,
+          y: wp.y,
+          duration: perCell,
+          ease: "Linear",
+        },
+      }));
+
+      // Play hit effects after shell reaches destination
+      events.push({
+        at: totalTravelTime,
+        run: () => {
           if (data.hit === "player") {
             // Spin hit player's helmet and launch shell upward
             const helmet = this.helmets.get(data.hitPlayerId);
@@ -772,7 +791,7 @@ export function initBoard(gameId) {
             const launchY = to.y - this.scale.height * 0.6;
             const spread = Math.tan(7.5 * Math.PI / 180) * this.scale.height * 0.6;
 
-            // Shell launches upward-left
+            // Thrown shell launches upward-left
             this.tweens.add({
               targets: shell,
               x: to.x - spread,
@@ -800,16 +819,20 @@ export function initBoard(gameId) {
             }
 
             this.tweenCellLayout();
-          } else {
-            // No hit — shell stays. Add it to shellSprites so _syncItemSprites
-            // doesn't create a duplicate (which would cause a blink).
+          } else if (textureKey === "green_shell") {
+            // Green shell, no hit — shell stays on cell
             shell.setDepth(0);
             const existing = this.shellSprites.get(data.toCellId) || [];
             existing.push(shell);
             this.shellSprites.set(data.toCellId, existing);
+          } else {
+            // Red shell, no hit — should not happen, but clean up
+            shell.destroy();
           }
         },
       });
+
+      this.add.timeline(events).play();
     }
 
     cellPixelPos(cellId) {
