@@ -488,6 +488,20 @@ input {
   margin-left: 8px;
 }
 
+.player-rank-icon {
+  width: 1.4em;
+  height: 1.4em;
+  vertical-align: middle;
+  margin-right: 2px;
+}
+
+.finished-rank-icon {
+  width: 1.4em;
+  height: 1.4em;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
 .lobby-zone {
   flex: 1;
   display: flex;
@@ -936,6 +950,20 @@ input {
   color: #FFD700;
   text-align: center;
   margin-top: 4px;
+}
+
+.board-rank-icon {
+  width: 2vh;
+  height: 2vh;
+  vertical-align: middle;
+  margin-right: 2px;
+}
+
+.board-leaderboard-icon {
+  width: 3vh;
+  height: 3vh;
+  vertical-align: middle;
+  margin-right: 4px;
 }
 
 /* Leaderboard overlay (board screen) */
