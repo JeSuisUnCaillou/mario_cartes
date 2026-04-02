@@ -451,10 +451,11 @@ export function initBoard(gameId) {
       const trackW = Math.round(maxDim);
       const trackH = Math.round(maxDim / SVG_ASPECT);
       this.load.svg("racetrack", "/racetrack_0.svg", { width: trackW, height: trackH });
-      this.load.svg("banana", "/banana.svg", { width: 128, height: 128 });
-      this.load.svg("green_shell", "/green_shell.svg", { width: 128, height: 128 });
-      this.load.svg("red_shell", "/red_shell.svg", { width: 128, height: 128 });
-      this.load.svg("permacoin", "/permacoin.svg", { width: 128, height: 128 });
+      const spriteSize = Math.round(maxDim / 5 / 4.5 * 0.9);
+      this.load.svg("banana", "/banana.svg", { width: spriteSize, height: spriteSize });
+      this.load.svg("green_shell", "/green_shell.svg", { width: spriteSize, height: spriteSize });
+      this.load.svg("red_shell", "/red_shell.svg", { width: spriteSize, height: spriteSize });
+      this.load.svg("permacoin", "/permacoin.svg", { width: spriteSize, height: spriteSize });
 
       this.load.image("space", "/space.jpg");
     }
