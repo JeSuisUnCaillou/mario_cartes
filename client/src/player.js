@@ -34,6 +34,64 @@ function openBuyModal() {
   _openBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins, currentPlayerCount);
 }
 
+function showRulesModal() {
+  closeRulesModal();
+  const overlay = document.createElement("div");
+  overlay.className = "rules-modal";
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) closeRulesModal(); });
+
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "rules-modal-close";
+  closeBtn.textContent = "\u00D7";
+  closeBtn.addEventListener("click", closeRulesModal);
+  overlay.appendChild(closeBtn);
+
+  const content = document.createElement("div");
+  content.className = "rules-modal-content";
+
+  const title = document.createElement("h2");
+  title.className = "rules-modal-title";
+  title.textContent = "Rules";
+  content.appendChild(title);
+
+  const rules = [
+    { icon: "/coin.svg", title: "Coin", text: "Gain 1 coin until end of turn." },
+    { icon: "/permacoin.svg", title: "Permanent Coin", text: "A permanent coin regenerates at turn end." },
+    { icon: "/mushroom.svg", title: "Mushroom", text: "Move forward 1 cell (subject to dark mushrooms)." },
+    { icon: "/banana.svg", title: "Banana", text: "Drop a banana on your cell. Landing on a banana: discard 1 card." },
+    { icon: "/green_shell.svg", title: "Green Shell", text: "Throw to adjacent cell, forward or backward. Gives dark mushrooms to players, or destroys bananas and shells." },
+    { icon: "/red_shell.svg", title: "Red Shell", text: "Forward: travels until it hits something. Backward: One cell only. Same hit effects as green shell." },
+    { icon: "/dark_mushroom.svg", title: "Dark Mushroom", text: "Each cancels one mushroom, except the first mushroom of the turn." },
+  ];
+
+  for (const rule of rules) {
+    const row = document.createElement("div");
+    row.className = "rules-row";
+
+    const img = document.createElement("img");
+    img.src = rule.icon;
+    row.appendChild(img);
+
+    const textDiv = document.createElement("div");
+    textDiv.className = "rules-row-text";
+    const strong = document.createElement("strong");
+    strong.textContent = rule.title;
+    textDiv.appendChild(strong);
+    textDiv.appendChild(document.createTextNode(rule.text));
+    row.appendChild(textDiv);
+
+    content.appendChild(row);
+  }
+
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
+}
+
+function closeRulesModal() {
+  const modal = document.querySelector(".rules-modal");
+  if (modal) modal.remove();
+}
+
 function showShellModal(shellType) {
   closeShellModal();
   const overlay = document.createElement("div");
@@ -419,6 +477,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
   document.getElementById("app").innerHTML = `
     <div class="player-screen">
       <div class="top-zone">
+        <button id="rules-btn" class="rules-btn">?</button>
         <input id="player-name" class="name-edit-input" type="text" maxlength="3" value="${name}" autocomplete="off" />
         ${existingRoom ? "" : '<p id="status">Joining…</p>'}
       </div>
@@ -445,6 +504,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
       </div>
     </div>
   `;
+
+  document.getElementById("rules-btn").addEventListener("click", showRulesModal);
 
   const nameInput = document.getElementById("player-name");
   nameInput.addEventListener("input", () => {

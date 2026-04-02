@@ -595,6 +595,7 @@ input {
   text-align: center;
   padding: 12px;
   flex-shrink: 0;
+  position: relative;
 }
 
 .finished-rank-icon {
@@ -1542,4 +1543,83 @@ input {
 
 .shell-modal-btn:active {
   background: #1f6b1f;
+}
+
+/* Rules button */
+.rules-btn {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.1em;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 10;
+  padding: 0;
+  text-align: center;
+}
+
+/* Rules modal */
+.rules-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.rules-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.8em;
+  cursor: pointer;
+  padding: 8px 12px;
+  z-index: 101;
+}
+
+.rules-modal-content {
+  max-height: 80vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.rules-modal-title {
+  color: #fff;
+  font-size: 1.4em;
+  text-align: center;
+  margin: 0 0 8px 0;
+}
+
+.rules-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: #fff;
+  font-size: 0.95em;
+  line-height: 1.4;
+}
+
+.rules-row img {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.rules-row-text strong {
+  display: block;
+  margin-bottom: 2px;
 }
