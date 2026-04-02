@@ -982,6 +982,7 @@ input {
   gap: 16px;
   width: 100%;
   max-width: fit-content;
+  padding: 30px 15px;
 }
 
 /* Buy modal river overrides */
