@@ -406,6 +406,7 @@ export function initBoard(gameId) {
       this.bananaSprites = new Map();
       this.shellSprites = new Map();
       this.permacoinSprites = new Map();
+      this._inflightShells = new Map(); // cellId → shell sprite being animated to that cell
       this.latestCellOccupants = {};
       this._cellOccupantsQueue = [];
       this._processingQueue = false;
@@ -717,17 +718,23 @@ export function initBoard(gameId) {
       }
       // Create or destroy sprites to match counts
       for (const [cellId, count] of Object.entries(countsByCell)) {
-        const existing = spriteMap.get(Number(cellId)) || [];
+        const cid = Number(cellId);
+        // Skip cells with an in-flight shell animation — the animation
+        // sprite will be registered when it arrives
+        if (textureKey === "green_shell" && this._inflightShells.has(cid)) {
+          continue;
+        }
+        const existing = spriteMap.get(cid) || [];
         while (existing.length > count) {
           existing.pop().destroy();
         }
         while (existing.length < count) {
-          const center = this.cellPixelPos(Number(cellId));
+          const center = this.cellPixelPos(cid);
           const sprite = this.add.image(center.x, center.y, textureKey);
           sprite.setDepth(0);
           existing.push(sprite);
         }
-        spriteMap.set(Number(cellId), existing);
+        spriteMap.set(cid, existing);
       }
     }
 
@@ -835,35 +842,17 @@ export function initBoard(gameId) {
         }
       }
 
-      // For green shells that land on the cell (no hit), reuse the sprite
-      // that _syncItemSprites already created — move it to the thrower and
-      // tween it along the path to its grid slot. No separate animation sprite.
+      // For green shells that land on the cell (no hit), mark cell as
+      // in-flight so _syncItemSprites won't create a duplicate sprite.
+      // The animation sprite becomes the permanent one on arrival.
       if (!data.hit && textureKey === "green_shell") {
+        // Destroy any sprite _syncItemSprites already created
         const destSprites = this.shellSprites.get(data.toCellId) || [];
-        const landed = destSprites[destSprites.length - 1];
-        if (landed) {
-          landed.setPosition(from.x, from.y);
-          landed.setDepth(10);
-          const waypoints = data.path && data.path.length > 1
-            ? data.path.map((cellId) => this.cellPixelPos(cellId))
-            : [to];
-          const perCell = waypoints.length > 1 ? 200 : 400;
-          const totalTravelTime = waypoints.length * perCell;
-          const events = waypoints.map((wp, i) => ({
-            at: i * perCell,
-            tween: { targets: landed, x: wp.x, y: wp.y, duration: perCell, ease: "Linear" },
-          }));
-          events.push({
-            at: totalTravelTime,
-            run: () => {
-              landed.setDepth(0);
-              this.tweenCellLayout();
-            },
-          });
-          this.add.timeline(events).play();
-        }
-        shell.destroy();
-        return;
+        const synced = destSprites.pop();
+        if (synced) synced.destroy();
+        if (destSprites.length === 0) this.shellSprites.delete(data.toCellId);
+
+        this._inflightShells.set(data.toCellId, shell);
       }
 
       // Build waypoints for the shell travel path
@@ -941,6 +930,14 @@ export function initBoard(gameId) {
               });
             }
 
+            this.tweenCellLayout();
+          } else if (!data.hit && textureKey === "green_shell") {
+            // Green shell, no hit — shell stays on cell
+            shell.setDepth(0);
+            this._inflightShells.delete(data.toCellId);
+            const existing = this.shellSprites.get(data.toCellId) || [];
+            existing.push(shell);
+            this.shellSprites.set(data.toCellId, existing);
             this.tweenCellLayout();
           } else {
             // Red shell or other — clean up
