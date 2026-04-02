@@ -71,6 +71,8 @@ describe("Joining a room", () => {
       coins: 0,
       permanentCoins: 0,
       lapCount: 0,
+      slowCounters: 0,
+      hasMovedThisTurn: false,
       pendingShellChoice: false,
       finished: false,
       rank: 0,
@@ -2056,10 +2058,9 @@ describe("Green shell", () => {
     expect(thrown.hit).toBe("player");
     expect(thrown.hitPlayerId).toBe(passiveId);
 
-    // Passive player should receive discardHit
-    const discardHit = await waitForMessage(passiveRoom, "discardHit");
-    expect(discardHit.source).toBe("green_shell");
-    expect(discardHit.mustDiscard).toBe(1);
+    // Passive player should gain a slow counter
+    const players = await waitForMessage(board, "players", (ps) => ps.find((p) => p.playerId === passiveId)?.slowCounters === 1);
+    expect(players.find((p) => p.playerId === passiveId).slowCounters).toBe(1);
 
     room1.leave();
     room2.leave();
@@ -2148,14 +2149,13 @@ describe("Green shell", () => {
     room.send("playCard", { cardId: mushroom.id });
     await waitForMessage(room, "cardPlayed");
 
-    // Should receive discardHit with source green_shell
-    const discardHit = await waitForMessage(room, "discardHit");
-    expect(discardHit.source).toBe("green_shell");
-    expect(discardHit.mustDiscard).toBe(1);
-
     // Board should receive itemHitBoard with type green_shell
     const hit = await waitForMessage(board, "itemHitBoard", (h) => h.type === "green_shell");
     expect(hit.type).toBe("green_shell");
+
+    // Player should gain a slow counter instead of discarding
+    const players = await waitForMessage(board, "players", (ps) => ps[0]?.slowCounters === 1);
+    expect(players[0].slowCounters).toBe(1);
 
     room.leave();
     board.leave();
@@ -2219,10 +2219,9 @@ describe("Red shell", () => {
     expect(thrown.toCellId).toBe(5);
     expect(thrown.path).toEqual([2, 3, 4, 5]);
 
-    // Passive player should receive discardHit with source red_shell
-    const discardHit = await waitForMessage(passiveRoom, "discardHit");
-    expect(discardHit.source).toBe("red_shell");
-    expect(discardHit.mustDiscard).toBe(1);
+    // Passive player should gain a slow counter
+    const players = await waitForMessage(board, "players", (ps) => ps.find((p) => p.playerId === passiveId)?.slowCounters === 1);
+    expect(players.find((p) => p.playerId === passiveId).slowCounters).toBe(1);
 
     room1.leave();
     room2.leave();
@@ -2319,10 +2318,9 @@ describe("Red shell", () => {
     expect(thrown.hitPlayerId).toBe(playerId);
     expect(thrown.path).toHaveLength(14);
 
-    // Thrower should receive discardHit
-    const discardHit = await waitForMessage(room, "discardHit");
-    expect(discardHit.source).toBe("red_shell");
-    expect(discardHit.mustDiscard).toBe(1);
+    // Thrower should gain a slow counter
+    const players = await waitForMessage(board, "players", (ps) => ps.find((p) => p.playerId === playerId)?.slowCounters === 1);
+    expect(players.find((p) => p.playerId === playerId).slowCounters).toBe(1);
 
     room.leave();
     board.leave();

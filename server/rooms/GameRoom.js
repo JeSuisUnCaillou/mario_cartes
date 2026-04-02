@@ -136,15 +136,7 @@ class GameRoom extends Room {
     if (playerIds.length > 0) {
       const hitPlayerId = playerIds[Math.floor(Math.random() * playerIds.length)];
       const hitPlayer = this.players.get(hitPlayerId);
-      const mustDiscard = Math.min(1, hitPlayer.hand.length);
-      if (mustDiscard > 0) {
-        hitPlayer.pendingDiscard = mustDiscard;
-        this._sendToPlayer(hitPlayerId, "discardHit", {
-          source: shellType,
-          mustDiscard,
-          ...this._cardState(hitPlayer),
-        });
-      }
+      hitPlayer.slowCounters++;
       this.broadcast("shellThrown", {
         playerId: thrower.playerId,
         fromCellId: thrower.cellId,
@@ -221,15 +213,7 @@ class GameRoom extends Room {
       if (playerIds.length > 0) {
         const hitPlayerId = playerIds[Math.floor(Math.random() * playerIds.length)];
         const hitPlayer = this.players.get(hitPlayerId);
-        const mustDiscard = Math.min(1, hitPlayer.hand.length);
-        if (mustDiscard > 0) {
-          hitPlayer.pendingDiscard = mustDiscard;
-          this._sendToPlayer(hitPlayerId, "discardHit", {
-            source: "red_shell",
-            mustDiscard,
-            ...this._cardState(hitPlayer),
-          });
-        }
+        hitPlayer.slowCounters++;
         this.broadcast("shellThrown", {
           playerId: thrower.playerId,
           fromCellId: thrower.cellId,
@@ -964,17 +948,23 @@ class GameRoom extends Room {
         playerId: player.playerId,
         cellId: player.cellId,
       });
-      const mustDiscard = Math.min(1, player.hand.length);
-      if (mustDiscard > 0) {
-        player.pendingDiscard = mustDiscard;
-        this._sendToPlayer(player.playerId, "discardHit", {
-          source: hitType,
-          mustDiscard,
-          ...this._cardState(player),
-        });
-      }
-      this._syncState();
-      if (player.pendingDiscard === 0) {
+      if (hitType === "banana") {
+        const mustDiscard = Math.min(1, player.hand.length);
+        if (mustDiscard > 0) {
+          player.pendingDiscard = mustDiscard;
+          this._sendToPlayer(player.playerId, "discardHit", {
+            source: hitType,
+            mustDiscard,
+            ...this._cardState(player),
+          });
+        }
+        this._syncState();
+        if (player.pendingDiscard === 0) {
+          this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
+        }
+      } else {
+        player.slowCounters++;
+        this._syncState();
         this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
       }
     } else {
