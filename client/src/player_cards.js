@@ -10,6 +10,17 @@ const ITEM_ICONS = {
 
 const cardElements = new Map();
 
+export function updateCardMushroomIcons(useDark) {
+  const src = useDark ? "/dark_mushroom.svg" : "/mushroom.svg";
+  for (const [, el] of cardElements) {
+    const items = JSON.parse(el.dataset.items);
+    const icons = el.querySelectorAll(".card-item");
+    items.forEach((item, i) => {
+      if (item === "mushroom") icons[i].src = src;
+    });
+  }
+}
+
 export function createCardElement(card) {
   const container = document.createElement("div");
   container.className = "card";

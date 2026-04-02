@@ -3,7 +3,7 @@ import { isPointInRect, splitDrawBatches, initialDrawPileCount, normalizeName } 
 import {
   ensureCardElements, getCardElement, spawnThrowAnimation,
   animateShuffle, animateDrawCards, captureHandPositions, recomputeFan,
-  renderHand, renderPileContent, updatePileCount, updatePiles, updateCoinDisplay,
+  renderHand, renderPileContent, updatePileCount, updatePiles, updateCoinDisplay, updateCardMushroomIcons,
 } from "./player_cards.js";
 import { updateBuyButton as _updateBuyButton, openBuyModal as _openBuyModal, renderBuyModal, closeBuyModal } from "./player_buy.js";
 import { rankBadge } from "./rank.js";
@@ -21,6 +21,7 @@ let latestRivers = null;
 let currentCoins = 0;
 let currentPermanentCoins = 0;
 let currentSlowCounters = 0;
+let currentHasMovedThisTurn = false;
 let currentRank = 0;
 let pendingShellChoice = false;
 
@@ -569,6 +570,11 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
                 currentSlowCounters = me.slowCounters;
                 updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton, currentSlowCounters);
               }
+              if (gamePhase === "playing" && (me.hasMovedThisTurn !== currentHasMovedThisTurn || me.slowCounters !== currentSlowCounters)) {
+                currentHasMovedThisTurn = me.hasMovedThisTurn;
+                currentSlowCounters = me.slowCounters;
+                updateCardMushroomIcons(currentHasMovedThisTurn && currentSlowCounters > 0);
+              }
               if (gamePhase === "playing") {
                 currentRank = me.rank;
               }
@@ -648,7 +654,9 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         currentCoins = data.coins || 0;
         currentPermanentCoins = data.permanentCoins || 0;
         currentSlowCounters = data.slowCounters || 0;
+        currentHasMovedThisTurn = false;
         updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton, currentSlowCounters);
+        updateCardMushroomIcons(false);
         animating = false;
       });
 
