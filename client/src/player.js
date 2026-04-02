@@ -519,7 +519,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
                 finishedZone.style.display = "";
                 const ranking = [];
                 state.ranking.forEach((r) => {
-                  ranking.push({ playerId: r.playerId, name: r.name, rank: r.finalRank });
+                  ranking.push({ playerId: r.playerId, name: r.name, finalRank: r.finalRank });
                 });
                 renderFinishedZone(finishedZone, ranking, room, { showStartOver: false, myPlayerId });
               }
@@ -537,7 +537,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
               finishedZone.style.display = "";
               const ranking = [];
               state.ranking.forEach((r) => {
-                ranking.push({ playerId: r.playerId, name: r.name, rank: r.finalRank });
+                ranking.push({ playerId: r.playerId, name: r.name, finalRank: r.finalRank });
               });
               renderFinishedZone(finishedZone, ranking, room);
             }
@@ -594,7 +594,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
                   finishedZone.style.display = "";
                   const ranking = [];
                   state.ranking.forEach((r) => {
-                    ranking.push({ playerId: r.playerId, name: r.name, rank: r.finalRank });
+                    ranking.push({ playerId: r.playerId, name: r.name, finalRank: r.finalRank });
                   });
                   renderFinishedZone(finishedZone, ranking, room, { showStartOver: false, myPlayerId });
                 }
