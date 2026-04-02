@@ -19,6 +19,7 @@ let myPlayerId = null;
 let activePlayerId = null;
 let latestRivers = null;
 let currentCoins = 0;
+let currentRank = 0;
 let pendingShellChoice = false;
 
 function updateBuyButton() {
@@ -26,7 +27,7 @@ function updateBuyButton() {
 }
 
 function openBuyModal() {
-  _openBuyModal(currentRoom, latestRivers, currentCoins);
+  _openBuyModal(currentRoom, latestRivers, currentCoins, currentRank);
 }
 
 function showShellModal() {
@@ -542,7 +543,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
 
           updatePlayZone();
           updateBuyButton();
-          if (document.querySelector(".buy-modal")) renderBuyModal(currentRoom, latestRivers, currentCoins);
+          if (document.querySelector(".buy-modal")) renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank);
           gameStateDirty = false;
           riversDirty = false;
         }
@@ -561,6 +562,9 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
               if (gamePhase === "playing" && me.coins !== currentCoins) {
                 currentCoins = me.coins;
                 updateCoinDisplay(currentCoins, updateBuyButton);
+              }
+              if (gamePhase === "playing") {
+                currentRank = me.rank;
               }
               if (gamePhase === "playing" && me.finished) {
                 const gameZone = document.getElementById("game-zone");
@@ -828,7 +832,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
             });
           }
           // Re-render modal with updated rivers and coins
-          if (latestRivers) renderBuyModal(currentRoom, latestRivers, currentCoins);
+          if (latestRivers) renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank);
         }
       });
 

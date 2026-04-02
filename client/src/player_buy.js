@@ -1,4 +1,5 @@
 import { renderRivers } from "./river.js";
+import { rankBadge } from "./rank.js";
 
 export function updateBuyButton(activePlayerId, myPlayerId, latestRivers, blocked, openBuyModal) {
   const container = document.getElementById("buy-btn-container");
@@ -15,7 +16,7 @@ export function updateBuyButton(activePlayerId, myPlayerId, latestRivers, blocke
   }
 }
 
-export function openBuyModal(currentRoom, latestRivers, currentCoins) {
+export function openBuyModal(currentRoom, latestRivers, currentCoins, currentRank) {
   if (document.querySelector(".buy-modal")) return;
   const overlay = document.createElement("div");
   overlay.className = "buy-modal";
@@ -34,10 +35,10 @@ export function openBuyModal(currentRoom, latestRivers, currentCoins) {
   overlay.appendChild(content);
 
   document.body.appendChild(overlay);
-  renderBuyModal(currentRoom, latestRivers, currentCoins);
+  renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank);
 }
 
-export function renderBuyModal(currentRoom, latestRivers, currentCoins) {
+export function renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank) {
   const content = document.querySelector(".buy-modal-content");
   if (!content || !latestRivers) return;
 
@@ -60,6 +61,14 @@ export function renderBuyModal(currentRoom, latestRivers, currentCoins) {
     coinBar.appendChild(img);
   }
   content.prepend(coinBar);
+
+  // Rank display on top of coins
+  if (currentRank > 0) {
+    const rankBar = document.createElement("div");
+    rankBar.className = "buy-modal-rank";
+    rankBar.innerHTML = rankBadge(currentRank, "buy-modal-rank-icon");
+    content.prepend(rankBar);
+  }
 }
 
 export function closeBuyModal() {
