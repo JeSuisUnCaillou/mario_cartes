@@ -3,6 +3,7 @@ import { Client, Callbacks } from "@colyseus/sdk";
 import QRCode from "qrcode";
 import { bananaCounts, shellCounts, redShellCounts, permacoinCells } from "./board.functions.js";
 import { renderRivers as renderRiverRows } from "./river.js";
+import { loadHelmetTexture, helmetDataUrl } from "./helmet.js";
 import { isDebugModalOpen, setDebugRoom, onDebugState, setupDebugKeyboard } from "./board_debug.js";
 import { rankBadge } from "./rank.js";
 
@@ -41,6 +42,7 @@ function schemaPlayersToArray(state) {
     players.push({
       playerId,
       name: p.name,
+      color: p.color,
       cellId: p.cellId,
       connected: p.connected,
       handCount: p.handCount,
@@ -222,6 +224,12 @@ function updateInfoBarPlayers(players) {
 
     el.classList.toggle("disconnected", !p.connected);
     el.querySelector(".board-player-name").textContent = p.name || "???";
+
+    const helmetImg = el.querySelector(".board-player-helmet");
+    if (p.color && helmetImg.dataset.color !== p.color) {
+      helmetImg.dataset.color = p.color;
+      helmetDataUrl(p.color).then((url) => { helmetImg.src = url; });
+    }
 
     const leftEl = el.querySelector(".board-player-left");
     const rightEl = el.querySelector(".board-player-right");
@@ -443,7 +451,6 @@ export function initBoard(gameId) {
       const trackW = Math.round(maxDim);
       const trackH = Math.round(maxDim / SVG_ASPECT);
       this.load.svg("racetrack", "/racetrack_0.svg", { width: trackW, height: trackH });
-      this.load.svg("helmet", "/helmet.svg", { width: 64, height: 64 });
       this.load.svg("banana", "/banana.svg", { width: 128, height: 128 });
       this.load.svg("green_shell", "/green_shell.svg", { width: 128, height: 128 });
       this.load.svg("red_shell", "/red_shell.svg", { width: 128, height: 128 });
@@ -1095,7 +1102,12 @@ export function initBoard(gameId) {
               });
             }
           } else {
-            const helmet = this.add.image(x, y, "helmet");
+            const textureKey = `helmet_${p.color}`;
+            if (!this.textures.exists(textureKey)) {
+              loadHelmetTexture(this, p.color).then(() => this.updatePlayers(this.latestPlayers));
+              return;
+            }
+            const helmet = this.add.image(x, y, textureKey);
             helmet.setScale(helmetDisplaySize / helmet.width);
             helmet.setAlpha(alpha);
             helmet.setDepth(5);

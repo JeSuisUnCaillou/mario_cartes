@@ -7,6 +7,7 @@ import {
 } from "./player_cards.js";
 import { updateBuyButton as _updateBuyButton, openBuyModal as _openBuyModal, renderBuyModal, closeBuyModal } from "./player_buy.js";
 import { rankBadge } from "./rank.js";
+import { helmetDataUrl } from "./helmet.js";
 
 let playing = false;
 let animating = false;
@@ -478,6 +479,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
     <div class="player-screen">
       <div class="top-zone">
         <button id="rules-btn" class="rules-btn">?</button>
+        <img id="player-helmet" class="player-helmet" src="/helmet.svg" />
         <input id="player-name" class="name-edit-input" type="text" maxlength="3" value="${name}" autocomplete="off" />
         ${existingRoom ? "" : '<p id="status">Joining…</p>'}
       </div>
@@ -623,6 +625,11 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           if (myPlayerId) {
             const me = state.players.get(myPlayerId);
             if (me) {
+              const helmetEl = document.getElementById("player-helmet");
+              if (helmetEl && me.color && helmetEl.dataset.color !== me.color) {
+                helmetEl.dataset.color = me.color;
+                helmetDataUrl(me.color).then((url) => { helmetEl.src = url; });
+              }
               if (gamePhase === "lobby" && me.ready !== isReady) {
                 isReady = me.ready;
                 renderLobby(room);
