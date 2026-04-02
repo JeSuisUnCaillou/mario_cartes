@@ -835,6 +835,21 @@ export function initBoard(gameId) {
         }
       }
 
+      // For shells that will land on the target cell (no hit), remove the
+      // synced sprite so it doesn't appear before the animation arrives.
+      if (!data.hit && textureKey === "green_shell") {
+        const destSprites = this.shellSprites.get(data.toCellId) || [];
+        const synced = destSprites.pop();
+        if (synced) synced.destroy();
+        if (destSprites.length === 0) this.shellSprites.delete(data.toCellId);
+
+        const occupants = this.latestCellOccupants[data.toCellId];
+        if (occupants) {
+          const idx = occupants.lastIndexOf("green_shell");
+          if (idx !== -1) occupants.splice(idx, 1);
+        }
+      }
+
       // Build waypoints for the shell travel path
       const waypoints = data.path && data.path.length > 1
         ? data.path.map((cellId) => this.cellPixelPos(cellId))
@@ -917,6 +932,12 @@ export function initBoard(gameId) {
             const existing = this.shellSprites.get(data.toCellId) || [];
             existing.push(shell);
             this.shellSprites.set(data.toCellId, existing);
+
+            // Restore occupant entry removed at animation start
+            if (!this.latestCellOccupants[data.toCellId]) this.latestCellOccupants[data.toCellId] = [];
+            this.latestCellOccupants[data.toCellId].push("green_shell");
+
+            this.tweenCellLayout();
           } else {
             // Red shell, no hit — should not happen, but clean up
             shell.destroy();
