@@ -154,6 +154,11 @@ function renderRankIndicators(riverId, riverCount) {
       wrapper.className = "river-rank-denied";
     }
     wrapper.appendChild(icon);
+    const label = document.createElement("span");
+    label.className = "river-rank-label";
+    const suffixes = ["st", "nd", "rd"];
+    label.textContent = rank + (suffixes[rank - 1] || "th");
+    wrapper.appendChild(label);
     container.appendChild(wrapper);
   }
   return container;

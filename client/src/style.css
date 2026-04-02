@@ -368,8 +368,15 @@ html, body, #app {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  align-items: center;
+  align-items: flex-start;
   margin-top: 4px;
+}
+
+.river-rank-indicators > span {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
 }
 
 .river-rank-icon {
@@ -377,9 +384,19 @@ html, body, #app {
   height: 32px;
 }
 
+.river-rank-label {
+  color: #888888;
+  font-size: 0.75em;
+  font-weight: bold;
+}
+
 .river-rank-denied {
   position: relative;
   display: inline-flex;
+}
+
+.river-rank-denied .river-rank-label {
+  opacity: 0.4;
 }
 
 .river-rank-denied .river-rank-icon {
@@ -395,7 +412,6 @@ html, body, #app {
   right: -2px;
   height: 3px;
   background: #e33;
-  transform: rotate(-45deg);
 }
 
 /* Rivers in top bar: compact overrides for board */
