@@ -132,10 +132,13 @@ function createTopBar() {
   const bar = document.createElement("div");
   bar.className = "board-top-bar";
 
-  const title = document.createElement("div");
-  title.className = "board-title-name";
-  title.textContent = "Mario Cartes";
-  bar.appendChild(title);
+  const exitBtn = document.createElement("button");
+  exitBtn.className = "board-exit-btn";
+  exitBtn.textContent = "Exit";
+  exitBtn.addEventListener("click", () => {
+    window.location.href = "/";
+  });
+  bar.appendChild(exitBtn);
 
   const riversContainer = document.createElement("div");
   riversContainer.className = "board-rivers";

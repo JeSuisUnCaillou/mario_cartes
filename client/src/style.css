@@ -240,7 +240,7 @@ html, body, #app {
 }
 
 .board-top-bar {
-  height: calc(18vh + 30px);
+  min-height: calc(18vh + 30px);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -248,14 +248,25 @@ html, body, #app {
   justify-content: space-evenly;
   background: #111;
   box-sizing: border-box;
+  position: relative;
 }
 
-.board-title-name {
-  font-size: 2.5vh;
-  font-weight: bold;
+.board-exit-btn {
+  position: absolute;
+  top: 0.5vh;
+  right: 0.5vh;
+  background: transparent;
+  border: 1px solid #555;
+  color: #999;
+  font-size: 1.4vh;
+  padding: 0.3vh 0.8vh;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.board-exit-btn:hover {
   color: #fff;
-  letter-spacing: 0.1em;
-  margin: 15px;
+  border-color: #999;
 }
 
 /* Shared river styles (used by board and buy modal) */
@@ -448,6 +459,7 @@ html, body, #app {
 /* Rivers in top bar: compact overrides for board */
 .board-rivers {
   display: flex;
+  flex-wrap: wrap;
   gap: 1vh;
   width: 100%;
   align-items: center;
