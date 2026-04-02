@@ -598,16 +598,18 @@ export function initBoard(gameId) {
       room.state.rivers.onRemove(() => { riversDirty = true; });
 
       room.onStateChange((state) => {
+        // Process cellOccupants before players so grid slots are up-to-date
+        // when updatePlayers computes tween targets for moving helmets
+        if (cellOccupantsDirty) {
+          const cellOccupants = schemaCellOccupantsToObject(state);
+          this.updateCellOccupants(cellOccupants);
+          cellOccupantsDirty = false;
+        }
         if (playersDirty) {
           const players = schemaPlayersToArray(state);
           updateInfoBarPlayers(players);
           this.updatePlayers(players);
           playersDirty = false;
-        }
-        if (cellOccupantsDirty) {
-          const cellOccupants = schemaCellOccupantsToObject(state);
-          this.updateCellOccupants(cellOccupants);
-          cellOccupantsDirty = false;
         }
         if (gameStateDirty || riversDirty) {
           const gameState = schemaToGameState(state);
