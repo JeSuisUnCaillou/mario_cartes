@@ -252,6 +252,9 @@ class GameRoom extends Room {
       if (data.removeShell) {
         this._removeFromCell(data.removeShell.cellId, "green_shell");
       }
+      if (data.setRanking) {
+        this.ranking = data.setRanking.filter((id) => this.players.has(id));
+      }
       if (data.setRiverSlot && this.rivers) {
         const river = this.rivers.find((r) => r.id === data.setRiverSlot.riverId);
         if (river && data.setRiverSlot.slotIndex >= 0 && data.setRiverSlot.slotIndex < 3) {

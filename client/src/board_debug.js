@@ -206,6 +206,53 @@ function renderDebugModal(state) {
   }
   content.appendChild(playersSection);
 
+  // --- Ranking section ---
+  const rankingSection = el("div", "debug-section");
+  rankingSection.appendChild(el("h3", "debug-section-title", "Ranking"));
+  const currentRanking = state.ranking || [];
+  const rankedIds = currentRanking.map((r) => r.playerId);
+  const rankingList = el("div", "debug-ranking-list");
+
+  function rebuildRankingUI() {
+    rankingList.innerHTML = "";
+    for (let i = 0; i < rankedIds.length; i++) {
+      const p = state.players.find((pl) => pl.playerId === rankedIds[i]);
+      const row = el("div", "debug-ranking-row");
+      row.textContent = `${i + 1}. ${p ? p.name : rankedIds[i].slice(0, 8)}`;
+      const removeBtn = el("button", "debug-small-btn debug-remove-btn", "\u2715");
+      removeBtn.addEventListener("click", () => {
+        rankedIds.splice(i, 1);
+        rebuildRankingUI();
+        boardRoom.send("_debugSetGameState", { setRanking: rankedIds });
+      });
+      row.appendChild(removeBtn);
+      rankingList.appendChild(row);
+    }
+  }
+  rebuildRankingUI();
+  rankingSection.appendChild(rankingList);
+
+  const unranked = state.players.filter((p) => !rankedIds.includes(p.playerId));
+  if (unranked.length > 0) {
+    const addRow = el("div", "debug-ranking-add");
+    const addSelect = el("select", "debug-input");
+    for (const p of unranked) {
+      const opt = document.createElement("option");
+      opt.value = p.playerId;
+      opt.textContent = p.name || p.playerId.slice(0, 8);
+      addSelect.appendChild(opt);
+    }
+    addRow.appendChild(addSelect);
+    const addBtn = el("button", "debug-small-btn debug-add-btn", "+");
+    addBtn.addEventListener("click", () => {
+      rankedIds.push(addSelect.value);
+      boardRoom.send("_debugSetGameState", { setRanking: rankedIds });
+    });
+    addRow.appendChild(addBtn);
+    rankingSection.appendChild(addRow);
+  }
+  content.appendChild(rankingSection);
+
   // --- Circuit section ---
   const circuitSection = el("div", "debug-section");
   circuitSection.appendChild(el("h3", "debug-section-title", "Circuit"));

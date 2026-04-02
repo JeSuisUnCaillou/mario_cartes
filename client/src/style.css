@@ -1215,6 +1215,20 @@ input {
   margin-bottom: 2px;
 }
 
+.debug-ranking-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.debug-ranking-add {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
 .debug-cell-bananas {
   color: #e8a317;
   margin-bottom: 2px;
