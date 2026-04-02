@@ -1024,6 +1024,7 @@ class GameRoom extends Room {
 
   _endTurnAndAdvance(player) {
     player.coins = player.permanentCoins;
+    player.slowCounters = 0;
     player.pendingItems = [];
     // Discard remaining hand cards
     if (player.hand.length > 0) {
@@ -1061,6 +1062,7 @@ class GameRoom extends Room {
 
   _endTurnForFinishedPlayer(player) {
     player.coins = player.permanentCoins;
+    player.slowCounters = 0;
     player.pendingItems = [];
     if (player.hand.length > 0) {
       player.discardPile.push(...player.hand.splice(0));

@@ -55,7 +55,7 @@ Each card contains 1–3 items resolved sequentially from top to bottom:
 - **Banana**: Drop a banana on your cell. Landing on a banana: discard 1 card.
 - **Green shell**: Throw to adjacent cell, forward or backward. Gives dark mushrooms to players, or destroys bananas and shells.
 - **Red shell**: Forward: travels until it hits something. Backward: one cell only. Same hit effects as green shell.
-- **Dark mushroom**: Each cancels one mushroom, except the first mushroom of the turn.
+- **Dark mushroom**: Each cancels one mushroom, except the first mushroom of the turn. Reset at end of turn.
 
 ### Turns
 - One player is active at a time. The active player can play cards, buy river cards, or end their turn.
