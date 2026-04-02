@@ -425,6 +425,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
     <div class="player-screen">
       <div class="top-zone">
         <input id="player-name" class="name-edit-input" type="text" maxlength="3" value="${name}" autocomplete="off" />
+        <span id="player-rank" class="player-rank"></span>
         ${existingRoom ? "" : '<p id="status">Joining…</p>'}
       </div>
       <div id="lobby-zone" class="lobby-zone"></div>
@@ -547,6 +548,19 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
             if (lobbyZone) {
               lobbyZone.style.display = "";
               renderLobby(room);
+            }
+          }
+
+          // Update live rank display
+          const rankEl = document.getElementById("player-rank");
+          if (rankEl) {
+            const me = myPlayerId ? state.players.get(myPlayerId) : null;
+            if (me && me.rank > 0 && state.phase === "playing") {
+              rankEl.textContent = ordinalSuffix(me.rank);
+              rankEl.style.display = "";
+            } else {
+              rankEl.textContent = "";
+              rankEl.style.display = "none";
             }
           }
 

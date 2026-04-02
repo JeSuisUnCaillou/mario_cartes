@@ -481,6 +481,13 @@ input {
   flex-shrink: 0;
 }
 
+.player-rank {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #FFD700;
+  margin-left: 8px;
+}
+
 .lobby-zone {
   flex: 1;
   display: flex;
