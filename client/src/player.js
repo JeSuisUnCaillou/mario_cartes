@@ -1,4 +1,4 @@
-import { Client } from "@colyseus/sdk";
+import { Client, Callbacks } from "@colyseus/sdk";
 import { isPointInRect, splitDrawBatches, initialDrawPileCount, normalizeName } from "./player.functions.js";
 import {
   ensureCardElements, getCardElement, spawnThrowAnimation,
@@ -460,22 +460,24 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
       let playersDirty = false;
       let riversDirty = false;
 
-      room.state.listen("phase", () => { gameStateDirty = true; });
-      room.state.listen("currentRound", () => { gameStateDirty = true; });
-      room.state.listen("activePlayerId", () => { gameStateDirty = true; });
+      const $ = Callbacks.get(room);
 
-      room.state.players.onAdd((player) => {
+      $.listen("phase", () => { gameStateDirty = true; });
+      $.listen("currentRound", () => { gameStateDirty = true; });
+      $.listen("activePlayerId", () => { gameStateDirty = true; });
+
+      $.onAdd("players", (player) => {
         playersDirty = true;
-        player.onChange(() => { playersDirty = true; });
+        $.onChange(player, () => { playersDirty = true; });
       });
-      room.state.players.onRemove(() => { playersDirty = true; });
+      $.onRemove("players", () => { playersDirty = true; });
 
-      room.state.ranking.onAdd(() => { gameStateDirty = true; });
-      room.state.ranking.onRemove(() => { gameStateDirty = true; });
+      $.onAdd("ranking", () => { gameStateDirty = true; });
+      $.onRemove("ranking", () => { gameStateDirty = true; });
 
-      room.state.rivers.onAdd(() => { riversDirty = true; });
-      room.state.rivers.onChange(() => { riversDirty = true; });
-      room.state.rivers.onRemove(() => { riversDirty = true; });
+      $.onAdd("rivers", () => { riversDirty = true; });
+      $.onChange("rivers", () => { riversDirty = true; });
+      $.onRemove("rivers", () => { riversDirty = true; });
 
       room.onStateChange((state) => {
         if (gameStateDirty || riversDirty) {

@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { Client } from "@colyseus/sdk";
+import { Client, Callbacks } from "@colyseus/sdk";
 import QRCode from "qrcode";
 import { bananaCounts, shellCounts, redShellCounts, permacoinCells } from "./board.functions.js";
 import { renderRivers as renderRiverRows } from "./river.js";
@@ -585,30 +585,32 @@ export function initBoard(gameId) {
       let gameStateDirty = false;
       let riversDirty = false;
 
-      room.state.players.onAdd((player) => {
+      const $ = Callbacks.get(room);
+
+      $.onAdd("players", (player) => {
         playersDirty = true;
-        player.onChange(() => { playersDirty = true; });
+        $.onChange(player, () => { playersDirty = true; });
       });
-      room.state.players.onRemove(() => { playersDirty = true; });
+      $.onRemove("players", () => { playersDirty = true; });
 
-      room.state.cellOccupants.onAdd((co, key) => {
+      $.onAdd("cellOccupants", (co) => {
         cellOccupantsDirty = true;
-        co.entries.onAdd(() => { cellOccupantsDirty = true; });
-        co.entries.onChange(() => { cellOccupantsDirty = true; });
-        co.entries.onRemove(() => { cellOccupantsDirty = true; });
+        $.onAdd(co, "entries", () => { cellOccupantsDirty = true; });
+        $.onChange(co, () => { cellOccupantsDirty = true; });
+        $.onRemove(co, "entries", () => { cellOccupantsDirty = true; });
       });
-      room.state.cellOccupants.onRemove(() => { cellOccupantsDirty = true; });
+      $.onRemove("cellOccupants", () => { cellOccupantsDirty = true; });
 
-      room.state.listen("phase", () => { gameStateDirty = true; });
-      room.state.listen("currentRound", () => { gameStateDirty = true; });
-      room.state.listen("activePlayerId", () => { gameStateDirty = true; });
+      $.listen("phase", () => { gameStateDirty = true; });
+      $.listen("currentRound", () => { gameStateDirty = true; });
+      $.listen("activePlayerId", () => { gameStateDirty = true; });
 
-      room.state.ranking.onAdd(() => { gameStateDirty = true; });
-      room.state.ranking.onRemove(() => { gameStateDirty = true; });
+      $.onAdd("ranking", () => { gameStateDirty = true; });
+      $.onRemove("ranking", () => { gameStateDirty = true; });
 
-      room.state.rivers.onAdd(() => { riversDirty = true; });
-      room.state.rivers.onChange(() => { riversDirty = true; });
-      room.state.rivers.onRemove(() => { riversDirty = true; });
+      $.onAdd("rivers", () => { riversDirty = true; });
+      $.onChange("rivers", () => { riversDirty = true; });
+      $.onRemove("rivers", () => { riversDirty = true; });
 
       room.onStateChange((state) => {
         // Process cellOccupants before players so grid slots are up-to-date
