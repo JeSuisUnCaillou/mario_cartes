@@ -611,24 +611,9 @@ export function initBoard(gameId) {
       });
 
       // Animation events stay as messages (not state)
-      room.onMessage("itemHitBoard", (data) => {
-        this._cellOccupantsQueue.push({ _itemHit: data });
-        if (!this._processingQueue) {
-          this._processNextCellOccupants();
-        }
-      });
-      room.onMessage("shellThrown", (data) => {
-        this._cellOccupantsQueue.push({ _shellThrown: data });
-        if (!this._processingQueue) {
-          this._processNextCellOccupants();
-        }
-      });
-      room.onMessage("permanentCoinPickup", (data) => {
-        this._cellOccupantsQueue.push({ _permanentCoinPickup: data });
-        if (!this._processingQueue) {
-          this._processNextCellOccupants();
-        }
-      });
+      room.onMessage("itemHitBoard", (data) => this._enqueueAnimation({ _itemHit: data }));
+      room.onMessage("shellThrown", (data) => this._enqueueAnimation({ _shellThrown: data }));
+      room.onMessage("permanentCoinPickup", (data) => this._enqueueAnimation({ _permanentCoinPickup: data }));
       room.onMessage("_debugState", (data) => {
         onDebugState(data);
       });
@@ -645,6 +630,16 @@ export function initBoard(gameId) {
             .then((newRoom) => scene.setupRoom(newRoom, roomId));
         }
       });
+    }
+
+    _enqueueAnimation(entry) {
+      this._cellOccupantsQueue.push(entry);
+      while (this._cellOccupantsQueue.length > 10) {
+        this._cellOccupantsQueue.shift();
+      }
+      if (!this._processingQueue) {
+        this._processNextCellOccupants();
+      }
     }
 
     _processNextCellOccupants() {
