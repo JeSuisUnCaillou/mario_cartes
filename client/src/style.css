@@ -442,7 +442,7 @@ html, body, #app {
   left: -2px;
   right: -2px;
   height: 3px;
-  background: #e33;
+  background: #910d0d;
 }
 
 /* Rivers in top bar: compact overrides for board */
@@ -1029,8 +1029,8 @@ input {
   background: linear-gradient(
     to top right,
     transparent calc(50% - 2px),
-    red calc(50% - 2px),
-    red calc(50% + 2px),
+    #910d0d calc(50% - 2px),
+    #910d0d calc(50% + 2px),
     transparent calc(50% + 2px)
   );
   border-radius: 8px;
