@@ -26,11 +26,11 @@ we need to be able to kick a player from the board. Clicking on a player should 
 
 In the debug modal, i want to be able to modify a player's win state, and his ranking.
 
+When a player has finished, on the board client, the player's ranking display should "replace" the hand and coin and lap display. And be displayed big.
+
 ---
 
 DOING
-
-the indicator that a player has finished should be bigger (BIG RANKING, Crown, whatever)
 
 ---
 
