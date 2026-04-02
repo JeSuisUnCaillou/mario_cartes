@@ -191,7 +191,7 @@ function updateInfoBarPlayers(players) {
 
       el.addEventListener("click", (e) => {
         e.stopPropagation();
-        if (boardPhase !== "lobby" || !boardRoom) return;
+        if (boardPhase === "finished" || !boardRoom) return;
         closeKickMenu();
         const menu = document.createElement("div");
         menu.className = "kick-menu";
