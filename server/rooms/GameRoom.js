@@ -289,6 +289,15 @@ class GameRoom extends Room {
       this._syncState();
     });
 
+    this.onMessage("kickPlayer", (client, data) => {
+      const info = this.clientsInfo.get(client.sessionId);
+      if (!info || info.type !== "board") return;
+      if (this.phase !== "lobby") return;
+      const playerId = data && data.playerId;
+      if (!playerId || !this.players.has(playerId)) return;
+      this._kickPlayer(playerId);
+    });
+
     this.onMessage("startGame", (client) => {
       const player = this._getPlayer(client);
       if (!player) return;
@@ -678,6 +687,22 @@ class GameRoom extends Room {
     for (const key of this.state.cellOccupants.keys()) {
       if (!activeCellIds.has(key)) this.state.cellOccupants.delete(key);
     }
+  }
+
+  _kickPlayer(playerId) {
+    this._sendToPlayer(playerId, "kicked");
+    this._removeFromCell(1, playerId);
+    this.players.delete(playerId);
+    // Remove clientsInfo entry and leave the client
+    for (const [sessionId, info] of this.clientsInfo) {
+      if (info.playerId === playerId) {
+        this.clientsInfo.delete(sessionId);
+        const client = this.clients.find((c) => c.sessionId === sessionId);
+        if (client) client.leave();
+        break;
+      }
+    }
+    this._syncState();
   }
 
   _sendToPlayer(playerId, type, data) {

@@ -282,6 +282,17 @@ export function initPlayer(gameId) {
         `;
       });
 
+      room.onMessage("kicked", () => {
+        localStorage.removeItem(playerIdKey);
+        document.getElementById("app").innerHTML = `
+          <div class="player-screen">
+            <div class="lobby-zone game-rejected">
+              <span class="rejected-message">You have been kicked from the game.</span>
+            </div>
+          </div>
+        `;
+      });
+
       room.onMessage("playerId", (id) => {
         myPlayerId = id;
         localStorage.setItem(playerIdKey, id);

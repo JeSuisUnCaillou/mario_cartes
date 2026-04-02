@@ -29,6 +29,11 @@ let latestPlayersData = [];
 let latestGameState = null;
 let boardRoom = null;
 
+function closeKickMenu() {
+  document.querySelectorAll(".kick-menu").forEach((m) => m.remove());
+}
+document.addEventListener("click", closeKickMenu);
+
 function schemaPlayersToArray(state) {
   const players = [];
   state.players.forEach((p, playerId) => {
@@ -186,6 +191,21 @@ function updateInfoBarPlayers(players) {
       coins.className = "board-player-coins";
       right.appendChild(coins);
       el.appendChild(right);
+
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (boardPhase !== "lobby" || !boardRoom) return;
+        closeKickMenu();
+        const menu = document.createElement("div");
+        menu.className = "kick-menu";
+        menu.innerHTML = `<button class="kick-btn">Kick</button>`;
+        menu.querySelector(".kick-btn").addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          boardRoom.send("kickPlayer", { playerId: p.playerId });
+          closeKickMenu();
+        });
+        el.appendChild(menu);
+      });
 
       container.appendChild(el);
     }

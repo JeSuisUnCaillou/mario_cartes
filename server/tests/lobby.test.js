@@ -420,6 +420,69 @@ describe("Ready state and game start", () => {
   });
 });
 
+describe("Kick player", () => {
+  it("board can kick a player during lobby", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    const { room: player1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: player2 } = await connectPlayer(baseUrl, roomId);
+
+    await waitForPlayers(board, (list) => list.length === 2);
+
+    board.send("kickPlayer", { playerId: id1 });
+    await waitForMessage(player1, "kicked");
+
+    const players = await waitForPlayers(board, (list) => list.length === 1);
+    expect(players).toHaveLength(1);
+    expect(players[0].playerId).not.toBe(id1);
+
+    player1.leave();
+    player2.leave();
+    board.leave();
+  });
+
+  it("kick is ignored during playing phase", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    const { room: player1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: player2 } = await connectPlayer(baseUrl, roomId);
+
+    player1.send("setReady", true);
+    player2.send("setReady", true);
+    player1.send("startGame");
+    await waitForMessage(board, "gameState", (gs) => gs.phase === "playing");
+
+    board.send("kickPlayer", { playerId: id1 });
+    // Give server time to process
+    await new Promise((r) => setTimeout(r, 100));
+
+    const players = await waitForPlayers(board, (list) => list.length === 2);
+    expect(players).toHaveLength(2);
+
+    player1.leave();
+    player2.leave();
+    board.leave();
+  });
+
+  it("player cannot kick another player", async () => {
+    const roomId = await createRoom(baseUrl);
+    const { room: player1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: player2 } = await connectPlayer(baseUrl, roomId);
+
+    await waitForPlayers(player2, (list) => list.length === 2);
+
+    player2.send("kickPlayer", { playerId: id1 });
+    // Give server time to process
+    await new Promise((r) => setTimeout(r, 100));
+
+    const players = await waitForPlayers(player1, (list) => list.length === 2);
+    expect(players).toHaveLength(2);
+
+    player1.leave();
+    player2.leave();
+  });
+});
+
 describe("Deck and coins", () => {
   it("deck has 10 cards (5 drawn, 5 remaining)", async () => {
     const roomId = await createRoom(baseUrl);

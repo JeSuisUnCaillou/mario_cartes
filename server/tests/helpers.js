@@ -9,7 +9,7 @@ const { Client } = require("colyseus.js");
 const { GameRoom } = require("../rooms/GameRoom");
 
 // "players", "cellOccupants", "gameState" are synthesized from schema state (not broadcast messages)
-const BUFFERED_TYPES = ["players", "cellOccupants", "gameState", "cardsDrawn", "gameAlreadyStarted", "cardPlayed", "discardHit", "cardDiscarded", "cardBought", "shellThrown", "itemHitBoard", "_debugState"];
+const BUFFERED_TYPES = ["players", "cellOccupants", "gameState", "cardsDrawn", "gameAlreadyStarted", "kicked", "cardPlayed", "discardHit", "cardDiscarded", "cardBought", "shellThrown", "itemHitBoard", "_debugState"];
 
 function schemaPlayersToArray(state) {
   const players = [];

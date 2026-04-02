@@ -93,6 +93,27 @@ html, body, #app {
   flex-direction: row;
   gap: 0.5vh;
   transition: opacity 0.3s;
+  position: relative;
+  cursor: pointer;
+}
+
+.kick-menu {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.kick-btn {
+  background: #c0392b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: 1.6vh;
+  font-weight: bold;
+  cursor: pointer;
 }
 
 .board-player-left {
