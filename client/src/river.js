@@ -168,7 +168,7 @@ export function renderRiverRow(river, options = {}) {
 
   const costLabel = document.createElement("div");
   costLabel.className = "river-cost";
-  costLabel.innerHTML = `<span>${river.cost}</span><img src="/coin.svg" class="river-cost-icon" />`;
+  costLabel.innerHTML = `<span class="river-cost-badge"><span>${river.cost}</span><img src="/coin.svg" class="river-cost-icon" /></span>`;
   if (rankIndicators) {
     costLabel.appendChild(renderRankIndicators(river.id, riverCount));
   }

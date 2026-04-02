@@ -247,12 +247,19 @@ html, body, #app {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
   font-size: 2.25em;
   font-weight: bold;
   color: #fff;
   flex-shrink: 0;
   padding: 15px;
+}
+
+.river-cost-badge {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 }
 
 .river-cost-icon {
