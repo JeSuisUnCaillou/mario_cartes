@@ -453,8 +453,10 @@ export function initBoard(gameId) {
         const center = this.cellPixelPos(cellId);
         const sprite = this.add.image(center.x, center.y, "permacoin");
         sprite.setDepth(0);
+        sprite.setVisible(false);
         this.permacoinSprites.set(cellId, sprite);
       }
+      this.repositionPermacoinSprites();
     }
 
     repositionPermacoinSprites() {
@@ -466,6 +468,7 @@ export function initBoard(gameId) {
         const { x, y } = this.cellSlotPos(cellId, 0, total);
         sprite.setPosition(x, y);
         sprite.setScale(itemSize / sprite.width);
+        if (!sprite.visible) sprite.setVisible(true);
       }
     }
 
