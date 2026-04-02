@@ -564,16 +564,16 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
                 isReady = me.ready;
                 renderLobby(room);
               }
-              if (gamePhase === "playing" && (me.coins !== currentCoins || me.permanentCoins !== currentPermanentCoins || me.slowCounters !== currentSlowCounters)) {
+              if (gamePhase === "playing" && (me.coins !== currentCoins || me.permanentCoins !== currentPermanentCoins || me.slowCounters !== currentSlowCounters || me.hasMovedThisTurn !== currentHasMovedThisTurn)) {
+                const slowChanged = me.slowCounters !== currentSlowCounters || me.hasMovedThisTurn !== currentHasMovedThisTurn;
                 currentCoins = me.coins;
                 currentPermanentCoins = me.permanentCoins;
                 currentSlowCounters = me.slowCounters;
-                updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton, currentSlowCounters);
-              }
-              if (gamePhase === "playing" && (me.hasMovedThisTurn !== currentHasMovedThisTurn || me.slowCounters !== currentSlowCounters)) {
                 currentHasMovedThisTurn = me.hasMovedThisTurn;
-                currentSlowCounters = me.slowCounters;
-                updateCardMushroomIcons(currentHasMovedThisTurn && currentSlowCounters > 0);
+                updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton, currentSlowCounters);
+                if (slowChanged) {
+                  updateCardMushroomIcons(currentHasMovedThisTurn && currentSlowCounters > 0);
+                }
               }
               if (gamePhase === "playing") {
                 currentRank = me.rank;
