@@ -247,8 +247,8 @@ html, body, #app {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  font-size: 1.5em;
+  gap: 4px;
+  font-size: 3em;
   font-weight: bold;
   color: #fff;
   flex-shrink: 0;
@@ -256,12 +256,12 @@ html, body, #app {
 }
 
 .river-cost-icon {
-  width: 24px;
-  height: 24px;
+  width: 48px;
+  height: 48px;
 }
 
 .river-cards {
-  --river-card-w: 80px;
+  --river-card-w: 65px;
   flex: 1;
   display: flex;
   align-items: flex-start;
@@ -359,14 +359,15 @@ html, body, #app {
 
 .river-rank-indicators {
   display: flex;
-  gap: 2px;
-  justify-content: center;
-  margin-top: 2px;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  margin-top: 4px;
 }
 
 .river-rank-icon {
-  width: 16px;
-  height: 16px;
+  width: 32px;
+  height: 32px;
 }
 
 .river-rank-denied {
@@ -383,9 +384,9 @@ html, body, #app {
   content: "";
   position: absolute;
   top: 50%;
-  left: -1px;
-  right: -1px;
-  height: 2px;
+  left: -2px;
+  right: -2px;
+  height: 3px;
   background: #e33;
   transform: rotate(-45deg);
 }
@@ -404,15 +405,6 @@ html, body, #app {
   border-color: #333;
   gap: 0.4vh;
   min-height: 0;
-}
-
-.board-rivers .river-cost {
-  font-size: 1.6vh;
-}
-
-.board-rivers .river-cost-icon {
-  width: 1.6vh;
-  height: 1.6vh;
 }
 
 .board-rivers .river-cards {
@@ -445,9 +437,25 @@ html, body, #app {
   min-width: 0;
 }
 
+.board-rivers .river-cost {
+  font-size: 2vh;
+  padding: 0.5vh;
+  gap: 0.3vh;
+}
+
+.board-rivers .river-cost-icon {
+  width: 2vh;
+  height: 2vh;
+}
+
+.board-rivers .river-rank-indicators {
+  gap: 0.2vh;
+  margin-top: 0.2vh;
+}
+
 .board-rivers .river-rank-icon {
-  width: 1.4vh;
-  height: 1.4vh;
+  width: 1.8vh;
+  height: 1.8vh;
 }
 
 .board-rivers .river-rank-denied::after {
@@ -959,7 +967,7 @@ input {
 }
 
 .buy-modal-content .river-cost {
-  width: 40px;
+  width: 80px;
 }
 
 .buy-modal-content .river-slots {
