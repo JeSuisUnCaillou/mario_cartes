@@ -49,3 +49,8 @@ river_3:
     - banana mushroom green_shell
     - banana mushroom red_shell
     - 8x mushroom mushroom
+
+river_4:
+  cost: 8
+  deck:
+    - 4x mushroom mushroom mushroom

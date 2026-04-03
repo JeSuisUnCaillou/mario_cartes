@@ -6,12 +6,14 @@ Besoin de plus de cartes à 1 gold.
 
 
 
-Prevent both clients to go to sleep, like a youtube video
 
 the double mushroom only advance once. It should advance two cells. Bug pas reproductible.
 
 
 # DONE
+
+-> Prevent both clients to go to sleep, like a youtube video
+
 
 -> the card zone is too small on mobile, the content overflows -> DONE
 
