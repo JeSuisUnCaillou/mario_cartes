@@ -792,6 +792,7 @@ export function initBoard(gameId) {
       this.tweens.add({
         targets: mush,
         y: y - size,
+        scale: mush.scale * 2,
         alpha: 0,
         duration: 1500,
         ease: "Power2",
