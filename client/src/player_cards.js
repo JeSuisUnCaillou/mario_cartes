@@ -17,7 +17,8 @@ export function clearCardElements() {
 export function updateCardMushroomIcons(useDark) {
   const src = useDark ? "/dark_mushroom.svg" : "/mushroom.svg";
   for (const [, el] of cardElements) {
-    const items = JSON.parse(el.dataset.items);
+    let items = [];
+    try { items = JSON.parse(el.dataset.items); } catch (e) {}
     const icons = el.querySelectorAll(".card-item");
     items.forEach((item, i) => {
       if (item === "mushroom") icons[i].src = src;

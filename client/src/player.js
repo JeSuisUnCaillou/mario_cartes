@@ -559,7 +559,9 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
               const slots = [];
               r.slots.forEach((s) => {
                 if (s.id) {
-                  slots.push({ id: s.id, items: JSON.parse(s.items) });
+                  let items = [];
+                  try { items = JSON.parse(s.items); } catch (e) {}
+                  slots.push({ id: s.id, items });
                 } else {
                   slots.push(null);
                 }
@@ -753,7 +755,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         // Read items from the card element before removing it
         const handArea = document.getElementById("hand-area");
         const played = handArea.querySelector(`[data-card-id="${data.cardId}"]`);
-        const items = played ? JSON.parse(played.dataset.items) : [];
+        let items = [];
+        if (played) { try { items = JSON.parse(played.dataset.items); } catch (e) {} }
         if (played) played.remove();
         // Animate remaining cards from old positions to new fan positions
         recomputeFan(positions);
