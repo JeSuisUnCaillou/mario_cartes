@@ -955,6 +955,24 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
       room.reconnection.maxRetries = 30;
       room.reconnection.maxDelay = 5000;
 
+      // Show disconnect overlay after 5s of lost connection
+      let disconnectTimer = null;
+      room.onDrop(() => {
+        disconnectTimer = setTimeout(() => {
+          if (document.querySelector(".disconnect-overlay")) return;
+          const overlay = document.createElement("div");
+          overlay.className = "disconnect-overlay";
+          overlay.innerHTML =
+            '<h2>Connection lost</h2><p>Trying to reconnect\u2026</p>' +
+            '<button onclick="location.reload()">Reload</button>';
+          document.getElementById("app").appendChild(overlay);
+        }, 5000);
+      });
+      room.onReconnect(() => {
+        clearTimeout(disconnectTimer);
+        document.querySelector(".disconnect-overlay")?.remove();
+      });
+
       room.onLeave((code) => {
         if (roomDestroyed) return;
         if (code === 4003) {

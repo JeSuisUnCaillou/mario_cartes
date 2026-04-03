@@ -1632,3 +1632,37 @@ input {
   display: block;
   margin-bottom: 2px;
 }
+
+.disconnect-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  color: #fff;
+  text-align: center;
+}
+
+.disconnect-overlay h2 {
+  font-size: 1.8em;
+  margin-bottom: 8px;
+}
+
+.disconnect-overlay p {
+  font-size: 1.2em;
+  margin-bottom: 24px;
+  opacity: 0.8;
+}
+
+.disconnect-overlay button {
+  font-size: 1.3em;
+  padding: 14px 32px;
+  background: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
