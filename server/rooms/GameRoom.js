@@ -1037,43 +1037,84 @@ class GameRoom extends Room {
       }
     }
 
-    const hitType = this._bananasOnCell(player.cellId) > 0 ? "banana"
-      : this._greenShellsOnCell(player.cellId) > 0 ? "green_shell"
-        : this._redShellsOnCell(player.cellId) > 0 ? "red_shell"
-          : null;
+    if (player.starInvincible) {
+      // Star-invincible: destroy one item on the cell (shell priority: player > banana > shell)
+      const occupants = this._cellOccupants(player.cellId);
+      const otherPlayers = occupants.filter(
+        (e) => e !== player.playerId && e !== "banana" && e !== "green_shell" && e !== "red_shell",
+      );
+      if (otherPlayers.length > 0) {
+        const hitPlayerId = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
+        const hitPlayer = this.players.get(hitPlayerId);
+        hitPlayer.slowCounters++;
+        this.broadcast("itemHitBoard", {
+          type: "star",
+          playerId: hitPlayerId,
+          cellId: player.cellId,
+        });
+      } else if (this._bananasOnCell(player.cellId) > 0) {
+        this._removeFromCell(player.cellId, "banana");
+        this.broadcast("itemHitBoard", {
+          type: "banana",
+          playerId: player.playerId,
+          cellId: player.cellId,
+        });
+      } else if (this._greenShellsOnCell(player.cellId) > 0) {
+        this._removeFromCell(player.cellId, "green_shell");
+        this.broadcast("itemHitBoard", {
+          type: "green_shell",
+          playerId: player.playerId,
+          cellId: player.cellId,
+        });
+      } else if (this._redShellsOnCell(player.cellId) > 0) {
+        this._removeFromCell(player.cellId, "red_shell");
+        this.broadcast("itemHitBoard", {
+          type: "red_shell",
+          playerId: player.playerId,
+          cellId: player.cellId,
+        });
+      }
+      this._syncState();
+      this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
+    } else {
+      const hitType = this._bananasOnCell(player.cellId) > 0 ? "banana"
+        : this._greenShellsOnCell(player.cellId) > 0 ? "green_shell"
+          : this._redShellsOnCell(player.cellId) > 0 ? "red_shell"
+            : null;
 
-    if (hitType) {
-      this._removeFromCell(player.cellId, hitType);
-      // Send itemHitBoard BEFORE _syncState so the message arrives before the patch.
-      // The board's animateItemHit has a built-in moveDelay (400ms) that waits for
-      // the helmet tween to finish before playing the hit effects.
-      this.broadcast("itemHitBoard", {
-        type: hitType,
-        playerId: player.playerId,
-        cellId: player.cellId,
-      });
-      if (hitType === "banana") {
-        const mustDiscard = Math.min(1, player.hand.length);
-        if (mustDiscard > 0) {
-          player.pendingDiscard = mustDiscard;
-          this._sendToPlayer(player.playerId, "discardHit", {
-            source: hitType,
-            mustDiscard,
-            ...this._cardState(player),
-          });
-        }
-        this._syncState();
-        if (player.pendingDiscard === 0) {
+      if (hitType) {
+        this._removeFromCell(player.cellId, hitType);
+        // Send itemHitBoard BEFORE _syncState so the message arrives before the patch.
+        // The board's animateItemHit has a built-in moveDelay (400ms) that waits for
+        // the helmet tween to finish before playing the hit effects.
+        this.broadcast("itemHitBoard", {
+          type: hitType,
+          playerId: player.playerId,
+          cellId: player.cellId,
+        });
+        if (hitType === "banana") {
+          const mustDiscard = Math.min(1, player.hand.length);
+          if (mustDiscard > 0) {
+            player.pendingDiscard = mustDiscard;
+            this._sendToPlayer(player.playerId, "discardHit", {
+              source: hitType,
+              mustDiscard,
+              ...this._cardState(player),
+            });
+          }
+          this._syncState();
+          if (player.pendingDiscard === 0) {
+            this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
+          }
+        } else {
+          player.slowCounters++;
+          this._syncState();
           this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
         }
       } else {
-        player.slowCounters++;
-        this._syncState();
+        // No hit — continue to next item after tween completes
         this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
       }
-    } else {
-      // No hit — continue to next item after tween completes
-      this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
     }
   }
 
