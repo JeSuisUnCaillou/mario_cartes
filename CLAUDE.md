@@ -53,7 +53,7 @@ Monorepo with npm workspaces (`server`, `client`):
 ## Commits & Plans
 
 - Small, focused commits — baby steps. Each commit should be understandable on its own.
-- Always commit after completing a change. Never leave changes uncommitted. Commit each slice as you go — do not wait until all work is done to commit.
+- Always commit after completing a change. Never leave changes uncommitted. Commit each slice as you go — do not wait until all work is done to commit. This is critical — never end a turn with uncommitted changes.
 - Plans saved and committed in `/docs/plans/` before implementing.
 - One commit per slice. Don't cite yourself as the author.
 - No `Co-Authored-By` trailer in commits.
