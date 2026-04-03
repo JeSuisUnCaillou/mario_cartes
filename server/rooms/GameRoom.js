@@ -671,7 +671,8 @@ class GameRoom extends Room {
       } else if (this.phase === "lobby") {
         const playerId = randomUUID();
         const name = (options.name || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
-        const color = PLAYER_COLORS[this.players.size % PLAYER_COLORS.length];
+        const usedColors = new Set([...this.players.values()].map(p => p.color));
+        const color = PLAYER_COLORS.find(c => !usedColors.has(c));
         this.players.set(playerId, {
           playerId, name, color, connected: true,
           ...this._initialPlayerState(),
