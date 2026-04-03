@@ -442,6 +442,7 @@ export function initBoard(gameId) {
       const cellW = this.track.displayWidth / 5;
       const itemSize = (cellW / 4.5) * 0.9;
       for (const [cellId, sprite] of this.permacoinSprites) {
+        if (this._dustCloudCells.has(cellId)) continue;
         const occupants = this.latestCellOccupants[cellId] || [];
         const total = occupants.length + 1; // +1 for permacoin at slot 0
         const { x, y } = this.cellSlotPos(cellId, 0, total);
@@ -985,6 +986,7 @@ export function initBoard(gameId) {
             this.time.delayedCall(500, () => {
               this._dustCloudCells.delete(data.toCellId);
               this.tweenCellLayout();
+              this.repositionPermacoinSprites();
             });
           } else if (!data.hit && (textureKey === "green_shell" || textureKey === "red_shell")) {
             // Shell, no hit — shell stays on cell
