@@ -654,7 +654,7 @@ export function initBoard(gameId) {
       this._processingQueue = true;
       const entry = this._cellOccupantsQueue.shift();
       if (entry._itemHit) {
-        this.animateItemHit(entry._itemHit.playerId, entry._itemHit.cellId, entry._itemHit.type || "banana");
+        this.animateItemHit(entry._itemHit.playerId, entry._itemHit.cellId, entry._itemHit.type || "banana", entry._itemHit.starHit);
         this.time.delayedCall(1400, () => this._processNextCellOccupants());
       } else if (entry._shellThrown) {
         const pathLen = entry._shellThrown.path ? entry._shellThrown.path.length : 0;
@@ -828,7 +828,7 @@ export function initBoard(gameId) {
       });
     }
 
-    animateItemHit(playerId, cellId, itemType = "banana") {
+    animateItemHit(playerId, cellId, itemType = "banana", starHit = false) {
       const helmet = this.helmets.get(playerId);
       const label = this.nameLabels.get(playerId);
       if (!helmet) return;
@@ -858,33 +858,43 @@ export function initBoard(gameId) {
       // After move completes, rearrange remaining occupants on the cell
       this.time.delayedCall(moveDelay, () => this.tweenCellLayout());
 
-      // After move: helmet rotates twice, item launches out, stars burst
-      const center = this.cellPixelPos(cellId);
       const helmetSize = this.track.displayWidth / 5 / 4.5 * 0.9;
-      this.tweens.add({
-        targets: helmet,
-        angle: -720,
-        duration: 1000,
-        ease: "Linear",
-        delay: moveDelay,
-        onComplete: () => { helmet.setAngle(0); },
-      });
-      this.tweens.add({
-        targets: item,
-        y: center.y - this.scale.height * 0.6,
-        angle: 360,
-        alpha: 0,
-        duration: 600,
-        ease: "Power2",
-        delay: moveDelay,
-        onComplete: () => { item.destroy(); },
-      });
-      this.time.delayedCall(moveDelay, () => {
-        this._spawnHitStars(helmet.x, helmet.y, helmetSize);
-        if (itemType === "green_shell" || itemType === "red_shell") {
-          this._spawnDarkMushroom(helmet.x, helmet.y, helmetSize);
-        }
-      });
+
+      if (starHit) {
+        // Star-invincible player destroys item: dust cloud on item, no player effects
+        this.time.delayedCall(moveDelay, () => {
+          this._spawnDustCloud(item.x, item.y, helmetSize);
+          item.destroy();
+          this.time.delayedCall(500, () => this.tweenCellLayout());
+        });
+      } else {
+        // Normal hit: helmet rotates twice, item launches out, stars burst
+        const center = this.cellPixelPos(cellId);
+        this.tweens.add({
+          targets: helmet,
+          angle: -720,
+          duration: 1000,
+          ease: "Linear",
+          delay: moveDelay,
+          onComplete: () => { helmet.setAngle(0); },
+        });
+        this.tweens.add({
+          targets: item,
+          y: center.y - this.scale.height * 0.6,
+          angle: 360,
+          alpha: 0,
+          duration: 600,
+          ease: "Power2",
+          delay: moveDelay,
+          onComplete: () => { item.destroy(); },
+        });
+        this.time.delayedCall(moveDelay, () => {
+          this._spawnHitStars(helmet.x, helmet.y, helmetSize);
+          if (itemType === "green_shell" || itemType === "red_shell") {
+            this._spawnDarkMushroom(helmet.x, helmet.y, helmetSize);
+          }
+        });
+      }
     }
 
     animateShellThrow(data) {

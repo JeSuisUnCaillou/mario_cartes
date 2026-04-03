@@ -1073,6 +1073,7 @@ class GameRoom extends Room {
           type: "banana",
           playerId: player.playerId,
           cellId: player.cellId,
+          starHit: true,
         });
       } else if (this._greenShellsOnCell(player.cellId) > 0) {
         this._removeFromCell(player.cellId, "green_shell");
@@ -1080,6 +1081,7 @@ class GameRoom extends Room {
           type: "green_shell",
           playerId: player.playerId,
           cellId: player.cellId,
+          starHit: true,
         });
       } else if (this._redShellsOnCell(player.cellId) > 0) {
         this._removeFromCell(player.cellId, "red_shell");
@@ -1087,6 +1089,7 @@ class GameRoom extends Room {
           type: "red_shell",
           playerId: player.playerId,
           cellId: player.cellId,
+          starHit: true,
         });
       }
       this._syncState();
