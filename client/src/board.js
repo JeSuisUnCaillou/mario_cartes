@@ -404,7 +404,8 @@ export function initBoard(gameId) {
       this.load.svg("green_shell", "/green_shell.svg", { width: spriteSize, height: spriteSize });
       this.load.svg("red_shell", "/red_shell.svg", { width: spriteSize, height: spriteSize });
       this.load.svg("permacoin", "/permacoin.svg", { width: spriteSize, height: spriteSize });
-
+      this.load.svg("hit_star", "/hit_star.svg", { width: spriteSize, height: spriteSize });
+      this.load.svg("dark_mushroom", "/dark_mushroom.svg", { width: spriteSize, height: spriteSize });
     }
 
     create() {
@@ -763,6 +764,41 @@ export function initBoard(gameId) {
       }
     }
 
+    _spawnHitStars(x, y, size) {
+      const directions = [180, 225, 315, 0]; // upward-ish fan: left → upper-left → upper-right → right
+      const rotations = [0, 18, 36, 54];     // spread within one 72° symmetry period
+      directions.forEach((dir, i) => {
+        const star = this.add.image(x, y, "hit_star");
+        star.setScale(size * 0.4 / star.width);
+        star.setAngle(rotations[i]);
+        star.setDepth(10);
+        const rad = dir * Math.PI / 180;
+        this.tweens.add({
+          targets: star,
+          x: x + Math.cos(rad) * size,
+          y: y - Math.sin(rad) * size,
+          angle: rotations[i] + 360,
+          duration: 400,
+          ease: "Power2",
+          onComplete: () => { star.destroy(); },
+        });
+      });
+    }
+
+    _spawnDarkMushroom(x, y, size) {
+      const mush = this.add.image(x, y, "dark_mushroom");
+      mush.setScale(size * 0.5 / mush.width);
+      mush.setDepth(10);
+      this.tweens.add({
+        targets: mush,
+        y: y - size,
+        alpha: 0,
+        duration: 500,
+        ease: "Power2",
+        onComplete: () => { mush.destroy(); },
+      });
+    }
+
     animateItemHit(playerId, cellId, itemType = "banana") {
       const helmet = this.helmets.get(playerId);
       const label = this.nameLabels.get(playerId);
@@ -793,8 +829,9 @@ export function initBoard(gameId) {
       // After move completes, rearrange remaining occupants on the cell
       this.time.delayedCall(moveDelay, () => this.tweenCellLayout());
 
-      // After move: helmet rotates twice, item launches out
+      // After move: helmet rotates twice, item launches out, stars burst
       const center = this.cellPixelPos(cellId);
+      const helmetSize = this.track.displayWidth / 5 / 4.5 * 0.9;
       this.tweens.add({
         targets: helmet,
         angle: -720,
@@ -812,6 +849,12 @@ export function initBoard(gameId) {
         ease: "Power2",
         delay: moveDelay,
         onComplete: () => { item.destroy(); },
+      });
+      this.time.delayedCall(moveDelay, () => {
+        this._spawnHitStars(helmet.x, helmet.y, helmetSize);
+        if (itemType === "green_shell" || itemType === "red_shell") {
+          this._spawnDarkMushroom(helmet.x, helmet.y, helmetSize);
+        }
       });
     }
 
@@ -883,8 +926,9 @@ export function initBoard(gameId) {
         at: totalTravelTime,
         run: () => {
           if (data.hit === "player") {
-            // Spin hit player's helmet and launch shell upward
+            // Spin hit player's helmet, launch shell upward, burst stars + dark mushroom
             const helmet = this.helmets.get(data.hitPlayerId);
+            const helmetSize = this.track.displayWidth / 5 / 4.5 * 0.9;
             if (helmet) {
               this.tweens.add({
                 targets: helmet,
@@ -893,6 +937,8 @@ export function initBoard(gameId) {
                 ease: "Linear",
                 onComplete: () => { helmet.setAngle(0); },
               });
+              this._spawnHitStars(helmet.x, helmet.y, helmetSize);
+              this._spawnDarkMushroom(helmet.x, helmet.y, helmetSize);
             }
             this.tweens.add({
               targets: shell,

@@ -642,6 +642,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
               }
               if (gamePhase === "playing" && (me.coins !== currentCoins || me.permanentCoins !== currentPermanentCoins || me.slowCounters !== currentSlowCounters || me.hasMovedThisTurn !== currentHasMovedThisTurn)) {
                 const slowChanged = me.slowCounters !== currentSlowCounters || me.hasMovedThisTurn !== currentHasMovedThisTurn;
+                if (me.slowCounters > currentSlowCounters) navigator.vibrate?.(200);
                 currentCoins = me.coins;
                 currentPermanentCoins = me.permanentCoins;
                 currentSlowCounters = me.slowCounters;
@@ -795,6 +796,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
       });
 
       room.onMessage("discardHit", async (data) => {
+        navigator.vibrate?.(200);
         const playZone = document.getElementById("play-zone");
         const zoneRect = playZone.getBoundingClientRect();
 
