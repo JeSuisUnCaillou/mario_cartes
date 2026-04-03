@@ -477,6 +477,7 @@ class GameRoom extends Room {
       player.pendingShellChoice = false;
       const shellType = player.pendingShellType;
       player.pendingShellType = null;
+      if (!shellType) return;
 
       if (shellType === "red_shell" && data.direction === "forward") {
         this._resolveRedShell(player, client, data.direction);
