@@ -137,7 +137,7 @@ class GameRoom extends Room {
     const occupants = this._cellOccupants(targetCellId);
 
     // Priority 1: hit a player (excluding thrower), randomly chosen
-    const playerIds = occupants.filter((e) => e !== "banana" && e !== "green_shell" && e !== "red_shell" && e !== thrower.playerId);
+    const playerIds = occupants.filter((e) => e !== "banana" && e !== "green_shell" && e !== "red_shell" && e !== thrower.playerId && !this.players.get(e)?.starInvincible);
     if (playerIds.length > 0) {
       const hitPlayerId = playerIds[Math.floor(Math.random() * playerIds.length)];
       const hitPlayer = this.players.get(hitPlayerId);
@@ -213,7 +213,7 @@ class GameRoom extends Room {
 
       // Priority 1: hit a player (exclude thrower unless last step)
       const playerIds = occupants.filter(
-        (e) => e !== "banana" && e !== "green_shell" && e !== "red_shell" && (isLastStep || e !== thrower.playerId),
+        (e) => e !== "banana" && e !== "green_shell" && e !== "red_shell" && (isLastStep || e !== thrower.playerId) && !this.players.get(e)?.starInvincible,
       );
       if (playerIds.length > 0) {
         const hitPlayerId = playerIds[Math.floor(Math.random() * playerIds.length)];
@@ -304,6 +304,21 @@ class GameRoom extends Room {
       currentCellId = this.cells.get(currentCellId).next_cell;
       path.push(currentCellId);
       if (currentCellId === target.cellId) break;
+    }
+
+    if (target.starInvincible) {
+      // Star blocks the blue shell — animate but no effect
+      this.broadcast("shellThrown", {
+        playerId: thrower.playerId,
+        fromCellId: thrower.cellId,
+        toCellId: target.cellId,
+        shellType: "blue_shell",
+        path,
+        hit: "star_blocked",
+        hitPlayerId: target.playerId,
+      });
+      this._syncState();
+      return;
     }
 
     // Auto-discard target's entire hand
