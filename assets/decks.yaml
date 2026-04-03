@@ -31,7 +31,6 @@ river_2:
     - red_shell red_shell
     - green_shell green_shell
     - 5x coin coin coin
-    - banana banana banana
     - coin coin banana
     - coin banana coin
     - banana coin coin
@@ -45,7 +44,7 @@ river_2:
 river_3:
   cost: 5
   deck:
-
+    - banana banana banana
     - banana mushroom mushroom
     - banana mushroom mushroom
     - mushroom banana banana
