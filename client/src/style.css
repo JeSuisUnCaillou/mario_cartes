@@ -250,6 +250,7 @@ html, body, #app {
   background: #111;
   box-sizing: border-box;
   position: relative;
+  padding: 15px;
 }
 
 .board-exit-btn {
