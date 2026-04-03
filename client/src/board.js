@@ -793,7 +793,7 @@ export function initBoard(gameId) {
         targets: mush,
         y: y - size,
         alpha: 0,
-        duration: 500,
+        duration: 1500,
         ease: "Power2",
         onComplete: () => { mush.destroy(); },
       });
