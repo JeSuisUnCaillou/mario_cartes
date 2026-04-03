@@ -688,6 +688,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           updateCardMushroomIcons(currentHasMovedThisTurn && currentSlowCounters > 0);
           if (data.pendingDiscard > 0) {
             pendingDiscards = data.pendingDiscard;
+            closeBuyModal();
+            updateBuyButton();
             const playZone = document.getElementById("play-zone");
             playZone.classList.add("discard-hit", "discard-hit-banana");
             playZone.innerHTML = `
