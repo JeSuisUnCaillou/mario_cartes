@@ -375,6 +375,7 @@ export function initBoard(gameId) {
       super("GameScene");
       this.helmets = new Map();
       this.nameLabels = new Map();
+      this.starOverlays = new Map();
 
       this.playerCells = new Map();
       this.latestPlayers = [];
@@ -402,6 +403,7 @@ export function initBoard(gameId) {
       this.load.svg("blue_shell", "/blue_shell.svg", { width: spriteSize, height: spriteSize });
       this.load.svg("permacoin", "/permacoin.svg", { width: spriteSize, height: spriteSize });
       this.load.svg("hit_star", "/hit_star.svg", { width: spriteSize, height: spriteSize });
+      this.load.svg("star_overlay", "/star.svg", { width: spriteSize * 2, height: spriteSize * 2 });
       this.load.svg("dark_mushroom", "/dark_mushroom.svg", { width: spriteSize, height: spriteSize });
       this.load.svg("dust_cloud", "/dust_cloud.svg", { width: spriteSize, height: spriteSize });
     }
@@ -1059,6 +1061,14 @@ export function initBoard(gameId) {
                 duration: 400,
                 ease: "Power2",
               });
+              if (this.starOverlays.has(p.playerId)) {
+                this.tweens.add({
+                  targets: this.starOverlays.get(p.playerId),
+                  x, y: y - helmetDisplaySize * 0.3,
+                  duration: 400,
+                  ease: "Power2",
+                });
+              }
               this.playerCells.set(p.playerId, p.cellId);
             } else if (helmet.x !== x || helmet.y !== y) {
               this.tweens.add({
@@ -1073,6 +1083,14 @@ export function initBoard(gameId) {
                 duration: 300,
                 ease: "Power2",
               });
+              if (this.starOverlays.has(p.playerId)) {
+                this.tweens.add({
+                  targets: this.starOverlays.get(p.playerId),
+                  x, y: y - helmetDisplaySize * 0.3,
+                  duration: 300,
+                  ease: "Power2",
+                });
+              }
             }
           } else {
             const textureKey = `helmet_${p.color}`;
@@ -1100,6 +1118,20 @@ export function initBoard(gameId) {
 
             this.playerCells.set(p.playerId, p.cellId);
           }
+
+          // Star overlay — create or destroy based on starInvincible
+          if (p.starInvincible && !this.starOverlays.has(p.playerId)) {
+            const h = this.helmets.get(p.playerId);
+            if (h) {
+              const star = this.add.image(h.x, h.y - helmetDisplaySize * 0.3, "star_overlay");
+              star.setScale(helmetDisplaySize * 1.1 / star.width);
+              star.setDepth(6);
+              this.starOverlays.set(p.playerId, star);
+            }
+          } else if (!p.starInvincible && this.starOverlays.has(p.playerId)) {
+            this.starOverlays.get(p.playerId).destroy();
+            this.starOverlays.delete(p.playerId);
+          }
         });
       }
 
@@ -1109,7 +1141,10 @@ export function initBoard(gameId) {
           this.helmets.delete(playerId);
           this.nameLabels.get(playerId).destroy();
           this.nameLabels.delete(playerId);
-
+          if (this.starOverlays.has(playerId)) {
+            this.starOverlays.get(playerId).destroy();
+            this.starOverlays.delete(playerId);
+          }
           this.playerCells.delete(playerId);
         }
       }
