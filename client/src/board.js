@@ -982,7 +982,7 @@ export function initBoard(gameId) {
               hitItem.destroy();
             }
             shell.destroy();
-            this.tweenCellLayout();
+            this.time.delayedCall(500, () => this.tweenCellLayout());
           } else if (!data.hit && (textureKey === "green_shell" || textureKey === "red_shell")) {
             // Shell, no hit — shell stays on cell
             shell.setDepth(0);
