@@ -867,7 +867,6 @@ input {
   justify-content: center;
   position: relative;
   z-index: 2;
-  filter: drop-shadow(10px 15px 4px rgba(0, 0, 0, 0.35));
 }
 
 .card {
@@ -885,6 +884,7 @@ input {
   -webkit-user-select: none;
   position: relative;
   overflow: hidden;
+  filter: drop-shadow(10px 15px 4px rgba(0, 0, 0, 0.35));
 }
 
 .card:first-child {
@@ -909,6 +909,7 @@ input {
   width: 50px;
   margin-left: 0;
   opacity: 0.6;
+  filter: none;
 }
 
 .card-flyer-inner {
