@@ -976,13 +976,12 @@ export function initBoard(gameId) {
               onComplete: () => { shell.destroy(); },
             });
           } else if (data.hit === "banana" || data.hit === "green_shell" || data.hit === "red_shell") {
-            // Dust cloud covers both objects disappearing
-            this._spawnDustCloud(shell.x, shell.y, itemSize);
-            shell.destroy();
+            // Dust cloud on target object, both disappear
             if (hitItem) {
               this._spawnDustCloud(hitItem.x, hitItem.y, itemSize);
               hitItem.destroy();
             }
+            shell.destroy();
             this.tweenCellLayout();
           } else if (!data.hit && (textureKey === "green_shell" || textureKey === "red_shell")) {
             // Shell, no hit — shell stays on cell
