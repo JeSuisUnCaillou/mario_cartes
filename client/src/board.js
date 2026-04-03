@@ -217,18 +217,13 @@ function updateInfoBarPlayers(players) {
     if (boardPhase !== "lobby") {
       const coinCount = p.coins || 0;
       const permCount = p.permanentCoins || 0;
-      const blueCount = Math.min(coinCount, permCount);
-      const goldCount = Math.max(0, coinCount - permCount);
+      const hasNormalCoins = coinCount > permCount;
+      const coinIcon = hasNormalCoins ? "/coin.svg" : "/permacoin.svg";
       let html = "";
-      if (blueCount > 0) {
-        html += `<span class="board-coin-count">${blueCount}</span><img src="/permacoin.svg" class="board-coin-icon" />`;
-      }
-      if (goldCount > 0) {
-        if (blueCount > 0) html += `<span class="board-coin-sep"></span>`;
-        html += `<span class="board-coin-count">${goldCount}</span><img src="/coin.svg" class="board-coin-icon" />`;
-      }
       if (coinCount === 0) {
         html = `<span class="board-coin-count board-coin-zero">0</span><img src="/coin.svg" class="board-coin-icon board-coin-zero" />`;
+      } else {
+        html = `<span class="board-coin-count">${coinCount}</span><img src="${coinIcon}" class="board-coin-icon" />`;
       }
       const slowCount = p.slowCounters || 0;
       if (slowCount > 0) {
