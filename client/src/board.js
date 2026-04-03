@@ -291,6 +291,16 @@ function updateBoardGameState(data) {
 
   if (data.phase === "lobby") {
     removeLeaderboard();
+
+    // Remove round card and restore scan label
+    const roundCard = container.querySelector(".board-round-card");
+    if (roundCard) roundCard.remove();
+    if (!container.querySelector(".board-scan-label")) {
+      const scanLabel = document.createElement("div");
+      scanLabel.className = "board-sidebar-element board-scan-label";
+      scanLabel.innerHTML = "Scan to join";
+      container.insertBefore(scanLabel, container.firstChild);
+    }
   }
 
   // Re-render player info with correct phase

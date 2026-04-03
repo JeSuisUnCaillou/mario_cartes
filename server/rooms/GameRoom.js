@@ -368,7 +368,7 @@ class GameRoom extends Room {
       this.currentRound = 0;
       this.turnIndex = -1;
       this.activePlayerId = null;
-      this.rivers = null;
+      this.rivers = this._createRiverDecks();
       this.cellOccupants = {};
       for (const player of this.players.values()) {
         Object.assign(player, this._initialPlayerState());
@@ -546,7 +546,7 @@ class GameRoom extends Room {
       this.currentRound = 0;
       this.turnIndex = -1;
       this.activePlayerId = null;
-      this.rivers = null;
+      this.rivers = this._createRiverDecks();
       this.cellOccupants = {};
       for (const player of this.players.values()) {
         Object.assign(player, this._initialPlayerState());
