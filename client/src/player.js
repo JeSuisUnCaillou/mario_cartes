@@ -57,7 +57,7 @@ function showRulesModal() {
 
   const rules = [
     { icon: "/coin.svg", title: "Coin", text: "Gain 1 coin until end of turn." },
-    { icon: "/permacoin.svg", title: "Permanent Coin", text: "A permanent coin regenerates at turn end." },
+    { icon: "/permacoin.svg", title: "Permanent Coin", text: "A permanent coin is kept from turn to turn. Permanent coins are spent last." },
     { icon: "/mushroom.svg", title: "Mushroom", text: "Move forward 1 cell (subject to dark mushrooms)." },
     { icon: "/banana.svg", title: "Banana", text: "Drop a banana on your cell. Landing on a banana: discard 1 card." },
     { icon: "/green_shell.svg", title: "Green Shell", text: "Throw to adjacent cell, forward or backward. Gives dark mushrooms to players, or destroys bananas and shells." },
