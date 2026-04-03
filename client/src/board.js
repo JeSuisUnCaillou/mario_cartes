@@ -405,11 +405,9 @@ export function initBoard(gameId) {
       this.load.svg("red_shell", "/red_shell.svg", { width: spriteSize, height: spriteSize });
       this.load.svg("permacoin", "/permacoin.svg", { width: spriteSize, height: spriteSize });
 
-      this.load.image("space", "/space.jpg");
     }
 
     create() {
-      // this.bg = this.add.image(0, 0, "space").setAlpha(0.6);
       this.track = this.add.image(0, 0, "racetrack");
       this.layoutTrack();
       this.createPermacoinSprites();
@@ -419,13 +417,6 @@ export function initBoard(gameId) {
 
     layoutTrack() {
       const { width, height } = this.scale;
-
-      if (this.bg) {
-        this.bg.setPosition(width / 2, height / 2);
-        const bgScaleX = width / this.bg.width;
-        const bgScaleY = height / this.bg.height;
-        this.bg.setScale(Math.max(bgScaleX, bgScaleY));
-      }
 
       this.track.setPosition(width / 2, height / 2);
       const scaleX = (width * 0.9) / this.track.width;
