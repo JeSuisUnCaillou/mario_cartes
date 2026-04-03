@@ -520,6 +520,10 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
   function setupRoom(room) {
     renderLobby(room);
     currentRoom = room;
+    playing = false;
+    animating = false;
+    pendingDiscards = 0;
+    pendingShellChoice = false;
 
       // Schema-based state sync for public game state
       let gameStateDirty = false;
