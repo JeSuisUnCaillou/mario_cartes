@@ -750,6 +750,11 @@ input {
   background: rgba(204, 34, 34, 0.1);
 }
 
+.play-zone.discard-hit-blueshell {
+  border-color: #212bc8;
+  background: rgba(33, 43, 200, 0.1);
+}
+
 .play-zone-banana {
   width: 60px;
   height: auto;

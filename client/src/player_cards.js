@@ -6,6 +6,7 @@ const ITEM_ICONS = {
   mushroom: "/mushroom.svg",
   green_shell: "/green_shell.svg",
   red_shell: "/red_shell.svg",
+  blue_shell: "/blue_shell.svg",
 };
 
 const cardElements = new Map();

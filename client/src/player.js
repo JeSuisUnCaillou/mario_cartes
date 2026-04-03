@@ -765,7 +765,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         recomputeFan(positions);
 
         // Sequentially throw each item icon (top to bottom, 400ms apart)
-        const ITEM_ICON = { banana: "/banana.svg", coin: "/coin.svg", mushroom: "/mushroom.svg", green_shell: "/green_shell.svg", red_shell: "/red_shell.svg" };
+        const ITEM_ICON = { banana: "/banana.svg", coin: "/coin.svg", mushroom: "/mushroom.svg", green_shell: "/green_shell.svg", red_shell: "/red_shell.svg", blue_shell: "/blue_shell.svg" };
         const playZone = document.getElementById("play-zone");
         items.forEach((item, i) => {
           if (ITEM_ICON[item]) {
@@ -898,6 +898,85 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           updatePlayZone();
           updateBuyButton();
         }
+      });
+
+      room.onMessage("blueShellHit", async (data) => {
+        navigator.vibrate?.(200);
+        const playZone = document.getElementById("play-zone");
+        const zoneRect = playZone.getBoundingClientRect();
+
+        // Crash animation: blue shell falls into play zone
+        const crashItem = document.createElement("img");
+        crashItem.src = "/blue_shell.svg";
+        crashItem.style.position = "fixed";
+        crashItem.style.width = "80px";
+        crashItem.style.height = "auto";
+        crashItem.style.left = (zoneRect.left + zoneRect.width / 2 - 40) + "px";
+        crashItem.style.top = "-100px";
+        crashItem.style.zIndex = "999";
+        crashItem.style.pointerEvents = "none";
+        document.body.appendChild(crashItem);
+        crashItem.getBoundingClientRect();
+        crashItem.style.transition = "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)";
+        crashItem.style.top = (zoneRect.top + zoneRect.height / 2 - 40) + "px";
+        await new Promise((resolve) => {
+          crashItem.addEventListener("transitionend", resolve, { once: true });
+        });
+        crashItem.remove();
+
+        // Show blue shell hit zone
+        playZone.classList.remove("waiting");
+        playZone.classList.add("discard-hit", "discard-hit-blueshell");
+        playZone.innerHTML = `
+          <img src="/blue_shell.svg" class="play-zone-banana" />
+          <span class="play-zone-label"><h2>Blue shell!</h2></span>
+        `;
+
+        // Auto-animate each card flying to discard pile
+        const handArea = document.getElementById("hand-area");
+        const discardEl = document.getElementById("discard-pile");
+        const discardRect = discardEl.getBoundingClientRect();
+
+        for (const cardId of data.discardedCardIds) {
+          const card = handArea.querySelector(`[data-card-id="${cardId}"]`);
+          if (!card) continue;
+          const positions = captureHandPositions();
+          const cardRect = card.getBoundingClientRect();
+
+          // Create clone flying to discard pile
+          const clone = card.cloneNode(true);
+          clone.style.position = "fixed";
+          clone.style.left = cardRect.left + "px";
+          clone.style.top = cardRect.top + "px";
+          clone.style.width = cardRect.width + "px";
+          clone.style.height = cardRect.height + "px";
+          clone.style.zIndex = "50";
+          clone.style.margin = "0";
+          clone.style.transform = "none";
+          clone.style.transition = "all 0.3s ease-in-out";
+          document.body.appendChild(clone);
+          card.remove();
+          recomputeFan(positions);
+
+          requestAnimationFrame(() => {
+            clone.style.left = (discardRect.left + discardRect.width / 2 - 25) + "px";
+            clone.style.top = discardRect.top + "px";
+            clone.style.width = "50px";
+            clone.style.height = "auto";
+            clone.style.transform = "rotate(0deg)";
+            clone.style.filter = "none";
+          });
+          await new Promise((r) => setTimeout(r, 200));
+        }
+
+        // Wait for last clone transition to finish, then clean up
+        await new Promise((r) => setTimeout(r, 300));
+        document.querySelectorAll("body > .card").forEach((c) => c.remove());
+        ensureCardElements(data.deck);
+        updatePiles(data);
+        playZone.classList.remove("discard-hit", "discard-hit-blueshell");
+        updatePlayZone();
+        updateBuyButton();
       });
 
       room.onMessage("cardBought", (data) => {

@@ -399,6 +399,7 @@ export function initBoard(gameId) {
       this.load.svg("banana", "/banana.svg", { width: spriteSize, height: spriteSize });
       this.load.svg("green_shell", "/green_shell.svg", { width: spriteSize, height: spriteSize });
       this.load.svg("red_shell", "/red_shell.svg", { width: spriteSize, height: spriteSize });
+      this.load.svg("blue_shell", "/blue_shell.svg", { width: spriteSize, height: spriteSize });
       this.load.svg("permacoin", "/permacoin.svg", { width: spriteSize, height: spriteSize });
       this.load.svg("hit_star", "/hit_star.svg", { width: spriteSize, height: spriteSize });
       this.load.svg("dark_mushroom", "/dark_mushroom.svg", { width: spriteSize, height: spriteSize });
