@@ -22,7 +22,8 @@ export function openBuyModal(currentRoom, latestRivers, currentCoins, currentRan
   const overlay = document.createElement("div");
   overlay.className = "buy-modal";
   overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) closeBuyModal();
+    if (e.target.closest(".river-card, .buy-modal-close")) return;
+    closeBuyModal();
   });
 
   const closeBtn = document.createElement("button");
