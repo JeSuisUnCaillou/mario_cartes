@@ -765,7 +765,7 @@ export function initBoard(gameId) {
     }
 
     _spawnHitStars(x, y, size) {
-      const directions = [180, 225, 315, 0]; // upward-ish fan: left → upper-left → upper-right → right
+      const directions = [180, 135, 45, 0]; // upward-ish fan: left → upper-left → upper-right → right
       const rotations = [0, 18, 36, 54];     // spread within one 72° symmetry period
       directions.forEach((dir, i) => {
         const star = this.add.image(x, y, "hit_star");
