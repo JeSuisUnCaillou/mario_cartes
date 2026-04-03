@@ -669,6 +669,12 @@ class GameRoom extends Room {
       if (existingPlayerId && this.players.has(existingPlayerId)) {
         const player = this.players.get(existingPlayerId);
         player.connected = true;
+        // Remove stale clientsInfo entries for this playerId (e.g. from a previous dropped connection)
+        for (const [sid, info] of this.clientsInfo) {
+          if (info.playerId === existingPlayerId && sid !== client.sessionId) {
+            this.clientsInfo.delete(sid);
+          }
+        }
         this.clientsInfo.set(client.sessionId, { type: "player", playerId: existingPlayerId });
         client.send("cardsDrawn", this._cardState(player));
       } else if (this.phase === "lobby") {
