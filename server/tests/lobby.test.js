@@ -1646,6 +1646,20 @@ describe("Start over", () => {
     board.leave();
   });
 
+  it("startOver resets rivers with fresh decks", async () => {
+    const { room1, room2, board } = await finishGame(baseUrl);
+
+    room1.send("startOver");
+    const gs = await waitForMessage(board, "gameState", (g) => g.phase === "lobby" && g.rivers);
+    expect(gs.rivers).toHaveLength(3);
+    expect(gs.rivers[0].slots).toHaveLength(3);
+    expect(gs.rivers[0].slots[0]).not.toBeNull();
+
+    room1.leave();
+    room2.leave();
+    board.leave();
+  });
+
   it("startOver resets cell occupants", async () => {
     const { room1, room2, board } = await finishGame(baseUrl);
 

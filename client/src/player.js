@@ -550,7 +550,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           gamePhase = state.phase;
           activePlayerId = state.activePlayerId || null;
 
-          if (riversDirty && state.rivers.length > 0) {
+          if (state.rivers.length > 0) {
             latestRivers = [];
             state.rivers.forEach((r) => {
               const slots = [];

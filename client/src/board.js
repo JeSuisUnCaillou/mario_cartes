@@ -613,7 +613,7 @@ export function initBoard(gameId) {
         if (gameStateDirty || riversDirty) {
           const gameState = schemaToGameState(state);
           updateBoardGameState(gameState);
-          if (riversDirty && gameState.rivers) renderRivers(gameState.rivers, state.players.size);
+          if (gameState.rivers) renderRivers(gameState.rivers, state.players.size);
           gameStateDirty = false;
           riversDirty = false;
         }
