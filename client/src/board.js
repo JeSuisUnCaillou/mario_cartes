@@ -791,7 +791,7 @@ export function initBoard(gameId) {
       mush.setDepth(10);
       this.tweens.add({
         targets: mush,
-        y: y - size,
+        y: y - size * 2,
         scale: mush.scale * 2,
         alpha: 0,
         duration: 1500,
