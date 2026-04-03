@@ -12,7 +12,10 @@ const gameServer = new Server({
   pingMaxRetries: 5,
   express: (app) => {
     app.use(express.json());
-    app.use(express.static(clientDist));
+
+    app.get("/", (req, res) => {
+      res.sendFile(path.join(clientDist, "home.html"));
+    });
 
     app.get("/create", async (req, res) => {
       const room = await matchMaker.createRoom("game", {});
@@ -29,13 +32,11 @@ const gameServer = new Server({
       res.json({ id: room.roomId });
     });
 
-    app.get("/", (req, res) => {
-      res.sendFile(path.join(clientDist, "home.html"));
-    });
-
     app.get("/game/*", (req, res) => {
       res.sendFile(path.join(clientDist, "index.html"));
     });
+
+    app.use(express.static(clientDist));
   },
 });
 
