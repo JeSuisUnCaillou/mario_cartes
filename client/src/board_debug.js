@@ -183,13 +183,15 @@ function renderDebugModal(state) {
       cardEl.appendChild(itemsInput);
       const applyBtn = el("button", "debug-small-btn debug-apply-btn", "\u2713");
       const cardIndex = ci;
-      applyBtn.addEventListener("click", () => {
+      const applyCard = () => {
         const raw = itemsInput.value.trim();
         const items = raw ? raw.split(",").map((s) => s.trim()).filter(Boolean) : null;
         if (items) {
           boardRoom.send("_testSetState", { playerId: p.playerId, setHandCard: { index: cardIndex, items } });
         }
-      });
+      };
+      applyBtn.addEventListener("click", applyCard);
+      itemsInput.addEventListener("keydown", (e) => { if (e.key === "Enter") applyCard(); });
       cardEl.appendChild(applyBtn);
       const removeBtn = el("button", "debug-small-btn debug-remove-btn", "\u2715");
       removeBtn.addEventListener("click", () => {
@@ -342,13 +344,15 @@ function renderDebugModal(state) {
         const slotApply = el("button", "debug-small-btn debug-apply-btn", "\u2713");
         const riverId = river.id;
         const slotIndex = si;
-        slotApply.addEventListener("click", () => {
+        const applySlot = () => {
           const raw = itemsInput.value.trim();
           const items = raw ? raw.split(",").map((s) => s.trim()).filter(Boolean) : null;
           boardRoom.send("_debugSetGameState", {
             setRiverSlot: { riverId, slotIndex, items },
           });
-        });
+        };
+        slotApply.addEventListener("click", applySlot);
+        itemsInput.addEventListener("keydown", (e) => { if (e.key === "Enter") applySlot(); });
         slotEl.appendChild(slotApply);
         slotsRow.appendChild(slotEl);
       }
