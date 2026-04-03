@@ -599,9 +599,9 @@ input {
 }
 
 .finished-rank-icon {
-  width: 1.4em;
-  height: 1.4em;
-  margin-right: 4px;
+  width: 2.2em;
+  height: 2.2em;
+  margin-right: 6px;
 }
 
 .lobby-zone {
@@ -1102,9 +1102,9 @@ input {
 }
 
 .board-leaderboard-icon {
-  width: 3vh;
-  height: 3vh;
-  margin-right: 4px;
+  width: 5vh;
+  height: 5vh;
+  margin-right: 6px;
 }
 
 /* Leaderboard overlay (board screen) */
