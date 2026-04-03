@@ -232,6 +232,7 @@ function addDragListeners(card) {
           }
         }
       }, 500);
+      setTimeout(() => { if (playing) playing = false; }, 5000);
     } else {
       // Animate back to original position
       dragClone.style.transition = "all 0.3s ease-in-out";
