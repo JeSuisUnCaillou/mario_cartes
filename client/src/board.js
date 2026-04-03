@@ -813,10 +813,15 @@ export function initBoard(gameId) {
       this.tweens.add({
         targets: cloud,
         scale: cloud.scale * 2,
-        alpha: 0,
         duration: 500,
         ease: "Power2",
         onComplete: () => { cloud.destroy(); },
+      });
+      this.tweens.add({
+        targets: cloud,
+        alpha: 0,
+        duration: 125,
+        delay: 375,
       });
     }
 
