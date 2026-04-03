@@ -636,6 +636,7 @@ class GameRoom extends Room {
     if (data.pendingDiscard !== undefined) player.pendingDiscard = data.pendingDiscard;
     if (data.pendingShellChoice !== undefined) player.pendingShellChoice = data.pendingShellChoice;
     if (data.slowCounters !== undefined) player.slowCounters = data.slowCounters;
+    if (data.starInvincible !== undefined) player.starInvincible = data.starInvincible;
     if (data.setHandCard) {
       const { index, items } = data.setHandCard;
       if (index >= 0 && index < player.hand.length) {
@@ -710,7 +711,7 @@ class GameRoom extends Room {
   _initialPlayerState() {
     return {
       cellId: 1, drawPile: this._createDeck(), hand: [], discardPile: [],
-      pendingDiscard: 0, pendingShellChoice: false, pendingItems: [], ready: false, hasPlayedAllCards: false, coins: 0, permanentCoins: 0, lapCount: 0, slowCounters: 0, hasMovedThisTurn: false,
+      pendingDiscard: 0, pendingShellChoice: false, pendingItems: [], ready: false, hasPlayedAllCards: false, coins: 0, permanentCoins: 0, lapCount: 0, slowCounters: 0, hasMovedThisTurn: false, starInvincible: false,
     };
   }
 
@@ -850,6 +851,7 @@ class GameRoom extends Room {
       sp.slowCounters = p.slowCounters;
       sp.hasMovedThisTurn = p.hasMovedThisTurn;
       sp.pendingShellChoice = p.pendingShellChoice;
+      sp.starInvincible = p.starInvincible || false;
       sp.finished = this.ranking.includes(playerId);
       sp.rank = liveRanks.get(playerId) || 0;
     }
@@ -1139,7 +1141,9 @@ class GameRoom extends Room {
 
     if (attempts >= playerIds.length) return;
 
-    this.players.get(this.activePlayerId).hasPlayedAllCards = false;
+    const activePlayer = this.players.get(this.activePlayerId);
+    activePlayer.hasPlayedAllCards = false;
+    activePlayer.starInvincible = false;
     this._syncState();
   }
 
@@ -1152,6 +1156,7 @@ class GameRoom extends Room {
     }
     player.hasPlayedAllCards = false;
     player.hasMovedThisTurn = false;
+    player.starInvincible = false;
     this._syncState();
     this._advanceTurn();
   }

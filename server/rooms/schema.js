@@ -15,6 +15,7 @@ const PlayerSchema = schema({
   pendingShellChoice: "boolean",
   finished: "boolean",
   rank: "number",
+  starInvincible: "boolean",
 });
 
 const RankEntrySchema = schema({

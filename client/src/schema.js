@@ -17,6 +17,7 @@ export function schemaPlayersToArray(state) {
       pendingShellChoice: p.pendingShellChoice,
       finished: p.finished,
       rank: p.rank,
+      starInvincible: p.starInvincible,
     });
   });
   return players;

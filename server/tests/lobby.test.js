@@ -77,6 +77,7 @@ describe("Joining a room", () => {
       pendingShellChoice: false,
       finished: false,
       rank: 0,
+      starInvincible: false,
     });
     room.leave();
   });
