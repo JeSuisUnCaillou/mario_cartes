@@ -51,7 +51,7 @@ npm test -w client
 Each card contains 1–3 items resolved sequentially from top to bottom:
 - **Mushroom**: Move forward 1 cell (subject to dark mushrooms).
 - **Coin**: Gain 1 coin until end of turn.
-- **Permanent coin**: A permanent coin regenerates at turn end.
+- **Permanent coin**: A permanent coin is kept from turn to turn (not regenerated). Permanent coins are spent last.
 - **Banana**: Drop a banana on your cell. Landing on a banana: discard 1 card.
 - **Green shell**: Throw to adjacent cell, forward or backward. Gives dark mushrooms to players, or destroys bananas and shells.
 - **Red shell**: Forward: travels until it hits something. Backward: one cell only. Same hit effects as green shell.
