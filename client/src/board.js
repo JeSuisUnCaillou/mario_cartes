@@ -406,6 +406,7 @@ export function initBoard(gameId) {
       this.load.svg("permacoin", "/permacoin.svg", { width: spriteSize, height: spriteSize });
       this.load.svg("hit_star", "/hit_star.svg", { width: spriteSize, height: spriteSize });
       this.load.svg("dark_mushroom", "/dark_mushroom.svg", { width: spriteSize, height: spriteSize });
+      this.load.svg("dust_cloud", "/dust_cloud.svg", { width: spriteSize, height: spriteSize });
     }
 
     create() {
@@ -805,6 +806,20 @@ export function initBoard(gameId) {
       });
     }
 
+    _spawnDustCloud(x, y, size) {
+      const cloud = this.add.image(x, y, "dust_cloud");
+      cloud.setScale(size / cloud.width);
+      cloud.setDepth(10);
+      this.tweens.add({
+        targets: cloud,
+        scale: cloud.scale * 2,
+        alpha: 0,
+        duration: 500,
+        ease: "Power2",
+        onComplete: () => { cloud.destroy(); },
+      });
+    }
+
     animateItemHit(playerId, cellId, itemType = "banana") {
       const helmet = this.helmets.get(playerId);
       const label = this.nameLabels.get(playerId);
@@ -956,36 +971,13 @@ export function initBoard(gameId) {
               onComplete: () => { shell.destroy(); },
             });
           } else if (data.hit === "banana" || data.hit === "green_shell" || data.hit === "red_shell") {
-            const launchY = to.y - this.scale.height * 0.6;
-            const spread = Math.tan(7.5 * Math.PI / 180) * this.scale.height * 0.6;
-
-            // Thrown shell launches upward-left
-            this.tweens.add({
-              targets: shell,
-              x: to.x - spread,
-              y: launchY,
-              angle: 360,
-              alpha: 0,
-              duration: 600,
-              ease: "Power2",
-              onComplete: () => { shell.destroy(); },
-            });
-
-            // Hit item launches upward-right
+            // Dust cloud covers both objects disappearing
+            this._spawnDustCloud(shell.x, shell.y, itemSize);
+            shell.destroy();
             if (hitItem) {
-              hitItem.setDepth(10);
-              this.tweens.add({
-                targets: hitItem,
-                x: to.x + spread,
-                y: launchY,
-                angle: -360,
-                alpha: 0,
-                duration: 600,
-                ease: "Power2",
-                onComplete: () => { hitItem.destroy(); },
-              });
+              this._spawnDustCloud(hitItem.x, hitItem.y, itemSize);
+              hitItem.destroy();
             }
-
             this.tweenCellLayout();
           } else if (!data.hit && (textureKey === "green_shell" || textureKey === "red_shell")) {
             // Shell, no hit — shell stays on cell
