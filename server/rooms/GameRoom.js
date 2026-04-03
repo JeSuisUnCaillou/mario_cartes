@@ -984,6 +984,8 @@ class GameRoom extends Room {
       this._resolveBananaStep(player);
     } else if (item === "coin") {
       this._resolveCoinStep(player);
+    } else if (item === "star") {
+      player.starInvincible = true;
     } else if (item === "blue_shell") {
       this._resolveBlueShell(player);
     } else if (item === "green_shell" || item === "red_shell") {
