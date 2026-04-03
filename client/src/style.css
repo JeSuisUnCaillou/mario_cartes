@@ -679,6 +679,10 @@ input {
 }
 
 .game-zone {
+  --hand-width: calc(100vw - 136px - 24px);
+  --card-overlap: 20px;
+  --card-w: min(calc((var(--hand-width) + 4 * var(--card-overlap)) / 5), 120px);
+  --card-h: calc(var(--card-w) * 86 / 54);
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -797,10 +801,9 @@ input {
   align-items: flex-end;
   justify-content: center;
   padding: 8px;
+  height: calc(var(--card-h) + 16px);
   flex-shrink: 0;
   gap: 8px;
-  /* Fixed height prevents layout shift when hand becomes empty */
-  height: 30vh;
 }
 
 .draw-pile,
@@ -870,10 +873,7 @@ input {
 }
 
 .card {
-  /* 5 cards with 4 overlaps must fit in hand area: (100vw - 2*68px piles) */
-  --hand-width: calc(100vw - 136px - 24px);
-  --card-overlap: 20px;
-  width: min(calc((var(--hand-width) + 4 * var(--card-overlap)) / 5), 120px);
+  width: var(--card-w);
   aspect-ratio: 54 / 86;
   border-radius: 8px;
   transform-origin: bottom center;

@@ -4,16 +4,18 @@ Besoin de plus de single mushroom.
 Besoin de plus de cartes à 1 gold.
 
 
--> the card zone is too small on mobile, the content overflows
 
 -> shouldn't be able to open the buy cards modal (it closes if open) if the player has a pending discard
 
 Prevent both clients to go to sleep, like a youtube video
 
-the double mushroom only advance once. It should advance two cells.
+the double mushroom only advance once. It should advance two cells. Bug pas reproductible.
 
 
 # DONE
+
+-> the card zone is too small on mobile, the content overflows -> DONE
+
 
 -> one of my players kept being disconnected. RELOU. 
 Sometimes, a bug arises for the player client : When 
