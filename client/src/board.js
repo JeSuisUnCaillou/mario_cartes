@@ -793,10 +793,15 @@ export function initBoard(gameId) {
         targets: mush,
         y: y - size * 2,
         scale: mush.scale * 2,
-        alpha: 0,
         duration: 1500,
         ease: "Power2",
         onComplete: () => { mush.destroy(); },
+      });
+      this.tweens.add({
+        targets: mush,
+        alpha: 0,
+        duration: 375,
+        delay: 1125,
       });
     }
 
