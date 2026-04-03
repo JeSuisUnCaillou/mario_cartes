@@ -259,8 +259,6 @@ function updatePlayZone() {
     endTurnContainer.innerHTML = `<button id="end-turn-btn" class="end-turn-btn">End turn</button>`;
     document.getElementById("end-turn-btn").addEventListener("click", () => {
       if (playing || animating || pendingDiscards > 0 || pendingShellChoice) return;
-      currentCoins = currentPermanentCoins;
-      updateCoinDisplay(currentPermanentCoins, currentPermanentCoins, updateBuyButton, currentSlowCounters);
       if (currentRoom) currentRoom.send("endTurn");
     });
   }
