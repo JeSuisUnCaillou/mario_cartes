@@ -519,7 +519,10 @@ class GameRoom extends Room {
       if (player.coins < river.cost) return;
       const rank = this._getLiveRank(player.playerId);
       if (!canBuyFromRiver(rank, this.rivers.length, river.id, this.players.size)) return;
+      const regularCoins = player.coins - player.permanentCoins;
+      const fromPermanent = Math.max(0, river.cost - regularCoins);
       player.coins -= river.cost;
+      player.permanentCoins -= fromPermanent;
       const card = river.slots[slotIndex];
       player.discardPile.push(card);
       river.slots[slotIndex] = null;

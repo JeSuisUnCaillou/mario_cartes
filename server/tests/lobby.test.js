@@ -2561,4 +2561,42 @@ describe("Permanent coins", () => {
     expect(players[0].permanentCoins).toBe(1);
     room.leave();
   });
+
+  it("buying with insufficient regular coins spends permanent coins", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["mushroom", "mushroom"], ["coin"], ["coin"], ["coin"], ["coin"],
+        ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+      _testRiverDecks: [
+        [["mushroom"], ["banana"], ["coin"], ["mushroom"], ["banana"], ["coin"]],
+        [["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"], ["mushroom", "mushroom"], ["banana", "banana"], ["coin", "coin"]],
+        [["mushroom", "mushroom", "mushroom"], ["banana", "banana", "banana"], ["coin", "coin", "coin"], ["mushroom", "mushroom", "mushroom"]],
+      ],
+    });
+    const { room } = await connectPlayer(baseUrl, roomId);
+    room.send("setReady", true);
+    room.send("startGame");
+    const gs = await waitForMessage(room, "gameState", (g) => g.phase === "playing");
+    const cards = await waitForMessage(room, "cardsDrawn");
+
+    // Play mushroom×2 to land on cell 3 (1 permanent coin)
+    const mmCard = cards.hand.find((c) => c.items.join(",") === "mushroom,mushroom");
+    room.send("playCard", { cardId: mmCard.id });
+    await waitForMessage(room, "cardPlayed");
+    await waitForPlayers(room, (list) => list[0].permanentCoins === 1);
+
+    // No coin cards played — only 1 permanent coin available (coins=1, permanentCoins=1)
+    // Buy a river 0 card (cost 1) — must spend the permanent coin
+    const river0Card = gs.rivers[0].slots[0];
+    room.send("buyCard", { riverId: 0, cardId: river0Card.id });
+    const bought = await waitForMessage(room, "cardBought");
+    expect(bought.coins).toBe(0);
+    expect(bought.permanentCoins).toBe(0);
+
+    // End turn: coins should be 0 since permanent coin was spent
+    room.send("endTurn");
+    const players = await waitForPlayers(room, (list) => list[0].coins === 0);
+    expect(players[0].coins).toBe(0);
+    expect(players[0].permanentCoins).toBe(0);
+    room.leave();
+  });
 });
