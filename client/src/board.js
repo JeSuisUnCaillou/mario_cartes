@@ -416,6 +416,17 @@ export function initBoard(gameId) {
       this.connectToRoom(gameId);
     }
 
+    update() {
+      const helmetSize = this.track ? this.track.displayWidth / 5 / 4.5 * 0.9 : 0;
+      for (const [playerId, star] of this.starOverlays) {
+        const helmet = this.helmets.get(playerId);
+        if (helmet) {
+          star.x = helmet.x;
+          star.y = helmet.y - helmetSize * 0.3;
+        }
+      }
+    }
+
     layoutTrack() {
       const { width, height } = this.scale;
 
@@ -1071,14 +1082,6 @@ export function initBoard(gameId) {
                 duration: 400,
                 ease: "Power2",
               });
-              if (this.starOverlays.has(p.playerId)) {
-                this.tweens.add({
-                  targets: this.starOverlays.get(p.playerId),
-                  x, y: y - helmetDisplaySize * 0.3,
-                  duration: 400,
-                  ease: "Power2",
-                });
-              }
               this.playerCells.set(p.playerId, p.cellId);
             } else if (helmet.x !== x || helmet.y !== y) {
               this.tweens.add({
@@ -1093,14 +1096,6 @@ export function initBoard(gameId) {
                 duration: 300,
                 ease: "Power2",
               });
-              if (this.starOverlays.has(p.playerId)) {
-                this.tweens.add({
-                  targets: this.starOverlays.get(p.playerId),
-                  x, y: y - helmetDisplaySize * 0.3,
-                  duration: 300,
-                  ease: "Power2",
-                });
-              }
             }
           } else {
             const textureKey = `helmet_${p.color}`;
