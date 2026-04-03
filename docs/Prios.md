@@ -9,7 +9,7 @@ Aiming a cell containing several items with a shell should prompt the player to 
 ✔️ la mécanique de slow pour les shells
 ✔️ Home page
 ✔️ Explication des règles
-Player's disconnection shown on his client, with reconnect button
+✔️ Player's disconnection shown on his client, with reconnect button
 le faux bloc
 les cartes spéciales
 le singe et la tortue
