@@ -277,12 +277,23 @@ class GameRoom extends Room {
     const finishedRanks = this.ranking.map((pid, i) => ({ playerId: pid, finalRank: i + 1 }));
     const liveRanks = computeLiveRanks(playerList, finishedRanks, this.cells.size);
 
-    let targetId = null;
+    // Find the best rank among unfinished players
+    let bestRank = Infinity;
     for (const [pid, rank] of liveRanks) {
       if (finishedIds.has(pid)) continue;
-      if (targetId === null || rank < liveRanks.get(targetId)) targetId = pid;
+      if (rank < bestRank) bestRank = rank;
     }
-    if (!targetId) return;
+    if (bestRank === Infinity) return;
+
+    // Collect all rank-1 candidates; prefer others over the thrower
+    const candidates = [];
+    for (const [pid, rank] of liveRanks) {
+      if (finishedIds.has(pid) || rank !== bestRank) continue;
+      candidates.push(pid);
+    }
+    const others = candidates.filter((pid) => pid !== thrower.playerId);
+    const pool = others.length > 0 ? others : candidates;
+    const targetId = pool[Math.floor(Math.random() * pool.length)];
     const target = this.players.get(targetId);
 
     // Build forward path from thrower to target (skip all obstacles)

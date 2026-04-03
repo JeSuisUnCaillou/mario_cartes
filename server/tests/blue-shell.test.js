@@ -76,8 +76,8 @@ describe("Blue shell", () => {
     const activeRoom = activeId === id1 ? room1 : room2;
     const activeCards = activeId === id1 ? cards1 : cards2;
 
-    // Move active ahead so they are rank 1
-    board.send("_testSetState", { playerId: activeId, cellId: 5 });
+    // Move active ahead so they are sole rank 1
+    board.send("_testSetState", { playerId: activeId, cellId: 5, lapCount: 1 });
     await waitForMessage(board, "cellOccupants", (o) => o[5] && o[5].includes(activeId));
 
     const shellCard = activeCards.hand.find((c) => c.items.includes("blue_shell"));
@@ -93,6 +93,42 @@ describe("Blue shell", () => {
     // Active hand should be empty (played 1 card, rest auto-discarded)
     const players = await waitForPlayers(board, (ps) => ps.find((p) => p.playerId === activeId)?.handCount === 0);
     expect(players.find((p) => p.playerId === activeId).handCount).toBe(0);
+
+    room1.leave(); room2.leave(); board.leave();
+  });
+
+  it("hits another rank-1 player when thrower is tied for rank 1", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["blue_shell"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    room1.send("startGame");
+    const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
+    const cards1 = await waitForMessage(room1, "cardsDrawn");
+    const cards2 = await waitForMessage(room2, "cardsDrawn");
+    const activeId = gs.activePlayerId;
+    const activeRoom = activeId === id1 ? room1 : room2;
+    const passiveId = activeId === id1 ? id2 : id1;
+    const activeCards = activeId === id1 ? cards1 : cards2;
+
+    // Both at same position (cell 5, lap 1) — tied for rank 1
+    board.send("_testSetState", { playerId: activeId, cellId: 5, lapCount: 1 });
+    board.send("_testSetState", { playerId: passiveId, cellId: 5, lapCount: 1 });
+    await waitForPlayers(board, (ps) =>
+      ps.find((p) => p.playerId === activeId)?.cellId === 5
+      && ps.find((p) => p.playerId === passiveId)?.cellId === 5,
+    );
+
+    const shellCard = activeCards.hand.find((c) => c.items.includes("blue_shell"));
+    activeRoom.send("playCard", { cardId: shellCard.id });
+
+    const thrown = await waitForMessage(board, "shellThrown");
+    // Should hit the OTHER player, not the thrower
+    expect(thrown.hitPlayerId).toBe(passiveId);
 
     room1.leave(); room2.leave(); board.leave();
   });
