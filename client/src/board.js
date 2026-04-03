@@ -710,6 +710,7 @@ export function initBoard(gameId) {
     _syncItemSprites(spriteMap, countsByCell, textureKey) {
       // Remove sprites for cells that no longer have this item
       for (const [cellId, sprites] of spriteMap) {
+        if (this._dustCloudCells.has(cellId)) continue;
         if (!countsByCell[cellId]) {
           sprites.forEach((s) => s.destroy());
           spriteMap.delete(cellId);
@@ -718,6 +719,7 @@ export function initBoard(gameId) {
       // Create or destroy sprites to match counts
       for (const [cellId, count] of Object.entries(countsByCell)) {
         const cid = Number(cellId);
+        if (this._dustCloudCells.has(cid)) continue;
         // Skip cells with an in-flight shell animation — the animation
         // sprite will be registered when it arrives
         if ((textureKey === "green_shell" || textureKey === "red_shell") && this._inflightShells.has(cid)) {
@@ -898,22 +900,10 @@ export function initBoard(gameId) {
       shell.setScale(itemSize / shell.width);
       shell.setDepth(10);
 
-      // Grab the hit item sprite NOW before updateCellOccupants destroys it
-      let hitItem = null;
+      // Freeze target cell layout until dust cloud finishes — prevents
+      // updateCellOccupants / tweenCellLayout from rearranging during animation
       if (data.hit === "banana" || data.hit === "green_shell" || data.hit === "red_shell") {
-        const hitSpriteMap = data.hit === "banana" ? this.bananaSprites
-          : data.hit === "green_shell" ? this.shellSprites
-            : this.redShellSprites;
-        const hitSprites = hitSpriteMap.get(data.toCellId) || [];
-        hitItem = hitSprites.pop();
-        if (hitSprites.length === 0) hitSpriteMap.delete(data.toCellId);
-
-        // Remove from latestCellOccupants so tweenCellLayout doesn't reposition it
-        const occupants = this.latestCellOccupants[data.toCellId];
-        if (occupants) {
-          const idx = occupants.lastIndexOf(data.hit);
-          if (idx !== -1) occupants.splice(idx, 1);
-        }
+        this._dustCloudCells.add(data.toCellId);
       }
 
       // For shells that land on the cell (no hit), mark cell as
@@ -978,8 +968,15 @@ export function initBoard(gameId) {
               onComplete: () => { shell.destroy(); },
             });
           } else if (data.hit === "banana" || data.hit === "green_shell" || data.hit === "red_shell") {
-            // Dust cloud on target object, freeze cell layout until animation ends
-            this._dustCloudCells.add(data.toCellId);
+            // Grab hit item sprite now (cell is frozen so it's still there)
+            const hitSpriteMap = data.hit === "banana" ? this.bananaSprites
+              : data.hit === "green_shell" ? this.shellSprites
+                : this.redShellSprites;
+            const hitSprites = hitSpriteMap.get(data.toCellId) || [];
+            const hitItem = hitSprites.pop();
+            if (hitSprites.length === 0) hitSpriteMap.delete(data.toCellId);
+
+            // Dust cloud on target object
             if (hitItem) {
               this._spawnDustCloud(hitItem.x, hitItem.y, itemSize);
               hitItem.destroy();
