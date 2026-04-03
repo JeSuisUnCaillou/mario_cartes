@@ -1007,10 +1007,11 @@ describe("Card buying (rivers)", () => {
     room.send("startGame");
     const gs = await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     const rivers = gs.rivers;
-    expect(rivers).toHaveLength(3);
+    expect(rivers).toHaveLength(4);
     expect(rivers[0].cost).toBe(1);
     expect(rivers[1].cost).toBe(3);
     expect(rivers[2].cost).toBe(5);
+    expect(rivers[3].cost).toBe(8);
     for (const river of rivers) {
       expect(river.slots).toHaveLength(3);
       for (const card of river.slots) {
@@ -1030,7 +1031,7 @@ describe("Card buying (rivers)", () => {
     await waitForMessage(room, "gameState", (gs) => gs.phase === "playing");
     const { room: board } = await connectBoard(baseUrl, roomId);
     const gs = await waitForMessage(board, "gameState");
-    expect(gs.rivers).toHaveLength(3);
+    expect(gs.rivers).toHaveLength(4);
     room.leave();
     board.leave();
   });
@@ -1651,7 +1652,7 @@ describe("Start over", () => {
 
     room1.send("startOver");
     const gs = await waitForMessage(board, "gameState", (g) => g.phase === "lobby" && g.rivers);
-    expect(gs.rivers).toHaveLength(3);
+    expect(gs.rivers).toHaveLength(4);
     expect(gs.rivers[0].slots).toHaveLength(3);
     expect(gs.rivers[0].slots[0]).not.toBeNull();
 
@@ -1820,7 +1821,7 @@ describe("Debug mode", () => {
     board.send("_debugGetState");
     const state = await waitForMessage(board, "_debugState");
 
-    expect(state.rivers).toHaveLength(3);
+    expect(state.rivers).toHaveLength(4);
     expect(state.rivers[0]).toHaveProperty("cost");
     expect(state.rivers[0]).toHaveProperty("slots");
     expect(state.rivers[0]).toHaveProperty("deckCount");

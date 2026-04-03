@@ -39,7 +39,7 @@ class GameRoom extends Room {
         const cards = river.map((items) => ({ id: randomUUID(), items }));
         return {
           id: i,
-          cost: [1, 3, 5][i],
+          cost: RIVER_DEFS[i].cost,
           deck: cards.slice(3),
           slots: cards.slice(0, 3),
         };
