@@ -501,6 +501,7 @@ export function initBoard(gameId) {
     }
 
     tweenCellLayout() {
+      if (this._layoutFrozen) return;
       const cellW = this.track.displayWidth / 5;
       const helmetSlot = cellW / 4.5;
       const helmetDisplaySize = helmetSlot * 0.9;
@@ -976,13 +977,17 @@ export function initBoard(gameId) {
               onComplete: () => { shell.destroy(); },
             });
           } else if (data.hit === "banana" || data.hit === "green_shell" || data.hit === "red_shell") {
-            // Dust cloud on target object, both disappear
+            // Dust cloud on target object, freeze layout until animation ends
+            this._layoutFrozen = true;
             if (hitItem) {
               this._spawnDustCloud(hitItem.x, hitItem.y, itemSize);
               hitItem.destroy();
             }
             shell.destroy();
-            this.time.delayedCall(500, () => this.tweenCellLayout());
+            this.time.delayedCall(500, () => {
+              this._layoutFrozen = false;
+              this.tweenCellLayout();
+            });
           } else if (!data.hit && (textureKey === "green_shell" || textureKey === "red_shell")) {
             // Shell, no hit — shell stays on cell
             shell.setDepth(0);
