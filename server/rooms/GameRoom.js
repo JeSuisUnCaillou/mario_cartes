@@ -267,6 +267,59 @@ class GameRoom extends Room {
     }
   }
 
+  _resolveBlueShell(thrower) {
+    // Find rank-1 unfinished player
+    const finishedIds = new Set(this.ranking);
+    const playerList = [];
+    for (const [pid, p] of this.players) {
+      playerList.push({ playerId: pid, cellId: p.cellId, lapCount: p.lapCount });
+    }
+    const finishedRanks = this.ranking.map((pid, i) => ({ playerId: pid, finalRank: i + 1 }));
+    const liveRanks = computeLiveRanks(playerList, finishedRanks, this.cells.size);
+
+    let targetId = null;
+    for (const [pid, rank] of liveRanks) {
+      if (finishedIds.has(pid)) continue;
+      if (targetId === null || rank < liveRanks.get(targetId)) targetId = pid;
+    }
+    if (!targetId) return;
+    const target = this.players.get(targetId);
+
+    // Build forward path from thrower to target (skip all obstacles)
+    const path = [];
+    let currentCellId = thrower.cellId;
+    const totalCells = this.cells.size;
+    for (let step = 0; step < totalCells; step++) {
+      currentCellId = this.cells.get(currentCellId).next_cell;
+      path.push(currentCellId);
+      if (currentCellId === target.cellId) break;
+    }
+
+    // Auto-discard target's entire hand
+    const discardedCardIds = target.hand.map((c) => c.id);
+    while (target.hand.length > 0) {
+      target.discardPile.push(target.hand.pop());
+    }
+
+    if (discardedCardIds.length > 0) {
+      this._sendToPlayer(target.playerId, "blueShellHit", {
+        discardedCardIds,
+        ...this._cardState(target),
+      });
+    }
+
+    this.broadcast("shellThrown", {
+      playerId: thrower.playerId,
+      fromCellId: thrower.cellId,
+      toCellId: target.cellId,
+      shellType: "blue_shell",
+      path,
+      hit: "player",
+      hitPlayerId: target.playerId,
+    });
+    this._syncState();
+  }
+
   onCreate(options) {
     if (options._roomId) {
       this.roomId = options._roomId;
@@ -918,6 +971,8 @@ class GameRoom extends Room {
       this._resolveBananaStep(player);
     } else if (item === "coin") {
       this._resolveCoinStep(player);
+    } else if (item === "blue_shell") {
+      this._resolveBlueShell(player);
     } else if (item === "green_shell" || item === "red_shell") {
       player.pendingShellChoice = true;
       player.pendingShellType = item;

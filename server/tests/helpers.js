@@ -5,7 +5,7 @@ import { GameRoom } from "../rooms/GameRoom.js";
 import { schemaPlayersToArray, schemaCellOccupantsToObject, schemaToGameState } from "../../client/src/schema.js";
 
 // "players", "cellOccupants", "gameState" are synthesized from schema state (not broadcast messages)
-const BUFFERED_TYPES = ["players", "cellOccupants", "gameState", "cardsDrawn", "gameAlreadyStarted", "kicked", "cardPlayed", "discardHit", "cardDiscarded", "cardBought", "shellThrown", "itemHitBoard", "_debugState"];
+const BUFFERED_TYPES = ["players", "cellOccupants", "gameState", "cardsDrawn", "gameAlreadyStarted", "kicked", "cardPlayed", "discardHit", "cardDiscarded", "cardBought", "shellThrown", "itemHitBoard", "blueShellHit", "_debugState"];
 
 function bufferMessages(room) {
   room._messageBuffers = {};
