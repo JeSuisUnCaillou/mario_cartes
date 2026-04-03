@@ -388,6 +388,7 @@ export function initBoard(gameId) {
       this.redShellSprites = new Map();
       this.permacoinSprites = new Map();
       this._inflightShells = new Map(); // cellId → shell sprite being animated to that cell
+      this._dustCloudCells = new Set(); // cellIds with active dust cloud animations
       this.latestCellOccupants = {};
       this._cellOccupantsQueue = [];
       this._processingQueue = false;
@@ -509,6 +510,7 @@ export function initBoard(gameId) {
       for (const [cellIdStr, occupants] of Object.entries(this.latestCellOccupants)) {
         const cellId = Number(cellIdStr);
         if (!CELL_POSITIONS[cellId]) continue;
+        if (this._dustCloudCells.has(cellId)) continue;
         const bSprites = this.bananaSprites.get(cellId) || [];
         const sSprites = this.shellSprites.get(cellId) || [];
         const rsSprites = this.redShellSprites.get(cellId) || [];
@@ -976,13 +978,17 @@ export function initBoard(gameId) {
               onComplete: () => { shell.destroy(); },
             });
           } else if (data.hit === "banana" || data.hit === "green_shell" || data.hit === "red_shell") {
-            // Dust cloud on target object, both disappear
+            // Dust cloud on target object, freeze cell layout until animation ends
+            this._dustCloudCells.add(data.toCellId);
             if (hitItem) {
               this._spawnDustCloud(hitItem.x, hitItem.y, itemSize);
               hitItem.destroy();
             }
             shell.destroy();
-            this.tweenCellLayout();
+            this.time.delayedCall(500, () => {
+              this._dustCloudCells.delete(data.toCellId);
+              this.tweenCellLayout();
+            });
           } else if (!data.hit && (textureKey === "green_shell" || textureKey === "red_shell")) {
             // Shell, no hit — shell stays on cell
             shell.setDepth(0);
