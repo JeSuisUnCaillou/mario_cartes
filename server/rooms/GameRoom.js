@@ -1167,19 +1167,22 @@ class GameRoom extends Room {
     this._syncState();
   }
 
-  _endTurnAndAdvance(player) {
+  _resetPlayerTurn(player) {
     player.coins = player.permanentCoins;
     player.slowCounters = 0;
     player.pendingItems = [];
-    // Discard remaining hand cards
     if (player.hand.length > 0) {
       player.discardPile.push(...player.hand.splice(0));
     }
+    player.hasPlayedAllCards = false;
+    player.hasMovedThisTurn = false;
+  }
+
+  _endTurnAndAdvance(player) {
+    this._resetPlayerTurn(player);
     const drawResult = this._drawCards(player);
     this._sendToPlayer(player.playerId, "cardsDrawn", drawResult);
     this._syncState();
-    player.hasPlayedAllCards = false;
-    player.hasMovedThisTurn = false;
     this._advanceTurn();
   }
 
@@ -1208,14 +1211,7 @@ class GameRoom extends Room {
   }
 
   _endTurnForFinishedPlayer(player) {
-    player.coins = player.permanentCoins;
-    player.slowCounters = 0;
-    player.pendingItems = [];
-    if (player.hand.length > 0) {
-      player.discardPile.push(...player.hand.splice(0));
-    }
-    player.hasPlayedAllCards = false;
-    player.hasMovedThisTurn = false;
+    this._resetPlayerTurn(player);
     player.starInvincible = false;
     this._syncState();
     this._advanceTurn();
