@@ -11,9 +11,9 @@ the active player shoud have a wobble ainmation
 
 vibrate the players phone when he becomes active, and color his background in light green. Red bg if waiting player.
 
-Consult deck and discard
+
   
-choose target on tie
+choose target on cell with several targets
 
 longer vibrate on hit
 
@@ -23,19 +23,19 @@ when choosing forward/backward => illuminate the cell options on the board with 
 
 config game in lobby : nb turns
 
+
+
 ## OLD
 
 Besoin de plus de single mushroom.
 Besoin de plus de cartes à 1 gold.
 
-
-
-
-
 the double mushroom only advance once. It should advance two cells. Bug pas reproductible.
 
 
 # DONE
+
+DONE Consult deck and discard
 
 -> Prevent both clients to go to sleep, like a youtube video
 
