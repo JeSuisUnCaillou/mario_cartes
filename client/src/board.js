@@ -69,7 +69,7 @@ class PlayerAvatar {
     if (this.wobbleTween) return;
     this.wobbleTween = this.scene.tweens.add({
       targets: this.helmet,
-      angle: { from: -3, to: 3 },
+      angle: { from: -1.5, to: 1.5 },
       duration: 150,
       yoyo: true,
       repeat: -1,
