@@ -34,6 +34,7 @@ Monorepo with npm workspaces (`server`, `client`):
 - No TypeScript, no linter config
 - Constants: `UPPER_CASE`. Variables/functions: `camelCase`
 - Card definitions live in `assets/decks.yaml`
+- **DRY (Don't Repeat Yourself)**: never duplicate logic. If the same value, expression, or block appears more than once, extract it into a constant, function, or shared module. When modifying code, actively look for existing duplication to factorize.
 
 ## Design Principles
 
