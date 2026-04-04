@@ -128,6 +128,17 @@ class GameRoom extends Room {
     return this._countItemOnCell(cellId, "green_shell") + this._countItemOnCell(cellId, "red_shell");
   }
 
+  _shellTypeOnCell(cellId) {
+    if (this._countItemOnCell(cellId, "green_shell") > 0) return "green_shell";
+    if (this._countItemOnCell(cellId, "red_shell") > 0) return "red_shell";
+    return null;
+  }
+
+  _hazardOnCell(cellId) {
+    if (this._countItemOnCell(cellId, "banana") > 0) return "banana";
+    return this._shellTypeOnCell(cellId);
+  }
+
   _previousCell(cellId) {
     return this.prevCell[cellId];
   }
@@ -168,9 +179,7 @@ class GameRoom extends Room {
     }
 
     // Priority 3: hit another shell (green or red) — both destroyed
-    const hitShellType = this._countItemOnCell(targetCellId, "green_shell") > 0 ? "green_shell"
-      : this._countItemOnCell(targetCellId, "red_shell") > 0 ? "red_shell"
-        : null;
+    const hitShellType = this._shellTypeOnCell(targetCellId);
     if (hitShellType) {
       this._removeFromCell(targetCellId, hitShellType);
       this.broadcast("shellThrown", {
@@ -247,9 +256,7 @@ class GameRoom extends Room {
       }
 
       // Priority 3: hit a shell (green or red)
-      const hitShellType = this._countItemOnCell(currentCellId, "green_shell") > 0 ? "green_shell"
-        : this._countItemOnCell(currentCellId, "red_shell") > 0 ? "red_shell"
-          : null;
+      const hitShellType = this._shellTypeOnCell(currentCellId);
       if (hitShellType) {
         this._removeFromCell(currentCellId, hitShellType);
         this.broadcast("shellThrown", {
@@ -1096,10 +1103,7 @@ class GameRoom extends Room {
       this._syncState();
       this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
     } else {
-      const hitType = this._countItemOnCell(player.cellId, "banana") > 0 ? "banana"
-        : this._countItemOnCell(player.cellId, "green_shell") > 0 ? "green_shell"
-          : this._countItemOnCell(player.cellId, "red_shell") > 0 ? "red_shell"
-            : null;
+      const hitType = this._hazardOnCell(player.cellId);
 
       if (hitType) {
         this._removeFromCell(player.cellId, hitType);
