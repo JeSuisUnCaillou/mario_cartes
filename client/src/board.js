@@ -454,7 +454,7 @@ export function initBoard(gameId) {
 
     repositionPermacoinSprites() {
       const cellW = this.cellW;
-      const itemSize = this.helmetSlot * 0.9;
+      const itemSize = this.helmetSlot * 0.7;
       for (const [cellId, sprite] of this.permacoinSprites) {
         if (this._dustCloudCells.has(cellId)) continue;
         const occupants = this.latestCellOccupants[cellId] || [];
