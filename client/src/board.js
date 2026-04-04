@@ -28,6 +28,82 @@ const CELL_POSITIONS = [
 
 const SVG_ASPECT = 131.0025 / 104.54418;
 const HELMET_SIZE_RATIO = 1;
+
+class PlayerAvatar {
+  constructor(scene, x, y, textureKey, name, helmetDisplaySize, alpha = 1) {
+    this.scene = scene;
+    this.helmet = scene.add.image(x, y, textureKey);
+    this.helmet.setScale(helmetDisplaySize / this.helmet.width);
+    this.helmet.setAlpha(alpha);
+    this.helmet.setDepth(5);
+
+    this.label = scene.add.text(x, y - helmetDisplaySize * 0.7, name || "???", {
+      fontFamily: "monospace",
+      fontSize: `${Math.round(helmetDisplaySize * 0.45)}px`,
+      color: "#ffffff",
+      stroke: "#000000",
+      strokeThickness: 3,
+      align: "center",
+    }).setOrigin(0.5, 1);
+    this.label.setAlpha(alpha);
+    this.label.setDepth(5);
+
+    this.starOverlay = null;
+    this.wobbleTween = null;
+    this.active = false;
+    this.cellId = null;
+  }
+
+  setActive(active) {
+    if (active === this.active) return;
+    this.active = active;
+    if (active) {
+      this.wobbleTween = this.scene.tweens.add({
+        targets: this.helmet,
+        angle: { from: -3, to: 3 },
+        duration: 400,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+    } else if (this.wobbleTween) {
+      this.wobbleTween.stop();
+      this.wobbleTween = null;
+      this.helmet.setAngle(0);
+    }
+  }
+
+  setStarInvincible(enabled, helmetDisplaySize) {
+    if (enabled && !this.starOverlay) {
+      const baseScale = helmetDisplaySize * 1.1 / this.scene.textures.get("star_overlay").getSourceImage().width;
+      const star = this.scene.add.image(this.helmet.x, this.helmet.y - helmetDisplaySize * 0.3, "star_overlay");
+      star.setScale(baseScale);
+      star.setDepth(6);
+      star._baseScale = baseScale;
+      this.scene.tweens.add({
+        targets: star,
+        alpha: { from: 1, to: 0.5 },
+        scale: { from: baseScale, to: baseScale * 0.8 },
+        duration: 600,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+      this.starOverlay = star;
+    } else if (!enabled && this.starOverlay) {
+      this.starOverlay.destroy();
+      this.starOverlay = null;
+    }
+  }
+
+  destroy() {
+    if (this.wobbleTween) this.wobbleTween.stop();
+    if (this.starOverlay) this.starOverlay.destroy();
+    this.helmet.destroy();
+    this.label.destroy();
+  }
+}
+
 let boardPhase = "lobby";
 let latestPlayersData = [];
 let latestGameState = null;
@@ -374,11 +450,7 @@ export function initBoard(gameId) {
   class GameScene extends Phaser.Scene {
     constructor() {
       super("GameScene");
-      this.helmets = new Map();
-      this.nameLabels = new Map();
-      this.starOverlays = new Map();
-
-      this.playerCells = new Map();
+      this.avatars = new Map();
       this.latestPlayers = [];
       this.bananaSprites = new Map();
       this.shellSprites = new Map();
@@ -423,11 +495,10 @@ export function initBoard(gameId) {
 
     update() {
       const helmetSize = this.track ? this.helmetSlot * 0.9 : 0;
-      for (const [playerId, star] of this.starOverlays) {
-        const helmet = this.helmets.get(playerId);
-        if (helmet) {
-          star.x = helmet.x;
-          star.y = helmet.y - helmetSize * 0.3;
+      for (const avatar of this.avatars.values()) {
+        if (avatar.starOverlay) {
+          avatar.starOverlay.x = avatar.helmet.x;
+          avatar.starOverlay.y = avatar.helmet.y - helmetSize * 0.3;
         }
       }
     }
@@ -504,14 +575,13 @@ export function initBoard(gameId) {
         const totalSlots = occupants.length + offset;
         occupants.forEach((entry, slotIndex) => {
           if (entry === "banana" || entry === "green_shell" || entry === "red_shell") return;
-          const helmet = this.helmets.get(entry);
-          const label = this.nameLabels.get(entry);
-          if (!helmet) return;
+          const avatar = this.avatars.get(entry);
+          if (!avatar) return;
           const { x, y } = this.cellSlotPos(cellId, slotIndex + offset, totalSlots);
-          helmet.setPosition(x, y);
-          helmet.setScale(helmetDisplaySize / helmet.width);
-          label.setPosition(x, y - helmetDisplaySize * 0.7);
-          label.setFontSize(Math.round(helmetDisplaySize * 0.45));
+          avatar.helmet.setPosition(x, y);
+          avatar.helmet.setScale(helmetDisplaySize / avatar.helmet.width);
+          avatar.label.setPosition(x, y - helmetDisplaySize * 0.7);
+          avatar.label.setFontSize(Math.round(helmetDisplaySize * 0.45));
         });
       }
     }
@@ -546,12 +616,11 @@ export function initBoard(gameId) {
             }
             if (sprite) sprite.setScale(itemSize / sprite.width);
           } else {
-            const helmet = this.helmets.get(entry);
-            const label = this.nameLabels.get(entry);
-            if (!helmet) return;
-            if (helmet.x !== x || helmet.y !== y) {
-              this.tweens.add({ targets: helmet, x, y, duration: 300, ease: "Power2" });
-              this.tweens.add({ targets: label, x, y: y - helmetDisplaySize * 0.7, duration: 300, ease: "Power2" });
+            const avatar = this.avatars.get(entry);
+            if (!avatar) return;
+            if (avatar.helmet.x !== x || avatar.helmet.y !== y) {
+              this.tweens.add({ targets: avatar.helmet, x, y, duration: 300, ease: "Power2" });
+              this.tweens.add({ targets: avatar.label, x, y: y - helmetDisplaySize * 0.7, duration: 300, ease: "Power2" });
             }
           }
         });
@@ -623,6 +692,9 @@ export function initBoard(gameId) {
         if (gameStateDirty || riversDirty) {
           const gameState = schemaToGameState(state);
           updateBoardGameState(gameState);
+          for (const [pid, avatar] of this.avatars) {
+            avatar.setActive(pid === gameState.activePlayerId);
+          }
           if (gameState.rivers) renderRivers(gameState.rivers, state.players.size);
           gameStateDirty = false;
           riversDirty = false;
@@ -845,9 +917,9 @@ export function initBoard(gameId) {
     }
 
     animateItemHit(playerId, cellId, itemType = "banana", starHit = false) {
-      const helmet = this.helmets.get(playerId);
-      const label = this.nameLabels.get(playerId);
-      if (!helmet) return;
+      const avatar = this.avatars.get(playerId);
+      if (!avatar) return;
+      const helmet = avatar.helmet;
 
       const moveDelay = 350; // Slightly shorter than the 400ms helmet tween to account for Power2 ease deceleration
       const spriteMap = itemType === "red_shell" ? this.redShellSprites
@@ -969,7 +1041,7 @@ export function initBoard(gameId) {
         run: () => {
           if (data.hit === "player") {
             // Spin hit player's helmet, launch shell upward, burst stars + dark mushroom
-            const helmet = this.helmets.get(data.hitPlayerId);
+            const helmet = this.avatars.get(data.hitPlayerId)?.helmet;
             const helmetSize = this.helmetSlot * 0.9;
             if (helmet) {
               this.tweens.add({
@@ -1065,37 +1137,35 @@ export function initBoard(gameId) {
           const { x, y } = slot;
           const alpha = p.connected ? 1 : 0.5;
 
-          if (this.helmets.has(p.playerId)) {
-            const helmet = this.helmets.get(p.playerId);
-            const label = this.nameLabels.get(p.playerId);
-            const prevCell = this.playerCells.get(p.playerId);
-            label.setText(p.name || "???");
-            helmet.setAlpha(alpha);
-            label.setAlpha(alpha);
+          if (this.avatars.has(p.playerId)) {
+            const avatar = this.avatars.get(p.playerId);
+            avatar.label.setText(p.name || "???");
+            avatar.helmet.setAlpha(alpha);
+            avatar.label.setAlpha(alpha);
 
-            if (prevCell !== p.cellId) {
+            if (avatar.cellId !== p.cellId) {
               this.tweens.add({
-                targets: helmet,
+                targets: avatar.helmet,
                 x, y,
                 duration: 400,
                 ease: "Power2",
               });
               this.tweens.add({
-                targets: label,
+                targets: avatar.label,
                 x, y: y - helmetDisplaySize * 0.7,
                 duration: 400,
                 ease: "Power2",
               });
-              this.playerCells.set(p.playerId, p.cellId);
-            } else if (helmet.x !== x || helmet.y !== y) {
+              avatar.cellId = p.cellId;
+            } else if (avatar.helmet.x !== x || avatar.helmet.y !== y) {
               this.tweens.add({
-                targets: helmet,
+                targets: avatar.helmet,
                 x, y,
                 duration: 300,
                 ease: "Power2",
               });
               this.tweens.add({
-                targets: label,
+                targets: avatar.label,
                 x, y: y - helmetDisplaySize * 0.7,
                 duration: 300,
                 ease: "Power2",
@@ -1107,65 +1177,21 @@ export function initBoard(gameId) {
               loadHelmetTexture(this, p.color).then(() => this.updatePlayers(this.latestPlayers));
               return;
             }
-            const helmet = this.add.image(x, y, textureKey);
-            helmet.setScale(helmetDisplaySize / helmet.width);
-            helmet.setAlpha(alpha);
-            helmet.setDepth(5);
-            this.helmets.set(p.playerId, helmet);
-
-            const label = this.add.text(x, y - helmetDisplaySize * 0.7, p.name || "???", {
-              fontFamily: "monospace",
-              fontSize: `${Math.round(helmetDisplaySize * 0.45)}px`,
-              color: "#ffffff",
-              stroke: "#000000",
-              strokeThickness: 3,
-              align: "center",
-            }).setOrigin(0.5, 1);
-            label.setAlpha(alpha);
-            label.setDepth(5);
-            this.nameLabels.set(p.playerId, label);
-
-            this.playerCells.set(p.playerId, p.cellId);
+            const avatar = new PlayerAvatar(this, x, y, textureKey, p.name, helmetDisplaySize, alpha);
+            avatar.cellId = p.cellId;
+            this.avatars.set(p.playerId, avatar);
           }
 
           // Star overlay — create or destroy based on starInvincible
-          if (p.starInvincible && !this.starOverlays.has(p.playerId)) {
-            const h = this.helmets.get(p.playerId);
-            if (h) {
-              const baseScale = helmetDisplaySize * 1.1 / this.textures.get("star_overlay").getSourceImage().width;
-              const star = this.add.image(h.x, h.y - helmetDisplaySize * 0.3, "star_overlay");
-              star.setScale(baseScale);
-              star.setDepth(6);
-              star._baseScale = baseScale;
-              this.tweens.add({
-                targets: star,
-                alpha: { from: 1, to: 0.5 },
-                scale: { from: baseScale, to: baseScale * 0.8 },
-                duration: 600,
-                yoyo: true,
-                repeat: -1,
-                ease: "Sine.easeInOut",
-              });
-              this.starOverlays.set(p.playerId, star);
-            }
-          } else if (!p.starInvincible && this.starOverlays.has(p.playerId)) {
-            this.starOverlays.get(p.playerId).destroy();
-            this.starOverlays.delete(p.playerId);
-          }
+          const avatar = this.avatars.get(p.playerId);
+          if (avatar) avatar.setStarInvincible(p.starInvincible, helmetDisplaySize);
         });
       }
 
-      for (const [playerId, helmet] of this.helmets) {
+      for (const [playerId, avatar] of this.avatars) {
         if (!activePlayerIds.has(playerId)) {
-          helmet.destroy();
-          this.helmets.delete(playerId);
-          this.nameLabels.get(playerId).destroy();
-          this.nameLabels.delete(playerId);
-          if (this.starOverlays.has(playerId)) {
-            this.starOverlays.get(playerId).destroy();
-            this.starOverlays.delete(playerId);
-          }
-          this.playerCells.delete(playerId);
+          avatar.destroy();
+          this.avatars.delete(playerId);
         }
       }
 

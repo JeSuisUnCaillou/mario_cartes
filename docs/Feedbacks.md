@@ -8,14 +8,8 @@ Ecrire les règles des items sur le board aussi, à droite
 Automatic end of turn when no option left
 
 the active player shoud have a wobble ainmation
-
-vibrate the players phone when he becomes active, and color his background in light green. Red bg if waiting player.
-
-
   
 choose target on cell with several targets
-
-longer vibrate on hit
 
 maybe on prend toutes les bananes dans la gueule quand on atteint une cellule avec plusieurs bananes ?
 
@@ -34,6 +28,10 @@ the double mushroom only advance once. It should advance two cells. Bug pas repr
 
 
 # DONE
+
+longer vibrate on hit
+
+vibrate the players phone when he becomes active, and color his background in light green. Red bg if waiting player.
 
 DONE Consult deck and discard
 
