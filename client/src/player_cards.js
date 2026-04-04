@@ -1,5 +1,13 @@
 import { ITEM_ICONS, createCardDOM, renderCoinIcons } from "./constants.js";
 
+function computeFanTransform(index, count) {
+  const angleStep = 10;
+  const offset = index - (count - 1) / 2;
+  const rotation = offset * angleStep;
+  const lift = Math.abs(offset) * 8;
+  return `rotate(${rotation}deg) translateY(${lift}px)`;
+}
+
 const cardElements = new Map();
 
 export function clearCardElements() {
@@ -120,12 +128,8 @@ export async function animateDrawCards(cards, addDragListeners, animDrawCount, s
     // Recompute fan for all visible cards + this new one
     const allCards = Array.from(handArea.children);
     const visibleCount = allCards.length;
-    const angleStep = 10;
     allCards.forEach((c, idx) => {
-      const offset = idx - (visibleCount - 1) / 2;
-      const rotation = offset * angleStep;
-      const lift = Math.abs(offset) * 8;
-      c.dataset.fanTransform = `rotate(${rotation}deg) translateY(${lift}px)`;
+      c.dataset.fanTransform = computeFanTransform(idx, visibleCount);
       // Existing visible cards animate via CSS transition
       if (c !== el) {
         c.style.transform = c.dataset.fanTransform;
@@ -208,15 +212,10 @@ export function recomputeFan(previousPositions) {
   const handArea = document.getElementById("hand-area");
   const cards = Array.from(handArea.querySelectorAll(".card:not([style*='visibility: hidden'])"));
   const n = cards.length;
-  const angleStep = 10;
-
   // Compute and apply new fan transforms without transition
   cards.forEach((img, i) => {
     img.style.transition = "none";
-    const offset = i - (n - 1) / 2;
-    const rotation = offset * angleStep;
-    const lift = Math.abs(offset) * 8;
-    img.dataset.fanTransform = `rotate(${rotation}deg) translateY(${lift}px)`;
+    img.dataset.fanTransform = computeFanTransform(i, n);
     img.style.transform = img.dataset.fanTransform;
   });
 
@@ -245,13 +244,9 @@ export function renderHand(hand, addDragListeners) {
   const handArea = document.getElementById("hand-area");
   handArea.innerHTML = "";
   const n = hand.length;
-  const angleStep = 10;
   hand.forEach((card, i) => {
     const el = getCardElement(card);
-    const offset = i - (n - 1) / 2;
-    const rotation = offset * angleStep;
-    const lift = Math.abs(offset) * 8;
-    el.style.transform = `rotate(${rotation}deg) translateY(${lift}px)`;
+    el.style.transform = computeFanTransform(i, n);
     el.dataset.fanTransform = el.style.transform;
     addDragListeners(el);
     handArea.appendChild(el);
