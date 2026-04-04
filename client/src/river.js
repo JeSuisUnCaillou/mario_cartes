@@ -1,5 +1,5 @@
 import { cardItemPositions } from "./player.functions.js";
-import { RANK_ICONS } from "./rank.js";
+import { RANK_ICONS, ordinalSuffix } from "./rank.js";
 import { canBuyFromRiver } from "./river.functions.js";
 
 const ITEM_ICONS = {
@@ -162,8 +162,7 @@ function renderRankIndicators(riverId, riverCount, playerCount) {
     wrapper.appendChild(icon);
     const label = document.createElement("span");
     label.className = "river-rank-label";
-    const suffixes = ["st", "nd", "rd"];
-    label.textContent = rank + (suffixes[rank - 1] || "th");
+    label.textContent = ordinalSuffix(rank);
     wrapper.appendChild(label);
     container.appendChild(wrapper);
   }
