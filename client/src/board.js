@@ -62,7 +62,7 @@ class PlayerAvatar {
       this.wobbleTween = this.scene.tweens.add({
         targets: this.helmet,
         angle: { from: -3, to: 3 },
-        duration: 400,
+        duration: 150,
         yoyo: true,
         repeat: -1,
         ease: "Sine.easeInOut",
@@ -71,7 +71,7 @@ class PlayerAvatar {
       this.bobTween = this.scene.tweens.add({
         targets: this.helmet,
         y: `-=${bobAmount}`,
-        duration: 500,
+        duration: 200,
         yoyo: true,
         repeat: -1,
         ease: "Sine.easeInOut",
