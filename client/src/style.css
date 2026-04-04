@@ -1135,6 +1135,7 @@ input {
   margin-left: 0;
   transform: none;
   transition: none;
+  max-height: 15vh;
 }
 
 .pile-modal-empty {
