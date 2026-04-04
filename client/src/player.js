@@ -1037,13 +1037,14 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
             clone.style.zIndex = "50";
             clone.style.margin = "0";
             clone.style.transition = "all 0.3s ease-in-out";
+            clone.style.pointerEvents = "none";
             document.body.appendChild(clone);
             requestAnimationFrame(() => {
               clone.style.left = (discardRect.left + discardRect.width / 2 - 25) + "px";
               clone.style.top = discardRect.top + "px";
               clone.style.width = "50px";
               clone.style.height = "auto";
-              clone.addEventListener("transitionend", () => clone.remove(), { once: true });
+              setTimeout(() => clone.remove(), 350);
             });
           }
           // Re-render modal with updated rivers and coins
