@@ -69,6 +69,8 @@ class GameRoom extends Room {
     const dp = player.discardPile;
     return {
       hand: player.hand,
+      drawPileDisplay: player.drawPileDisplay,
+      discardPile: player.discardPile,
       drawCount: player.drawPile.length,
       discardCount: dp.length,
       discardTopCard: dp.length > 0 ? dp[dp.length - 1] : null,
@@ -87,11 +89,16 @@ class GameRoom extends Room {
     let needed = 5;
     const drawn = player.drawPile.splice(0, needed);
     const drawnBeforeShuffle = drawn.length;
+    const drawnIds = new Set(drawn.map(c => c.id));
+    player.drawPileDisplay = player.drawPileDisplay.filter(c => !drawnIds.has(c.id));
     needed -= drawn.length;
     if (needed > 0 && player.discardPile.length > 0) {
       shuffledCount = player.discardPile.length;
       player.drawPile.push(...this._shuffle(player.discardPile.splice(0)));
+      player.drawPileDisplay = this._shuffle([...player.drawPile]);
       drawn.push(...player.drawPile.splice(0, needed));
+      const newDrawnIds = new Set(drawn.slice(drawnBeforeShuffle).map(c => c.id));
+      player.drawPileDisplay = player.drawPileDisplay.filter(c => !newDrawnIds.has(c.id));
     }
     player.hand.push(...drawn);
     return { ...this._cardState(player), shuffledCount, drawnBeforeShuffle };
@@ -696,6 +703,7 @@ class GameRoom extends Room {
       discardCount: p.discardPile.length,
       hand: p.hand,
       drawPile: p.drawPile,
+      drawPileDisplay: p.drawPileDisplay,
       discardPile: p.discardPile,
     }));
     const state = {
@@ -724,8 +732,9 @@ class GameRoom extends Room {
   }
 
   _initialPlayerState() {
+    const drawPile = this._createDeck();
     return {
-      cellId: 1, drawPile: this._createDeck(), hand: [], discardPile: [],
+      cellId: 1, drawPile, drawPileDisplay: this._shuffle([...drawPile]), hand: [], discardPile: [],
       pendingDiscard: 0, pendingShellChoice: false, pendingItems: [], ready: false, hasPlayedAllCards: false, coins: 0, permanentCoins: 0, lapCount: 0, slowCounters: 0, hasMovedThisTurn: false, starInvincible: false,
     };
   }
