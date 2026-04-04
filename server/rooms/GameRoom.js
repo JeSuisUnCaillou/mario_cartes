@@ -143,6 +143,18 @@ class GameRoom extends Room {
     return this._shellTypeOnCell(cellId);
   }
 
+  _buildPlayerList() {
+    const list = [];
+    for (const [pid, p] of this.players) {
+      list.push({ playerId: pid, cellId: p.cellId, lapCount: p.lapCount });
+    }
+    return list;
+  }
+
+  _buildFinishedRanks() {
+    return this.ranking.map((pid, i) => ({ playerId: pid, finalRank: i + 1 }));
+  }
+
   _previousCell(cellId) {
     return this.prevCell[cellId];
   }
@@ -280,12 +292,7 @@ class GameRoom extends Room {
   _resolveBlueShell(thrower) {
     // Find rank-1 unfinished player
     const finishedIds = new Set(this.ranking);
-    const playerList = [];
-    for (const [pid, p] of this.players) {
-      playerList.push({ playerId: pid, cellId: p.cellId, lapCount: p.lapCount });
-    }
-    const finishedRanks = this.ranking.map((pid, i) => ({ playerId: pid, finalRank: i + 1 }));
-    const liveRanks = computeLiveRanks(playerList, finishedRanks, this.cells.size);
+    const liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.cells.size);
 
     // Find the best rank among unfinished players
     let bestRank = Infinity;
@@ -683,11 +690,7 @@ class GameRoom extends Room {
 
   _fullState() {
     const liveRanks = this.phase === "playing"
-      ? computeLiveRanks(
-        Array.from(this.players.values()).map((p) => ({ playerId: p.playerId, cellId: p.cellId, lapCount: p.lapCount })),
-        this.ranking.map((pid, i) => ({ playerId: pid, finalRank: i + 1 })),
-        this.cells.size,
-      )
+      ? computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.cells.size)
       : new Map();
     const players = Array.from(this.players.values()).map((p) => ({
       playerId: p.playerId,
@@ -825,12 +828,7 @@ class GameRoom extends Room {
 
 
   _getLiveRank(playerId) {
-    const playerList = [];
-    for (const [pid, p] of this.players) {
-      playerList.push({ playerId: pid, cellId: p.cellId, lapCount: p.lapCount });
-    }
-    const finishedRanks = this.ranking.map((pid, i) => ({ playerId: pid, finalRank: i + 1 }));
-    const liveRanks = computeLiveRanks(playerList, finishedRanks, this.cells.size);
+    const liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.cells.size);
     return liveRanks.get(playerId) || 0;
   }
 
@@ -849,12 +847,7 @@ class GameRoom extends Room {
     // Compute live ranks
     let liveRanks = new Map();
     if (this.phase === "playing") {
-      const playerList = [];
-      for (const [playerId, p] of this.players) {
-        playerList.push({ playerId, cellId: p.cellId, lapCount: p.lapCount });
-      }
-      const finishedRanks = this.ranking.map((pid, i) => ({ playerId: pid, finalRank: i + 1 }));
-      liveRanks = computeLiveRanks(playerList, finishedRanks, this.cells.size);
+      liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.cells.size);
     }
 
     // Sync players
