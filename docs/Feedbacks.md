@@ -1,4 +1,29 @@
 # Feedbacks
+(with vinc & indira)
+
+Limiter le nombre de champignons noirs et simplifier la règle ?
+
+Ecrire les règles des items sur le board aussi, à droite
+
+Automatic end of turn when no option left
+
+the active player shoud have a wobble ainmation
+
+vibrate the players phone when he becomes active, and color his background in light green. Red bg if waiting player.
+
+Consult deck and discard
+  
+choose target on tie
+
+longer vibrate on hit
+
+maybe on prend toutes les bananes dans la gueule quand on atteint une cellule avec plusieurs bananes ?
+
+when choosing forward/backward => illuminate the cell options on the board with the same colors
+
+config game in lobby : nb turns
+
+## OLD
 
 Besoin de plus de single mushroom.
 Besoin de plus de cartes à 1 gold.
