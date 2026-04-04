@@ -1128,9 +1128,20 @@ export function initBoard(gameId) {
           if (p.starInvincible && !this.starOverlays.has(p.playerId)) {
             const h = this.helmets.get(p.playerId);
             if (h) {
+              const baseScale = helmetDisplaySize * 1.1 / this.textures.get("star_overlay").getSourceImage().width;
               const star = this.add.image(h.x, h.y - helmetDisplaySize * 0.3, "star_overlay");
-              star.setScale(helmetDisplaySize * 1.1 / star.width);
+              star.setScale(baseScale);
               star.setDepth(6);
+              star._baseScale = baseScale;
+              this.tweens.add({
+                targets: star,
+                alpha: { from: 1, to: 0.5 },
+                scale: { from: baseScale, to: baseScale * 0.8 },
+                duration: 600,
+                yoyo: true,
+                repeat: -1,
+                ease: "Sine.easeInOut",
+              });
               this.starOverlays.set(p.playerId, star);
             }
           } else if (!p.starInvincible && this.starOverlays.has(p.playerId)) {
