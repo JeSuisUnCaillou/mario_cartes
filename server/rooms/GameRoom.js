@@ -155,6 +155,10 @@ class GameRoom extends Room {
     return this.ranking.map((pid, i) => ({ playerId: pid, finalRank: i + 1 }));
   }
 
+  _normalizeName(raw) {
+    return (raw || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
+  }
+
   _resetGame() {
     this.phase = "lobby";
     this.ranking = [];
@@ -486,7 +490,7 @@ class GameRoom extends Room {
     this.onMessage("changeName", (client, newName) => {
       const player = this._getPlayer(client);
       if (!player) return;
-      player.name = (newName || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
+      player.name = this._normalizeName(newName);
       this._syncState();
     });
 
@@ -767,7 +771,7 @@ class GameRoom extends Room {
         client.send("cardsDrawn", this._cardState(player));
       } else if (this.phase === "lobby") {
         const playerId = randomUUID();
-        const name = (options.name || "???").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) || "???";
+        const name = this._normalizeName(options.name);
         const usedColors = new Set([...this.players.values()].map(p => p.color));
         const color = PLAYER_COLORS.find(c => !usedColors.has(c));
         this.players.set(playerId, {
