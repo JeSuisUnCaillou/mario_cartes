@@ -50,6 +50,7 @@ class PlayerAvatar {
 
     this.starOverlay = null;
     this.wobbleTween = null;
+    this.bobTween = null;
     this.active = false;
     this.cellId = null;
   }
@@ -66,10 +67,25 @@ class PlayerAvatar {
         repeat: -1,
         ease: "Sine.easeInOut",
       });
-    } else if (this.wobbleTween) {
-      this.wobbleTween.stop();
-      this.wobbleTween = null;
-      this.helmet.setAngle(0);
+      const bobAmount = this.helmet.displayHeight * 0.06;
+      this.bobTween = this.scene.tweens.add({
+        targets: this.helmet,
+        y: `-=${bobAmount}`,
+        duration: 500,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.easeInOut",
+      });
+    } else {
+      if (this.wobbleTween) {
+        this.wobbleTween.stop();
+        this.wobbleTween = null;
+        this.helmet.setAngle(0);
+      }
+      if (this.bobTween) {
+        this.bobTween.stop();
+        this.bobTween = null;
+      }
     }
   }
 
@@ -98,6 +114,7 @@ class PlayerAvatar {
 
   destroy() {
     if (this.wobbleTween) this.wobbleTween.stop();
+    if (this.bobTween) this.bobTween.stop();
     if (this.starOverlay) this.starOverlay.destroy();
     this.helmet.destroy();
     this.label.destroy();
