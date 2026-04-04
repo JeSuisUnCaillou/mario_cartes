@@ -155,6 +155,21 @@ class GameRoom extends Room {
     return this.ranking.map((pid, i) => ({ playerId: pid, finalRank: i + 1 }));
   }
 
+  _resetGame() {
+    this.phase = "lobby";
+    this.ranking = [];
+    this.currentRound = 0;
+    this.turnIndex = -1;
+    this.activePlayerId = null;
+    this.rivers = this._createRiverDecks();
+    this.cellOccupants = {};
+    for (const player of this.players.values()) {
+      Object.assign(player, this._initialPlayerState());
+      this._addToCell(START_CELL, player.playerId);
+    }
+    this._syncState();
+  }
+
   _previousCell(cellId) {
     return this.prevCell[cellId];
   }
@@ -459,18 +474,7 @@ class GameRoom extends Room {
     this.onMessage("_debugRestart", (client) => {
       const info = this.clientsInfo.get(client.sessionId);
       if (!info || info.type !== "board") return;
-      this.phase = "lobby";
-      this.ranking = [];
-      this.currentRound = 0;
-      this.turnIndex = -1;
-      this.activePlayerId = null;
-      this.rivers = this._createRiverDecks();
-      this.cellOccupants = {};
-      for (const player of this.players.values()) {
-        Object.assign(player, this._initialPlayerState());
-        this._addToCell(START_CELL, player.playerId);
-      }
-      this._syncState();
+      this._resetGame();
     });
 
     this.onMessage("_debugGetState", (client) => {
@@ -641,18 +645,7 @@ class GameRoom extends Room {
 
     this.onMessage("startOver", () => {
       if (this.phase !== "finished") return;
-      this.phase = "lobby";
-      this.ranking = [];
-      this.currentRound = 0;
-      this.turnIndex = -1;
-      this.activePlayerId = null;
-      this.rivers = this._createRiverDecks();
-      this.cellOccupants = {};
-      for (const player of this.players.values()) {
-        Object.assign(player, this._initialPlayerState());
-        this._addToCell(START_CELL, player.playerId);
-      }
-      this._syncState();
+      this._resetGame();
     });
   }
 
