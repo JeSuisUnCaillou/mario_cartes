@@ -1221,9 +1221,12 @@ export function initBoard(gameId) {
             this.avatars.set(p.playerId, avatar);
           }
 
-          // Star overlay — create or destroy based on starInvincible
+          // Star overlay and active wobble — sync with current state
           const avatar = this.avatars.get(p.playerId);
-          if (avatar) avatar.setStarInvincible(p.starInvincible, helmetDisplaySize);
+          if (avatar) {
+            avatar.setStarInvincible(p.starInvincible, helmetDisplaySize);
+            avatar.setActive(latestGameState && p.playerId === latestGameState.activePlayerId);
+          }
         });
       }
 
