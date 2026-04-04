@@ -822,6 +822,7 @@ input {
   flex-shrink: 0;
   position: relative;
   z-index: 1;
+  cursor: pointer;
 }
 
 .pile-icon {
@@ -1082,6 +1083,65 @@ input {
   margin: 0;
   transform: none;
   transition: none;
+}
+
+/* Pile viewing modal */
+.pile-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.pile-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.8em;
+  cursor: pointer;
+  padding: 8px 12px;
+  z-index: 101;
+}
+
+.pile-modal-title {
+  color: #fff;
+  font-size: 1.4em;
+  text-align: center;
+  margin: 0 0 8px 0;
+}
+
+.pile-modal-content {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 16px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.pile-modal-card {
+  flex-shrink: 0;
+  margin-left: 0;
+  transform: none;
+  transition: none;
+}
+
+.pile-modal-empty {
+  color: #888;
+  font-size: 1em;
+  text-align: center;
+  padding: 32px;
 }
 
 /* Lap counter in sidebar */
