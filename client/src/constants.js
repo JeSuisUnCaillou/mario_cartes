@@ -34,3 +34,20 @@ export function createCardDOM(card, className = "card") {
 
   return el;
 }
+
+export function renderCoinIcons(container, coins, permanentCoins) {
+  const blueCount = Math.min(coins, permanentCoins);
+  const goldCount = Math.max(0, coins - permanentCoins);
+  for (let i = 0; i < blueCount; i++) {
+    const img = document.createElement("img");
+    img.src = "/permacoin.svg";
+    img.className = "coin-icon";
+    container.appendChild(img);
+  }
+  for (let i = 0; i < goldCount; i++) {
+    const img = document.createElement("img");
+    img.src = "/coin.svg";
+    img.className = "coin-icon";
+    container.appendChild(img);
+  }
+}

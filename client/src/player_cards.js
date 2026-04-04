@@ -1,4 +1,4 @@
-import { ITEM_ICONS, createCardDOM } from "./constants.js";
+import { ITEM_ICONS, createCardDOM, renderCoinIcons } from "./constants.js";
 
 const cardElements = new Map();
 
@@ -290,20 +290,7 @@ export function updateCoinDisplay(coins, permanentCoins, updateBuyButton, slowCo
   const coinDisplay = document.getElementById("coin-display");
   if (!coinDisplay) return;
   coinDisplay.innerHTML = "";
-  const blueCount = Math.min(coins, permanentCoins);
-  const goldCount = Math.max(0, coins - permanentCoins);
-  for (let i = 0; i < blueCount; i++) {
-    const img = document.createElement("img");
-    img.src = "/permacoin.svg";
-    img.className = "coin-icon";
-    coinDisplay.appendChild(img);
-  }
-  for (let i = 0; i < goldCount; i++) {
-    const img = document.createElement("img");
-    img.src = "/coin.svg";
-    img.className = "coin-icon";
-    coinDisplay.appendChild(img);
-  }
+  renderCoinIcons(coinDisplay, coins, permanentCoins);
   for (let i = 0; i < slowCounters; i++) {
     const img = document.createElement("img");
     img.src = "/dark_mushroom.svg";
