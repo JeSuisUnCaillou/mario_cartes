@@ -266,6 +266,17 @@ function updatePlayZone() {
   const playZone = document.getElementById("play-zone");
   const endTurnContainer = document.getElementById("end-turn-container");
   if (!playZone) return;
+  // Toggle active/waiting background on the player screen
+  const screen = document.querySelector(".player-screen");
+  if (screen) {
+    if (gamePhase === "playing" && activePlayerId) {
+      const isActive = activePlayerId === myPlayerId;
+      screen.classList.toggle("my-turn", isActive);
+      screen.classList.toggle("waiting-turn", !isActive);
+    } else {
+      screen.classList.remove("my-turn", "waiting-turn");
+    }
+  }
   // Ensure end-turn button exists (create once, toggle visibility)
   if (endTurnContainer && !document.getElementById("end-turn-btn")) {
     endTurnContainer.innerHTML = `<button id="end-turn-btn" class="end-turn-btn">End turn</button>`;
@@ -569,7 +580,11 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
       room.onStateChange((state) => {
         if (gameStateDirty || riversDirty) {
           gamePhase = state.phase;
+          const prevActive = activePlayerId;
           activePlayerId = state.activePlayerId || null;
+          if (activePlayerId === myPlayerId && prevActive !== myPlayerId && navigator.vibrate) {
+            navigator.vibrate(200);
+          }
 
           if (state.rivers.length > 0) {
             latestRivers = [];
