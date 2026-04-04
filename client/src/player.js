@@ -9,6 +9,7 @@ import { updateBuyButton as _updateBuyButton, openBuyModal as _openBuyModal, ren
 import { openPileModal, closePileModal } from "./player_pile_modal.js";
 import { rankBadge } from "./rank.js";
 import { helmetDataUrl } from "./helmet.js";
+import { ITEM_ICONS } from "./constants.js";
 
 let playing = false;
 let animating = false;
@@ -783,11 +784,10 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         recomputeFan(positions);
 
         // Sequentially throw each item icon (top to bottom, 400ms apart)
-        const ITEM_ICON = { banana: "/banana.svg", coin: "/coin.svg", mushroom: "/mushroom.svg", green_shell: "/green_shell.svg", red_shell: "/red_shell.svg", blue_shell: "/blue_shell.svg" };
         const playZone = document.getElementById("play-zone");
         items.forEach((item, i) => {
-          if (ITEM_ICON[item]) {
-            setTimeout(() => spawnThrowAnimation(ITEM_ICON[item], playZone), i * 400);
+          if (ITEM_ICONS[item]) {
+            setTimeout(() => spawnThrowAnimation(ITEM_ICONS[item], playZone), i * 400);
           }
         });
 
