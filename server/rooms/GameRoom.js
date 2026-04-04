@@ -120,20 +120,12 @@ class GameRoom extends Room {
     if (arr.length === 0) delete this.cellOccupants[cellId];
   }
 
-  _bananasOnCell(cellId) {
-    return this._cellOccupants(cellId).filter((e) => e === "banana").length;
+  _countItemOnCell(cellId, type) {
+    return this._cellOccupants(cellId).filter((e) => e === type).length;
   }
 
-  _greenShellsOnCell(cellId) {
-    return this._cellOccupants(cellId).filter((e) => e === "green_shell").length;
-  }
-
-  _redShellsOnCell(cellId) {
-    return this._cellOccupants(cellId).filter((e) => e === "red_shell").length;
-  }
-
-  _anyShellsOnCell(cellId) {
-    return this._cellOccupants(cellId).filter((e) => e === "green_shell" || e === "red_shell").length;
+  _countShellsOnCell(cellId) {
+    return this._countItemOnCell(cellId, "green_shell") + this._countItemOnCell(cellId, "red_shell");
   }
 
   _previousCell(cellId) {
@@ -162,7 +154,7 @@ class GameRoom extends Room {
     }
 
     // Priority 2: hit a banana — both destroyed
-    if (this._bananasOnCell(targetCellId) > 0) {
+    if (this._countItemOnCell(targetCellId, "banana") > 0) {
       this._removeFromCell(targetCellId, "banana");
       this.broadcast("shellThrown", {
         playerId: thrower.playerId,
@@ -176,8 +168,8 @@ class GameRoom extends Room {
     }
 
     // Priority 3: hit another shell (green or red) — both destroyed
-    const hitShellType = this._greenShellsOnCell(targetCellId) > 0 ? "green_shell"
-      : this._redShellsOnCell(targetCellId) > 0 ? "red_shell"
+    const hitShellType = this._countItemOnCell(targetCellId, "green_shell") > 0 ? "green_shell"
+      : this._countItemOnCell(targetCellId, "red_shell") > 0 ? "red_shell"
         : null;
     if (hitShellType) {
       this._removeFromCell(targetCellId, hitShellType);
@@ -240,7 +232,7 @@ class GameRoom extends Room {
       }
 
       // Priority 2: hit a banana
-      if (this._bananasOnCell(currentCellId) > 0) {
+      if (this._countItemOnCell(currentCellId, "banana") > 0) {
         this._removeFromCell(currentCellId, "banana");
         this.broadcast("shellThrown", {
           playerId: thrower.playerId,
@@ -255,8 +247,8 @@ class GameRoom extends Room {
       }
 
       // Priority 3: hit a shell (green or red)
-      const hitShellType = this._greenShellsOnCell(currentCellId) > 0 ? "green_shell"
-        : this._redShellsOnCell(currentCellId) > 0 ? "red_shell"
+      const hitShellType = this._countItemOnCell(currentCellId, "green_shell") > 0 ? "green_shell"
+        : this._countItemOnCell(currentCellId, "red_shell") > 0 ? "red_shell"
           : null;
       if (hitShellType) {
         this._removeFromCell(currentCellId, hitShellType);
@@ -1076,7 +1068,7 @@ class GameRoom extends Room {
           playerId: hitPlayerId,
           cellId: player.cellId,
         });
-      } else if (this._bananasOnCell(player.cellId) > 0) {
+      } else if (this._countItemOnCell(player.cellId, "banana") > 0) {
         this._removeFromCell(player.cellId, "banana");
         this.broadcast("itemHitBoard", {
           type: "banana",
@@ -1084,7 +1076,7 @@ class GameRoom extends Room {
           cellId: player.cellId,
           starHit: true,
         });
-      } else if (this._greenShellsOnCell(player.cellId) > 0) {
+      } else if (this._countItemOnCell(player.cellId, "green_shell") > 0) {
         this._removeFromCell(player.cellId, "green_shell");
         this.broadcast("itemHitBoard", {
           type: "green_shell",
@@ -1092,7 +1084,7 @@ class GameRoom extends Room {
           cellId: player.cellId,
           starHit: true,
         });
-      } else if (this._redShellsOnCell(player.cellId) > 0) {
+      } else if (this._countItemOnCell(player.cellId, "red_shell") > 0) {
         this._removeFromCell(player.cellId, "red_shell");
         this.broadcast("itemHitBoard", {
           type: "red_shell",
@@ -1104,9 +1096,9 @@ class GameRoom extends Room {
       this._syncState();
       this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
     } else {
-      const hitType = this._bananasOnCell(player.cellId) > 0 ? "banana"
-        : this._greenShellsOnCell(player.cellId) > 0 ? "green_shell"
-          : this._redShellsOnCell(player.cellId) > 0 ? "red_shell"
+      const hitType = this._countItemOnCell(player.cellId, "banana") > 0 ? "banana"
+        : this._countItemOnCell(player.cellId, "green_shell") > 0 ? "green_shell"
+          : this._countItemOnCell(player.cellId, "red_shell") > 0 ? "red_shell"
             : null;
 
       if (hitType) {
