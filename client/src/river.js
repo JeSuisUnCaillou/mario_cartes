@@ -1,31 +1,9 @@
-import { cardItemPositions } from "./player.functions.js";
 import { RANK_ICONS, ordinalSuffix } from "./rank.js";
 import { canBuyFromRiver } from "./river.functions.js";
-import { ITEM_ICONS } from "./constants.js";
+import { ITEM_ICONS, createCardDOM } from "./constants.js";
 
 function createRiverCard(card) {
-  const el = document.createElement("div");
-  el.className = "river-card";
-  el.dataset.cardId = card.id;
-
-  const bg = document.createElement("img");
-  bg.src = "/card - blank.svg";
-  bg.className = "card-bg";
-  bg.draggable = false;
-  el.appendChild(bg);
-
-  const positions = cardItemPositions(card.items.length);
-  card.items.forEach((item, i) => {
-    const icon = document.createElement("img");
-    icon.src = ITEM_ICONS[item];
-    icon.className = "card-item";
-    icon.style.left = positions[i].x;
-    icon.style.top = positions[i].y;
-    icon.draggable = false;
-    el.appendChild(icon);
-  });
-
-  return el;
+  return createCardDOM(card, "river-card");
 }
 
 function createEmptySlot() {

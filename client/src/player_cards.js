@@ -1,5 +1,4 @@
-import { cardItemPositions } from "./player.functions.js";
-import { ITEM_ICONS } from "./constants.js";
+import { ITEM_ICONS, createCardDOM } from "./constants.js";
 
 const cardElements = new Map();
 
@@ -20,29 +19,9 @@ export function updateCardMushroomIcons(useDark) {
 }
 
 export function createCardElement(card) {
-  const container = document.createElement("div");
-  container.className = "card";
-  container.dataset.cardId = card.id;
-  container.dataset.items = JSON.stringify(card.items);
-
-  const bg = document.createElement("img");
-  bg.src = "/card - blank.svg";
-  bg.className = "card-bg";
-  bg.draggable = false;
-  container.appendChild(bg);
-
-  const positions = cardItemPositions(card.items.length);
-  card.items.forEach((item, i) => {
-    const icon = document.createElement("img");
-    icon.src = ITEM_ICONS[item];
-    icon.className = "card-item";
-    icon.style.left = positions[i].x;
-    icon.style.top = positions[i].y;
-    icon.draggable = false;
-    container.appendChild(icon);
-  });
-
-  return container;
+  const el = createCardDOM(card);
+  el.dataset.items = JSON.stringify(card.items);
+  return el;
 }
 
 export function ensureCardElements(deck) {
