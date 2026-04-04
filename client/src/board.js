@@ -1,7 +1,7 @@
 import Phaser from "phaser";
 import { Client, Callbacks } from "@colyseus/sdk";
 import QRCode from "qrcode";
-import { bananaCounts, shellCounts, redShellCounts, permacoinCells } from "./board.functions.js";
+import { itemCounts, permacoinCells } from "./board.functions.js";
 import { renderRivers as renderRiverRows } from "./river.js";
 import { loadHelmetTexture, helmetDataUrl } from "./helmet.js";
 import { isDebugModalOpen, setDebugRoom, onDebugState, setupDebugKeyboard } from "./board_debug.js";
@@ -714,9 +714,9 @@ export function initBoard(gameId) {
     updateCellOccupants(cellOccupants) {
       this.latestCellOccupants = cellOccupants;
 
-      this._syncItemSprites(this.bananaSprites, bananaCounts(cellOccupants), "banana");
-      this._syncItemSprites(this.shellSprites, shellCounts(cellOccupants), "green_shell");
-      this._syncItemSprites(this.redShellSprites, redShellCounts(cellOccupants), "red_shell");
+      this._syncItemSprites(this.bananaSprites, itemCounts(cellOccupants, "banana"), "banana");
+      this._syncItemSprites(this.shellSprites, itemCounts(cellOccupants, "green_shell"), "green_shell");
+      this._syncItemSprites(this.redShellSprites, itemCounts(cellOccupants, "red_shell"), "red_shell");
 
       this.tweenCellLayout();
       this.repositionPermacoinSprites();
