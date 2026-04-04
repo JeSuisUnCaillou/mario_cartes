@@ -23,6 +23,10 @@ const PLAYER_COLORS = [
 ];
 const PATCH_DELAY_MS = 60; // Delay between async steps to guarantee separate schema patches (> patchRate 50ms)
 const MOVE_DELAY_MS = 700; // Delay after a mushroom move to let the board helmet tween complete with a visible pause
+const RIVER_SLOT_COUNT = 3;
+const INITIAL_HAND_SIZE = 5;
+const MAX_LAPS = 3;
+const START_CELL = 1;
 
 class GameRoom extends Room {
   _createDeck() {
@@ -40,8 +44,8 @@ class GameRoom extends Room {
         return {
           id: i,
           cost: RIVER_DEFS[i].cost,
-          deck: cards.slice(3),
-          slots: cards.slice(0, 3),
+          deck: cards.slice(RIVER_SLOT_COUNT),
+          slots: cards.slice(0, RIVER_SLOT_COUNT),
         };
       });
     }
@@ -50,8 +54,8 @@ class GameRoom extends Room {
       return {
         id: i,
         cost: river.cost,
-        deck: cards.slice(3),
-        slots: cards.slice(0, 3),
+        deck: cards.slice(RIVER_SLOT_COUNT),
+        slots: cards.slice(0, RIVER_SLOT_COUNT),
       };
     });
   }
@@ -86,7 +90,7 @@ class GameRoom extends Room {
 
   _drawCards(player) {
     let shuffledCount = 0;
-    let needed = 5;
+    let needed = INITIAL_HAND_SIZE;
     const drawn = player.drawPile.splice(0, needed);
     const drawnBeforeShuffle = drawn.length;
     const drawnIds = new Set(drawn.map(c => c.id));
@@ -431,7 +435,7 @@ class GameRoom extends Room {
       }
       if (data.setRiverSlot && this.rivers) {
         const river = this.rivers.find((r) => r.id === data.setRiverSlot.riverId);
-        if (river && data.setRiverSlot.slotIndex >= 0 && data.setRiverSlot.slotIndex < 3) {
+        if (river && data.setRiverSlot.slotIndex >= 0 && data.setRiverSlot.slotIndex < RIVER_SLOT_COUNT) {
           if (data.setRiverSlot.items) {
             river.slots[data.setRiverSlot.slotIndex] = {
               id: randomUUID(),
@@ -457,7 +461,7 @@ class GameRoom extends Room {
       this.cellOccupants = {};
       for (const player of this.players.values()) {
         Object.assign(player, this._initialPlayerState());
-        this._addToCell(1, player.playerId);
+        this._addToCell(START_CELL, player.playerId);
       }
       this._syncState();
     });
@@ -639,7 +643,7 @@ class GameRoom extends Room {
       this.cellOccupants = {};
       for (const player of this.players.values()) {
         Object.assign(player, this._initialPlayerState());
-        this._addToCell(1, player.playerId);
+        this._addToCell(START_CELL, player.playerId);
       }
       this._syncState();
     });
@@ -733,7 +737,7 @@ class GameRoom extends Room {
   _initialPlayerState() {
     const drawPile = this._createDeck();
     return {
-      cellId: 1, drawPile, drawPileDisplay: this._shuffle([...drawPile]), hand: [], discardPile: [],
+      cellId: START_CELL, drawPile, drawPileDisplay: this._shuffle([...drawPile]), hand: [], discardPile: [],
       pendingDiscard: 0, pendingShellChoice: false, pendingItems: [], ready: false, hasPlayedAllCards: false, coins: 0, permanentCoins: 0, lapCount: 0, slowCounters: 0, hasMovedThisTurn: false, starInvincible: false,
     };
   }
@@ -774,7 +778,7 @@ class GameRoom extends Room {
           playerId, name, color, connected: true,
           ...this._initialPlayerState(),
         });
-        this._addToCell(1, playerId);
+        this._addToCell(START_CELL, playerId);
         this.clientsInfo.set(client.sessionId, { type: "player", playerId });
         client.send("playerId", playerId);
       } else {
@@ -1051,7 +1055,7 @@ class GameRoom extends Room {
 
     if (cellData.finish_line) {
       player.lapCount++;
-      if (player.lapCount > 3) {
+      if (player.lapCount > MAX_LAPS) {
         this.ranking.push(player.playerId);
         player.pendingItems = [];
         this._endTurnForFinishedPlayer(player);
