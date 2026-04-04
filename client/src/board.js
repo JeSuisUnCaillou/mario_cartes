@@ -59,34 +59,54 @@ class PlayerAvatar {
     if (active === this.active) return;
     this.active = active;
     if (active) {
-      this.wobbleTween = this.scene.tweens.add({
-        targets: this.helmet,
-        angle: { from: -3, to: 3 },
-        duration: 150,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut",
-      });
-      const bobAmount = this.helmet.displayHeight * 0.06;
-      this.bobTween = this.scene.tweens.add({
-        targets: this.helmet,
-        y: `-=${bobAmount}`,
-        duration: 200,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut",
-      });
+      this._startActiveTweens();
     } else {
-      if (this.wobbleTween) {
-        this.wobbleTween.stop();
-        this.wobbleTween = null;
-        this.helmet.setAngle(0);
-      }
-      if (this.bobTween) {
-        this.bobTween.stop();
-        this.bobTween = null;
-      }
+      this._stopActiveTweens();
     }
+  }
+
+  _startActiveTweens() {
+    if (this.wobbleTween) return;
+    this.wobbleTween = this.scene.tweens.add({
+      targets: this.helmet,
+      angle: { from: -3, to: 3 },
+      duration: 150,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+    const bobAmount = this.helmet.displayHeight * 0.06;
+    this.bobTween = this.scene.tweens.add({
+      targets: this.helmet,
+      y: `-=${bobAmount}`,
+      duration: 200,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.easeInOut",
+    });
+  }
+
+  _stopActiveTweens() {
+    if (this.wobbleTween) {
+      this.wobbleTween.stop();
+      this.wobbleTween = null;
+      this.helmet.setAngle(0);
+    }
+    if (this.bobTween) {
+      this.bobTween.stop();
+      this.bobTween = null;
+    }
+  }
+
+  moveTo(x, y, duration) {
+    this._stopActiveTweens();
+    this.scene.tweens.add({
+      targets: this.helmet,
+      x, y,
+      duration,
+      ease: "Power2",
+      onComplete: () => { if (this.active) this._startActiveTweens(); },
+    });
   }
 
   setStarInvincible(enabled, helmetDisplaySize) {
@@ -594,11 +614,14 @@ export function initBoard(gameId) {
           if (entry === "banana" || entry === "green_shell" || entry === "red_shell") return;
           const avatar = this.avatars.get(entry);
           if (!avatar) return;
+          const wasActive = avatar.active && avatar.wobbleTween;
+          if (wasActive) avatar._stopActiveTweens();
           const { x, y } = this.cellSlotPos(cellId, slotIndex + offset, totalSlots);
           avatar.helmet.setPosition(x, y);
           avatar.helmet.setScale(helmetDisplaySize / avatar.helmet.width);
           avatar.label.setPosition(x, y - helmetDisplaySize * 0.7);
           avatar.label.setFontSize(Math.round(helmetDisplaySize * 0.45));
+          if (wasActive) avatar._startActiveTweens();
         });
       }
     }
@@ -636,7 +659,7 @@ export function initBoard(gameId) {
             const avatar = this.avatars.get(entry);
             if (!avatar) return;
             if (avatar.helmet.x !== x || avatar.helmet.y !== y) {
-              this.tweens.add({ targets: avatar.helmet, x, y, duration: 300, ease: "Power2" });
+              avatar.moveTo(x, y, 300);
               this.tweens.add({ targets: avatar.label, x, y: y - helmetDisplaySize * 0.7, duration: 300, ease: "Power2" });
             }
           }
@@ -936,6 +959,7 @@ export function initBoard(gameId) {
     animateItemHit(playerId, cellId, itemType = "banana", starHit = false) {
       const avatar = this.avatars.get(playerId);
       if (!avatar) return;
+      avatar._stopActiveTweens();
       const helmet = avatar.helmet;
 
       const moveDelay = 350; // Slightly shorter than the 400ms helmet tween to account for Power2 ease deceleration
@@ -981,7 +1005,10 @@ export function initBoard(gameId) {
           duration: 1000,
           ease: "Linear",
           delay: moveDelay,
-          onComplete: () => { helmet.setAngle(0); },
+          onComplete: () => {
+            helmet.setAngle(0);
+            if (avatar.active) avatar._startActiveTweens();
+          },
         });
         this.tweens.add({
           targets: item,
@@ -1058,15 +1085,20 @@ export function initBoard(gameId) {
         run: () => {
           if (data.hit === "player") {
             // Spin hit player's helmet, launch shell upward, burst stars + dark mushroom
-            const helmet = this.avatars.get(data.hitPlayerId)?.helmet;
+            const hitAvatar = this.avatars.get(data.hitPlayerId);
+            const helmet = hitAvatar?.helmet;
             const helmetSize = this.helmetSlot * 0.9;
             if (helmet) {
+              if (hitAvatar) hitAvatar._stopActiveTweens();
               this.tweens.add({
                 targets: helmet,
                 angle: -720,
                 duration: 1000,
                 ease: "Linear",
-                onComplete: () => { helmet.setAngle(0); },
+                onComplete: () => {
+                  helmet.setAngle(0);
+                  if (hitAvatar?.active) hitAvatar._startActiveTweens();
+                },
               });
               this._spawnHitStars(helmet.x, helmet.y, helmetSize);
               this._spawnDarkMushroom(helmet.x, helmet.y, helmetSize);
@@ -1161,12 +1193,7 @@ export function initBoard(gameId) {
             avatar.label.setAlpha(alpha);
 
             if (avatar.cellId !== p.cellId) {
-              this.tweens.add({
-                targets: avatar.helmet,
-                x, y,
-                duration: 400,
-                ease: "Power2",
-              });
+              avatar.moveTo(x, y, 400);
               this.tweens.add({
                 targets: avatar.label,
                 x, y: y - helmetDisplaySize * 0.7,
@@ -1175,12 +1202,7 @@ export function initBoard(gameId) {
               });
               avatar.cellId = p.cellId;
             } else if (avatar.helmet.x !== x || avatar.helmet.y !== y) {
-              this.tweens.add({
-                targets: avatar.helmet,
-                x, y,
-                duration: 300,
-                ease: "Power2",
-              });
+              avatar.moveTo(x, y, 300);
               this.tweens.add({
                 targets: avatar.label,
                 x, y: y - helmetDisplaySize * 0.7,
