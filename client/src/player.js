@@ -1,5 +1,6 @@
 import { Client, Callbacks } from "@colyseus/sdk";
-import { isPointInRect, splitDrawBatches, initialDrawPileCount, normalizeName } from "./player.functions.js";
+import { splitDrawBatches, initialDrawPileCount, normalizeName } from "./player.functions.js";
+import { CardDragHandler } from "./player_drag.js";
 import {
   ensureCardElements, getCardElement, spawnThrowAnimation, clearCardElements,
   animateShuffle, animateDrawCards, captureHandPositions, recomputeFan,
@@ -11,7 +12,6 @@ import { rankBadge } from "./rank.js";
 import { helmetDataUrl } from "./helmet.js";
 import { ITEM_ICONS } from "./constants.js";
 
-let playing = false;
 let animating = false;
 let animDrawCount = 0;
 let currentRoom = null;
@@ -30,6 +30,16 @@ let currentPlayerCount = 0;
 let pendingShellChoice = false;
 let latestDrawPileDisplay = [];
 let latestDiscardPile = [];
+
+const drag = new CardDragHandler({
+  getRoom: () => currentRoom,
+  isBlocked: () => animating,
+  isPendingDiscard: () => pendingDiscards > 0,
+});
+
+function addDragListeners(card) {
+  drag.attach(card);
+}
 
 function updateBuyButton() {
   _updateBuyButton(activePlayerId, myPlayerId, latestRivers, pendingDiscards || pendingShellChoice, openBuyModal);
@@ -155,113 +165,6 @@ function closeShellModal() {
   if (modal) modal.remove();
 }
 
-function getPointerPos(e) {
-  if (e.touches) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  return { x: e.clientX, y: e.clientY };
-}
-
-function addDragListeners(card) {
-  let startX, startY, origLeft, origTop, dragClone;
-
-  function onStart(e) {
-    if (playing || animating) return;
-    e.preventDefault();
-    const pos = getPointerPos(e);
-    const rect = card.getBoundingClientRect();
-    startX = pos.x;
-    startY = pos.y;
-    origLeft = rect.left;
-    origTop = rect.top;
-
-    // Create a visual clone for dragging
-    dragClone = card.cloneNode(true);
-    dragClone.style.position = "fixed";
-    dragClone.style.left = origLeft + "px";
-    dragClone.style.top = origTop + "px";
-    dragClone.style.width = rect.width + "px";
-    dragClone.style.height = rect.height + "px";
-    dragClone.style.transform = "scale(1.1)";
-    dragClone.style.zIndex = "1000";
-    dragClone.style.margin = "0";
-    dragClone.style.transition = "none";
-    dragClone.style.pointerEvents = "none";
-    dragClone.style.filter = "drop-shadow(10px 15px 4px rgba(0, 0, 0, 0.35))";
-    document.body.appendChild(dragClone);
-
-    // Hide original to keep gap
-    card.style.visibility = "hidden";
-
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onEnd);
-    document.addEventListener("touchmove", onMove, { passive: false });
-    document.addEventListener("touchend", onEnd);
-  }
-
-  function onMove(e) {
-    e.preventDefault();
-    const pos = getPointerPos(e);
-    const dx = pos.x - startX;
-    const dy = pos.y - startY;
-    dragClone.style.left = (origLeft + dx) + "px";
-    dragClone.style.top = (origTop + dy) + "px";
-  }
-
-  function onEnd(e) {
-    document.removeEventListener("mousemove", onMove);
-    document.removeEventListener("mouseup", onEnd);
-    document.removeEventListener("touchmove", onMove);
-    document.removeEventListener("touchend", onEnd);
-
-    const playZone = document.getElementById("play-zone");
-    const zoneRect = playZone.getBoundingClientRect();
-    const cloneRect = dragClone.getBoundingClientRect();
-    const centerX = cloneRect.left + cloneRect.width / 2;
-    const centerY = cloneRect.top + cloneRect.height / 2;
-
-    const inZone = isPointInRect(centerX, centerY, zoneRect.left, zoneRect.top, zoneRect.right, zoneRect.bottom);
-
-    if (inZone && playZone.classList.contains("waiting")) {
-      playZone.classList.add("waiting-reject");
-      playZone.addEventListener("animationend", () => {
-        playZone.classList.remove("waiting-reject");
-      }, { once: true });
-    }
-
-    if (inZone && !playZone.classList.contains("waiting")) {
-      playing = true;
-      dragClone.style.transition = "all 0.3s ease";
-      dragClone.style.left = (zoneRect.left + zoneRect.width / 2 - cloneRect.width / 2) + "px";
-      dragClone.style.top = (zoneRect.top + zoneRect.height / 2 - cloneRect.height / 2) + "px";
-      dragClone.style.transform = "scale(1)";
-      dragClone.style.filter = "drop-shadow(2px 2px 1px rgba(0, 0, 0, 0.3))";
-
-      setTimeout(() => {
-        if (currentRoom) {
-          if (pendingDiscards > 0) {
-            currentRoom.send("discardCard", { cardId: card.dataset.cardId });
-          } else {
-            currentRoom.send("playCard", { cardId: card.dataset.cardId });
-          }
-        }
-      }, 500);
-      setTimeout(() => { if (playing) playing = false; }, 5000);
-    } else {
-      // Animate back to original position
-      dragClone.style.transition = "all 0.3s ease-in-out";
-      dragClone.style.left = origLeft + "px";
-      dragClone.style.top = origTop + "px";
-      dragClone.style.transform = card.dataset.fanTransform;
-      dragClone.addEventListener("transitionend", () => {
-        dragClone.remove();
-        card.style.visibility = "";
-      }, { once: true });
-    }
-  }
-
-  card.addEventListener("mousedown", onStart);
-  card.addEventListener("touchstart", onStart, { passive: false });
-}
-
 function updatePlayZone() {
   const playZone = document.getElementById("play-zone");
   const endTurnContainer = document.getElementById("end-turn-container");
@@ -281,7 +184,7 @@ function updatePlayZone() {
   if (endTurnContainer && !document.getElementById("end-turn-btn")) {
     endTurnContainer.innerHTML = `<button id="end-turn-btn" class="end-turn-btn">End turn</button>`;
     document.getElementById("end-turn-btn").addEventListener("click", () => {
-      if (playing || animating || pendingDiscards > 0 || pendingShellChoice) return;
+      if (drag.isPlaying || animating || pendingDiscards > 0 || pendingShellChoice) return;
       if (currentRoom) currentRoom.send("endTurn");
     });
   }
@@ -548,7 +451,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
   function setupRoom(room) {
     renderLobby(room);
     currentRoom = room;
-    playing = false;
+    drag.reset();
     animating = false;
     pendingDiscards = 0;
     pendingShellChoice = false;
@@ -785,7 +688,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           }
           return;
         }
-        playing = false;
+        drag.reset();
         ensureCardElements(data.deck);
         // Capture positions BEFORE removing the card
         const positions = captureHandPositions();
@@ -893,7 +796,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
       });
 
       room.onMessage("cardDiscarded", (data) => {
-        playing = false;
+        drag.reset();
         ensureCardElements(data.deck);
         // Remove the discarded card from hand
         const positions = captureHandPositions();

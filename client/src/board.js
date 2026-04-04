@@ -1,12 +1,14 @@
 import Phaser from "phaser";
 import { Client, Callbacks } from "@colyseus/sdk";
 import QRCode from "qrcode";
-import { itemCounts, permacoinCells } from "./board.functions.js";
+import { CellItemSprites } from "./board_items.js";
+import { BoardAnimator } from "./board_animations.js";
 import { renderRivers as renderRiverRows } from "./river.js";
 import { loadHelmetTexture, helmetDataUrl } from "./helmet.js";
 import { isDebugModalOpen, setDebugRoom, onDebugState, setupDebugKeyboard } from "./board_debug.js";
 import { rankBadge } from "./rank.js";
 import { schemaPlayersToArray, schemaCellOccupantsToObject, schemaToGameState } from "./schema.js";
+import { PlayerAvatar } from "./board_avatar.js";
 
 const CELL_POSITIONS = [
   null,           // index 0 unused (cells are 1-indexed)
@@ -28,118 +30,6 @@ const CELL_POSITIONS = [
 
 const SVG_ASPECT = 131.0025 / 104.54418;
 const HELMET_SIZE_RATIO = 1;
-
-class PlayerAvatar {
-  constructor(scene, x, y, textureKey, name, helmetDisplaySize, alpha = 1) {
-    this.scene = scene;
-    this.helmet = scene.add.image(x, y, textureKey);
-    this.helmet.setScale(helmetDisplaySize / this.helmet.width);
-    this.helmet.setAlpha(alpha);
-    this.helmet.setDepth(5);
-
-    this.label = scene.add.text(x, y - helmetDisplaySize * 0.7, name || "???", {
-      fontFamily: "monospace",
-      fontSize: `${Math.round(helmetDisplaySize * 0.45)}px`,
-      color: "#ffffff",
-      stroke: "#000000",
-      strokeThickness: 3,
-      align: "center",
-    }).setOrigin(0.5, 1);
-    this.label.setAlpha(alpha);
-    this.label.setDepth(5);
-
-    this.starOverlay = null;
-    this.wobbleTween = null;
-    this.bobTween = null;
-    this.active = false;
-    this.cellId = null;
-  }
-
-  setActive(active) {
-    if (active === this.active) return;
-    this.active = active;
-    if (active) {
-      this._startActiveTweens();
-    } else {
-      this._stopActiveTweens();
-    }
-  }
-
-  _startActiveTweens() {
-    if (this.wobbleTween) return;
-    this.wobbleTween = this.scene.tweens.add({
-      targets: this.helmet,
-      angle: { from: -1.5, to: 1.5 },
-      duration: 150,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut",
-    });
-    const bobAmount = this.helmet.displayHeight * 0.06;
-    this.bobTween = this.scene.tweens.add({
-      targets: this.helmet,
-      y: `-=${bobAmount}`,
-      duration: 120,
-      yoyo: true,
-      repeat: -1,
-      ease: "Sine.easeInOut",
-    });
-  }
-
-  _stopActiveTweens() {
-    if (this.wobbleTween) {
-      this.wobbleTween.stop();
-      this.wobbleTween = null;
-      this.helmet.setAngle(0);
-    }
-    if (this.bobTween) {
-      this.bobTween.stop();
-      this.bobTween = null;
-    }
-  }
-
-  moveTo(x, y, duration) {
-    this._stopActiveTweens();
-    this.scene.tweens.add({
-      targets: this.helmet,
-      x, y,
-      duration,
-      ease: "Power2",
-      onComplete: () => { if (this.active) this._startActiveTweens(); },
-    });
-  }
-
-  setStarInvincible(enabled, helmetDisplaySize) {
-    if (enabled && !this.starOverlay) {
-      const baseScale = helmetDisplaySize * 1.1 / this.scene.textures.get("star_overlay").getSourceImage().width;
-      const star = this.scene.add.image(this.helmet.x, this.helmet.y - helmetDisplaySize * 0.3, "star_overlay");
-      star.setScale(baseScale);
-      star.setDepth(6);
-      star._baseScale = baseScale;
-      this.scene.tweens.add({
-        targets: star,
-        alpha: { from: 1, to: 0.5 },
-        scale: { from: baseScale, to: baseScale * 0.8 },
-        duration: 600,
-        yoyo: true,
-        repeat: -1,
-        ease: "Sine.easeInOut",
-      });
-      this.starOverlay = star;
-    } else if (!enabled && this.starOverlay) {
-      this.starOverlay.destroy();
-      this.starOverlay = null;
-    }
-  }
-
-  destroy() {
-    if (this.wobbleTween) this.wobbleTween.stop();
-    if (this.bobTween) this.bobTween.stop();
-    if (this.starOverlay) this.starOverlay.destroy();
-    this.helmet.destroy();
-    this.label.destroy();
-  }
-}
 
 let boardPhase = "lobby";
 let latestPlayersData = [];
@@ -489,15 +379,8 @@ export function initBoard(gameId) {
       super("GameScene");
       this.avatars = new Map();
       this.latestPlayers = [];
-      this.bananaSprites = new Map();
-      this.shellSprites = new Map();
-      this.redShellSprites = new Map();
-      this.permacoinSprites = new Map();
-      this._inflightShells = new Map(); // cellId → shell sprite being animated to that cell
-      this._dustCloudCells = new Set(); // cellIds with active dust cloud animations
       this.latestCellOccupants = {};
-      this._cellOccupantsQueue = [];
-      this._processingQueue = false;
+      this._pendingOccupants = {};
     }
 
     get cellW() { return this.track.displayWidth / 5; }
@@ -525,7 +408,20 @@ export function initBoard(gameId) {
     create() {
       this.track = this.add.image(0, 0, "racetrack");
       this.layoutTrack();
-      this.createPermacoinSprites();
+      this.items = new CellItemSprites(
+        this,
+        (cellId) => this.cellPixelPos(cellId),
+        (cellId, slotIndex, totalSlots) => this.cellSlotPos(cellId, slotIndex, totalSlots),
+      );
+      this.items.createPermacoins();
+      this.animator = new BoardAnimator(
+        this,
+        this.items,
+        this.avatars,
+        (cellId) => this.cellPixelPos(cellId),
+        () => this.tweenCellLayout(),
+        (cellId) => this.applyPendingOccupants(cellId),
+      );
       this.scale.on("resize", this.onResize, this);
       this.connectToRoom(gameId);
     }
@@ -536,6 +432,9 @@ export function initBoard(gameId) {
         if (avatar.starOverlay) {
           avatar.starOverlay.x = avatar.helmet.x;
           avatar.starOverlay.y = avatar.helmet.y - helmetSize * 0.3;
+        }
+        if (avatar._hitContainer) {
+          avatar._hitContainer.setPosition(avatar.helmet.x, avatar.helmet.y);
         }
       }
     }
@@ -549,36 +448,11 @@ export function initBoard(gameId) {
       this.track.setScale(Math.min(scaleX, scaleY));
     }
 
-    createPermacoinSprites() {
-      for (const cellId of permacoinCells) {
-        const center = this.cellPixelPos(cellId);
-        const sprite = this.add.image(center.x, center.y, "permacoin");
-        sprite.setDepth(0);
-        sprite.setVisible(false);
-        this.permacoinSprites.set(cellId, sprite);
-      }
-      this.repositionPermacoinSprites();
-    }
-
-    repositionPermacoinSprites() {
-      const cellW = this.cellW;
-      const itemSize = this.helmetSlot * 0.7;
-      for (const [cellId, sprite] of this.permacoinSprites) {
-        if (this._dustCloudCells.has(cellId)) continue;
-        const occupants = this.latestCellOccupants[cellId] || [];
-        const total = occupants.length + 1; // +1 for permacoin at slot 0
-        const { x, y } = this.cellSlotPos(cellId, 0, total);
-        sprite.setPosition(x, y);
-        sprite.setScale(itemSize / sprite.width);
-        if (!sprite.visible) sprite.setVisible(true);
-      }
-    }
-
     onResize() {
       this.layoutTrack();
       this.refreshPlayerPositions();
-      this.snapCellLayout();
-      this.repositionPermacoinSprites();
+      this.items.snapLayout(this.latestCellOccupants, CELL_POSITIONS);
+      this.items.repositionPermacoins(this.latestCellOccupants);
     }
 
     cellSlotPos(cellId, slotIndex, totalSlots) {
@@ -596,19 +470,13 @@ export function initBoard(gameId) {
       };
     }
 
-    _slotOffset(cellId) {
-      return permacoinCells.has(cellId) ? 1 : 0;
-    }
-
     refreshPlayerPositions() {
-      const cellW = this.cellW;
-      const helmetSlot = this.helmetSlot;
       const helmetDisplaySize = this.helmetDisplaySize;
 
       for (const [cellIdStr, occupants] of Object.entries(this.latestCellOccupants)) {
         const cellId = Number(cellIdStr);
         if (!CELL_POSITIONS[cellId]) continue;
-        const offset = this._slotOffset(cellId);
+        const offset = this.items.slotOffset(cellId);
         const totalSlots = occupants.length + offset;
         occupants.forEach((entry, slotIndex) => {
           if (entry === "banana" || entry === "green_shell" || entry === "red_shell") return;
@@ -627,41 +495,25 @@ export function initBoard(gameId) {
     }
 
     tweenCellLayout() {
-      const cellW = this.cellW;
-      const helmetSlot = this.helmetSlot;
       const helmetDisplaySize = this.helmetDisplaySize;
-      const itemSize = helmetSlot * 0.9;
+
+      this.items.tweenLayout(this.latestCellOccupants, CELL_POSITIONS);
 
       for (const [cellIdStr, occupants] of Object.entries(this.latestCellOccupants)) {
         const cellId = Number(cellIdStr);
         if (!CELL_POSITIONS[cellId]) continue;
-        if (this._dustCloudCells.has(cellId)) continue;
-        const bSprites = this.bananaSprites.get(cellId) || [];
-        const sSprites = this.shellSprites.get(cellId) || [];
-        const rsSprites = this.redShellSprites.get(cellId) || [];
-        let bananaIdx = 0;
-        let shellIdx = 0;
-        let redShellIdx = 0;
-        const offset = this._slotOffset(cellId);
+        if (this.items.isFrozen(cellId)) continue;
+        const offset = this.items.slotOffset(cellId);
         const totalSlots = occupants.length + offset;
 
         occupants.forEach((entry, slotIndex) => {
+          if (entry === "banana" || entry === "green_shell" || entry === "red_shell") return;
+          const avatar = this.avatars.get(entry);
+          if (!avatar) return;
           const { x, y } = this.cellSlotPos(cellId, slotIndex + offset, totalSlots);
-          if (entry === "banana" || entry === "green_shell" || entry === "red_shell") {
-            const sprite = entry === "banana" ? bSprites[bananaIdx++]
-              : entry === "green_shell" ? sSprites[shellIdx++]
-                : rsSprites[redShellIdx++];
-            if (sprite && (sprite.x !== x || sprite.y !== y)) {
-              this.tweens.add({ targets: sprite, x, y, duration: 300, ease: "Power2" });
-            }
-            if (sprite) sprite.setScale(itemSize / sprite.width);
-          } else {
-            const avatar = this.avatars.get(entry);
-            if (!avatar) return;
-            if (avatar.helmet.x !== x || avatar.helmet.y !== y) {
-              avatar.moveTo(x, y, 300);
-              this.tweens.add({ targets: avatar.label, x, y: y - helmetDisplaySize * 0.7, duration: 300, ease: "Power2" });
-            }
+          if (avatar.helmet.x !== x || avatar.helmet.y !== y) {
+            avatar.moveTo(x, y, 300);
+            this.tweens.add({ targets: avatar.label, x, y: y - helmetDisplaySize * 0.7, duration: 300, ease: "Power2" });
           }
         });
       }
@@ -743,9 +595,9 @@ export function initBoard(gameId) {
       });
 
       // Animation events stay as messages (not state)
-      room.onMessage("itemHitBoard", (data) => this._enqueueAnimation({ _itemHit: data }));
-      room.onMessage("shellThrown", (data) => this._enqueueAnimation({ _shellThrown: data }));
-      room.onMessage("permanentCoinPickup", (data) => this._enqueueAnimation({ _permanentCoinPickup: data }));
+      room.onMessage("itemHitBoard", (data) => this.animator.animateItemHit(data.playerId, data.cellId, data.type || "banana", data.starHit));
+      room.onMessage("shellThrown", (data) => this.animator.enqueue({ _shellThrown: data }));
+      room.onMessage("permanentCoinPickup", (data) => this.animator.enqueue({ _permanentCoinPickup: data }));
       room.onMessage("_debugState", (data) => {
         onDebugState(data);
       });
@@ -764,390 +616,34 @@ export function initBoard(gameId) {
       });
     }
 
-    _enqueueAnimation(entry) {
-      this._cellOccupantsQueue.push(entry);
-      while (this._cellOccupantsQueue.length > 10) {
-        this._cellOccupantsQueue.shift();
-      }
-      if (!this._processingQueue) {
-        this._processNextCellOccupants();
-      }
-    }
-
-    _processNextCellOccupants() {
-      if (this._cellOccupantsQueue.length === 0) {
-        this._processingQueue = false;
-        return;
-      }
-      this._processingQueue = true;
-      const entry = this._cellOccupantsQueue.shift();
-      if (entry._itemHit) {
-        this.animateItemHit(entry._itemHit.playerId, entry._itemHit.cellId, entry._itemHit.type || "banana", entry._itemHit.starHit);
-        this.time.delayedCall(1400, () => this._processNextCellOccupants());
-      } else if (entry._shellThrown) {
-        const pathLen = entry._shellThrown.path ? entry._shellThrown.path.length : 0;
-        const travelTime = pathLen > 1 ? pathLen * 200 : 400;
-        this.animateShellThrow(entry._shellThrown);
-        this.time.delayedCall(travelTime + 1000, () => this._processNextCellOccupants());
-      } else if (entry._permanentCoinPickup) {
-        this.animatePermacoinPickup(entry._permanentCoinPickup.cellId);
-        this.time.delayedCall(700, () => this._processNextCellOccupants());
-      }
-    }
-
-    animatePermacoinPickup(cellId) {
-      const sprite = this.permacoinSprites.get(cellId);
-      if (!sprite) return;
-      const origY = sprite.y;
-      const cellW = this.cellW;
-      const jumpHeight = cellW / 3;
-      sprite.setDepth(10);
-      this.tweens.add({
-        targets: sprite,
-        y: origY - jumpHeight,
-        duration: 300,
-        ease: "Power2",
-        yoyo: true,
-        onComplete: () => {
-          sprite.setDepth(0);
-        },
-      });
-      this.tweens.add({
-        targets: sprite,
-        angle: 720,
-        duration: 600,
-        ease: "Linear",
-        onComplete: () => {
-          sprite.setAngle(0);
-        },
-      });
-    }
-
     updateCellOccupants(cellOccupants) {
+      // Preserve occupants for frozen cells so slot positions stay stable mid-animation.
+      // Store the real server data so we can apply it when the cell unfreezes.
+      for (const cellId of this.items.frozenCellIds()) {
+        if (cellOccupants[cellId] !== undefined) {
+          this._pendingOccupants[cellId] = cellOccupants[cellId];
+        } else {
+          this._pendingOccupants[cellId] = null;
+        }
+        if (this.latestCellOccupants[cellId]) {
+          cellOccupants[cellId] = this.latestCellOccupants[cellId];
+        }
+      }
       this.latestCellOccupants = cellOccupants;
-
-      this._syncItemSprites(this.bananaSprites, itemCounts(cellOccupants, "banana"), "banana");
-      this._syncItemSprites(this.shellSprites, itemCounts(cellOccupants, "green_shell"), "green_shell");
-      this._syncItemSprites(this.redShellSprites, itemCounts(cellOccupants, "red_shell"), "red_shell");
-
+      this.items.sync(cellOccupants);
       this.tweenCellLayout();
-      this.repositionPermacoinSprites();
+      this.items.repositionPermacoins(cellOccupants);
     }
 
-    _syncItemSprites(spriteMap, countsByCell, textureKey) {
-      // Remove sprites for cells that no longer have this item
-      for (const [cellId, sprites] of spriteMap) {
-        if (this._dustCloudCells.has(cellId)) continue;
-        if (!countsByCell[cellId]) {
-          sprites.forEach((s) => s.destroy());
-          spriteMap.delete(cellId);
-        }
-      }
-      // Create or destroy sprites to match counts
-      for (const [cellId, count] of Object.entries(countsByCell)) {
-        const cid = Number(cellId);
-        if (this._dustCloudCells.has(cid)) continue;
-        // Skip cells with an in-flight shell animation — the animation
-        // sprite will be registered when it arrives
-        if ((textureKey === "green_shell" || textureKey === "red_shell") && this._inflightShells.has(cid)) {
-          continue;
-        }
-        const existing = spriteMap.get(cid) || [];
-        while (existing.length > count) {
-          existing.pop().destroy();
-        }
-        while (existing.length < count) {
-          const center = this.cellPixelPos(cid);
-          const sprite = this.add.image(center.x, center.y, textureKey);
-          sprite.setDepth(0);
-          existing.push(sprite);
-        }
-        spriteMap.set(cid, existing);
-      }
-    }
-
-    snapCellLayout() {
-      const cellW = this.cellW;
-      const helmetSlot = this.helmetSlot;
-      const bananaSize = helmetSlot * 0.9;
-
-      for (const [cellIdStr, occupants] of Object.entries(this.latestCellOccupants)) {
-        const cellId = Number(cellIdStr);
-        if (!CELL_POSITIONS[cellId]) continue;
-        const bSprites = this.bananaSprites.get(cellId) || [];
-        const sSprites = this.shellSprites.get(cellId) || [];
-        const rsSprites = this.redShellSprites.get(cellId) || [];
-        let bananaIdx = 0;
-        let shellIdx = 0;
-        let redShellIdx = 0;
-        const offset = this._slotOffset(cellId);
-        const totalSlots = occupants.length + offset;
-
-        occupants.forEach((entry, slotIndex) => {
-          if (entry !== "banana" && entry !== "green_shell" && entry !== "red_shell") return;
-          const sprite = entry === "banana" ? bSprites[bananaIdx++]
-            : entry === "green_shell" ? sSprites[shellIdx++]
-              : rsSprites[redShellIdx++];
-          if (!sprite) return;
-          const { x, y } = this.cellSlotPos(cellId, slotIndex + offset, totalSlots);
-          sprite.setPosition(x, y);
-          sprite.setScale(bananaSize / sprite.width);
-        });
-      }
-    }
-
-    _spawnHitStars(x, y, size) {
-      const directions = [180, 135, 45, 0]; // upward-ish fan: left → upper-left → upper-right → right
-      const rotations = [0, 18, 36, 54];     // spread within one 72° symmetry period
-      directions.forEach((dir, i) => {
-        const star = this.add.image(x, y, "hit_star");
-        star.setScale(size * 0.4 / star.width);
-        star.setAngle(rotations[i]);
-        star.setDepth(10);
-        const rad = dir * Math.PI / 180;
-        this.tweens.add({
-          targets: star,
-          x: x + Math.cos(rad) * size,
-          y: y - Math.sin(rad) * size,
-          angle: rotations[i] + 360,
-          duration: 400,
-          ease: "Power2",
-          onComplete: () => { star.destroy(); },
-        });
-      });
-    }
-
-    _spawnDarkMushroom(x, y, size) {
-      const mush = this.add.image(x, y, "dark_mushroom");
-      mush.setScale(size * 0.5 / mush.width);
-      mush.setDepth(10);
-      this.tweens.add({
-        targets: mush,
-        y: y - size * 2,
-        scale: mush.scale * 2,
-        duration: 1000,
-        ease: "Power2",
-        onComplete: () => { mush.destroy(); },
-      });
-      this.tweens.add({
-        targets: mush,
-        alpha: 0,
-        duration: 350,
-        delay: 650,
-      });
-    }
-
-    _spawnDustCloud(x, y, size) {
-      const cloud = this.add.image(x, y, "dust_cloud");
-      cloud.setScale(size / cloud.width);
-      cloud.setDepth(10);
-      this.tweens.add({
-        targets: cloud,
-        scale: cloud.scale * 2,
-        duration: 500,
-        ease: "Power2",
-        onComplete: () => { cloud.destroy(); },
-      });
-      this.tweens.add({
-        targets: cloud,
-        alpha: 0,
-        duration: 125,
-        delay: 375,
-      });
-    }
-
-    animateItemHit(playerId, cellId, itemType = "banana", starHit = false) {
-      const avatar = this.avatars.get(playerId);
-      if (!avatar) return;
-      avatar._stopActiveTweens();
-      const helmet = avatar.helmet;
-
-      const moveDelay = 350; // Slightly shorter than the 400ms helmet tween to account for Power2 ease deceleration
-      const spriteMap = itemType === "red_shell" ? this.redShellSprites
-        : itemType === "green_shell" ? this.shellSprites
-          : this.bananaSprites;
-
-      // Use the real item sprite from the cell (server hasn't broadcast its removal yet)
-      const sprites = spriteMap.get(cellId) || [];
-      const item = sprites.pop();
-      if (sprites.length === 0) {
-        spriteMap.delete(cellId);
-      }
-
-      if (!item) return;
-      item.setDepth(10);
-
-      // Also remove from latestCellOccupants so tweenCellLayout doesn't reposition it
-      const occupants = this.latestCellOccupants[cellId];
-      if (occupants) {
-        const idx = occupants.lastIndexOf(itemType);
-        if (idx !== -1) occupants.splice(idx, 1);
-      }
-
-      // After move completes, rearrange remaining occupants on the cell
-      this.time.delayedCall(moveDelay, () => this.tweenCellLayout());
-
-      const helmetSize = this.helmetSlot * 0.9;
-
-      if (starHit) {
-        // Star-invincible player destroys item: dust cloud on item, no player effects
-        this.time.delayedCall(moveDelay, () => {
-          this._spawnDustCloud(item.x, item.y, helmetSize);
-          item.destroy();
-          this.time.delayedCall(500, () => this.tweenCellLayout());
-        });
+    applyPendingOccupants(cellId) {
+      if (!(cellId in this._pendingOccupants)) return;
+      const pending = this._pendingOccupants[cellId];
+      if (pending) {
+        this.latestCellOccupants[cellId] = pending;
       } else {
-        // Normal hit: helmet rotates twice, item launches out, stars burst
-        const center = this.cellPixelPos(cellId);
-        this.tweens.add({
-          targets: helmet,
-          angle: -720,
-          duration: 1000,
-          ease: "Linear",
-          delay: moveDelay,
-          onComplete: () => {
-            helmet.setAngle(0);
-            if (avatar.active) avatar._startActiveTweens();
-          },
-        });
-        this.tweens.add({
-          targets: item,
-          y: center.y - this.scale.height * 0.6,
-          angle: 360,
-          alpha: 0,
-          duration: 600,
-          ease: "Power2",
-          delay: moveDelay,
-          onComplete: () => { item.destroy(); },
-        });
-        this.time.delayedCall(moveDelay, () => {
-          this._spawnHitStars(helmet.x, helmet.y, helmetSize);
-          if (itemType === "green_shell" || itemType === "red_shell") {
-            this._spawnDarkMushroom(helmet.x, helmet.y, helmetSize);
-          }
-        });
+        delete this.latestCellOccupants[cellId];
       }
-    }
-
-    animateShellThrow(data) {
-      const from = this.cellPixelPos(data.fromCellId);
-      const to = this.cellPixelPos(data.toCellId);
-      const itemSize = this.helmetSlot * 0.9;
-      const textureKey = data.shellType || "green_shell";
-
-      // Create shell sprite at thrower position
-      const shell = this.add.image(from.x, from.y, textureKey);
-      shell.setScale(itemSize / shell.width);
-      shell.setDepth(10);
-
-      // Freeze target cell layout until dust cloud finishes — prevents
-      // updateCellOccupants / tweenCellLayout from rearranging during animation
-      if (data.hit === "banana" || data.hit === "green_shell" || data.hit === "red_shell") {
-        this._dustCloudCells.add(data.toCellId);
-      }
-
-      // For shells that land on the cell (no hit), mark cell as
-      // in-flight so _syncItemSprites won't create a duplicate sprite.
-      // The animation sprite becomes the permanent one on arrival.
-      if (!data.hit && (textureKey === "green_shell" || textureKey === "red_shell")) {
-        // Destroy any sprite _syncItemSprites already created
-        const destMap = textureKey === "green_shell" ? this.shellSprites : this.redShellSprites;
-        const destSprites = destMap.get(data.toCellId) || [];
-        const synced = destSprites.pop();
-        if (synced) synced.destroy();
-        if (destSprites.length === 0) destMap.delete(data.toCellId);
-
-        this._inflightShells.set(data.toCellId, shell);
-      }
-
-      // Build waypoints for the shell travel path
-      const waypoints = data.path && data.path.length > 1
-        ? data.path.map((cellId) => this.cellPixelPos(cellId))
-        : [to];
-      const perCell = waypoints.length > 1 ? 200 : 400;
-      const totalTravelTime = waypoints.length * perCell;
-
-      // Create a timeline that moves the shell through all waypoints smoothly
-      const events = waypoints.map((wp, i) => ({
-        at: i * perCell,
-        tween: {
-          targets: shell,
-          x: wp.x,
-          y: wp.y,
-          duration: perCell,
-          ease: "Linear",
-        },
-      }));
-
-      // Play hit effects after shell reaches destination
-      events.push({
-        at: totalTravelTime,
-        run: () => {
-          if (data.hit === "player") {
-            // Spin hit player's helmet, launch shell upward, burst stars + dark mushroom
-            const hitAvatar = this.avatars.get(data.hitPlayerId);
-            const helmet = hitAvatar?.helmet;
-            const helmetSize = this.helmetSlot * 0.9;
-            if (helmet) {
-              if (hitAvatar) hitAvatar._stopActiveTweens();
-              this.tweens.add({
-                targets: helmet,
-                angle: -720,
-                duration: 1000,
-                ease: "Linear",
-                onComplete: () => {
-                  helmet.setAngle(0);
-                  if (hitAvatar?.active) hitAvatar._startActiveTweens();
-                },
-              });
-              this._spawnHitStars(helmet.x, helmet.y, helmetSize);
-              this._spawnDarkMushroom(helmet.x, helmet.y, helmetSize);
-            }
-            this.tweens.add({
-              targets: shell,
-              y: to.y - this.scale.height * 0.6,
-              angle: 360,
-              alpha: 0,
-              duration: 600,
-              ease: "Power2",
-              onComplete: () => { shell.destroy(); },
-            });
-          } else if (data.hit === "banana" || data.hit === "green_shell" || data.hit === "red_shell") {
-            // Grab hit item sprite now (cell is frozen so it's still there)
-            const hitSpriteMap = data.hit === "banana" ? this.bananaSprites
-              : data.hit === "green_shell" ? this.shellSprites
-                : this.redShellSprites;
-            const hitSprites = hitSpriteMap.get(data.toCellId) || [];
-            const hitItem = hitSprites.pop();
-            if (hitSprites.length === 0) hitSpriteMap.delete(data.toCellId);
-
-            // Dust cloud on target object
-            if (hitItem) {
-              this._spawnDustCloud(hitItem.x, hitItem.y, itemSize);
-              hitItem.destroy();
-            }
-            shell.destroy();
-            this.time.delayedCall(500, () => {
-              this._dustCloudCells.delete(data.toCellId);
-              this.tweenCellLayout();
-              this.repositionPermacoinSprites();
-            });
-          } else if (!data.hit && (textureKey === "green_shell" || textureKey === "red_shell")) {
-            // Shell, no hit — shell stays on cell
-            shell.setDepth(0);
-            this._inflightShells.delete(data.toCellId);
-            const destMap = textureKey === "green_shell" ? this.shellSprites : this.redShellSprites;
-            const existing = destMap.get(data.toCellId) || [];
-            existing.push(shell);
-            destMap.set(data.toCellId, existing);
-            this.tweenCellLayout();
-          } else {
-            shell.destroy();
-          }
-        },
-      });
-
-      this.add.timeline(events).play();
+      delete this._pendingOccupants[cellId];
     }
 
     cellPixelPos(cellId) {
@@ -1175,7 +671,7 @@ export function initBoard(gameId) {
 
       for (const [cellId, cellPlayers] of byCell) {
         const occupants = this.latestCellOccupants[cellId] || [];
-        const offset = this._slotOffset(cellId);
+        const offset = this.items.slotOffset(cellId);
         const totalSlots = occupants.length + offset;
 
         cellPlayers.forEach((p) => {

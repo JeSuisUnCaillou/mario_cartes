@@ -1,4 +1,10 @@
 # Feedbacks
+(with fougre)
+
+star should remove slow counters
+
+(with indi)
+
 (with vinc & indira)
 
 Limiter le nombre de champignons noirs et simplifier la règle ?
@@ -7,11 +13,9 @@ Ecrire les règles des items sur le board aussi, à droite
 
 Automatic end of turn when no option left
 
-the active player shoud have a wobble ainmation
+the active player shoud have a subtle wobble animation on his avatar on the track.
   
 choose target on cell with several targets
-
-maybe on prend toutes les bananes dans la gueule quand on atteint une cellule avec plusieurs bananes ?
 
 when choosing forward/backward => illuminate the cell options on the board with the same colors
 
@@ -28,6 +32,8 @@ the double mushroom only advance once. It should advance two cells. Bug pas repr
 
 
 # DONE
+
+When a card is discarded and placed on top of the discard pile, it should then disapear (and the discard pile itself will show the last card played on top)
 
 longer vibrate on hit
 

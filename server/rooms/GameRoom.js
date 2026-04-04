@@ -4,9 +4,10 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { MapSchema, ArraySchema } from "@colyseus/schema";
-import { STARTING_DECK, RIVER_DEFS } from "./decks.js";
 import { computeLiveRanks } from "./ranking.js";
 import { canBuyFromRiver } from "./riverRules.js";
+import { CellGrid } from "./CellGrid.js";
+import { DeckManager } from "./DeckManager.js";
 import {
   PlayerSchema,
   RankEntrySchema,
@@ -24,125 +25,10 @@ const PLAYER_COLORS = [
 const PATCH_DELAY_MS = 60; // Delay between async steps to guarantee separate schema patches (> patchRate 50ms)
 const MOVE_DELAY_MS = 700; // Delay after a mushroom move to let the board helmet tween complete with a visible pause
 const RIVER_SLOT_COUNT = 3;
-const INITIAL_HAND_SIZE = 5;
 const MAX_LAPS = 3;
 const START_CELL = 1;
 
 class GameRoom extends Room {
-  _createDeck() {
-    if (this._testDeck) {
-      return this._testDeck.map((items) => ({ id: randomUUID(), items }));
-    }
-    const cards = STARTING_DECK.map((items) => ({ id: randomUUID(), items: [...items] }));
-    return this._shuffle(cards);
-  }
-
-  _createRiverDecks() {
-    if (this._testRiverDecks) {
-      return this._testRiverDecks.map((river, i) => {
-        const cards = river.map((items) => ({ id: randomUUID(), items }));
-        return {
-          id: i,
-          cost: RIVER_DEFS[i].cost,
-          deck: cards.slice(RIVER_SLOT_COUNT),
-          slots: cards.slice(0, RIVER_SLOT_COUNT),
-        };
-      });
-    }
-    return RIVER_DEFS.map((river, i) => {
-      const cards = this._shuffle(river.cards.map((items) => ({ id: randomUUID(), items: [...items] })));
-      return {
-        id: i,
-        cost: river.cost,
-        deck: cards.slice(RIVER_SLOT_COUNT),
-        slots: cards.slice(0, RIVER_SLOT_COUNT),
-      };
-    });
-  }
-
-
-  _shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-  }
-
-  _cardState(player) {
-    const dp = player.discardPile;
-    return {
-      hand: player.hand,
-      drawPileDisplay: player.drawPileDisplay,
-      discardPile: player.discardPile,
-      drawCount: player.drawPile.length,
-      discardCount: dp.length,
-      discardTopCard: dp.length > 0 ? dp[dp.length - 1] : null,
-      pendingDiscard: player.pendingDiscard,
-      pendingShellChoice: player.pendingShellChoice,
-      pendingShellType: player.pendingShellType,
-      coins: player.coins,
-      permanentCoins: player.permanentCoins,
-      slowCounters: player.slowCounters,
-      deck: [...player.hand, ...player.drawPile, ...player.discardPile],
-    };
-  }
-
-  _drawCards(player) {
-    let shuffledCount = 0;
-    let needed = INITIAL_HAND_SIZE;
-    const drawn = player.drawPile.splice(0, needed);
-    const drawnBeforeShuffle = drawn.length;
-    const drawnIds = new Set(drawn.map(c => c.id));
-    player.drawPileDisplay = player.drawPileDisplay.filter(c => !drawnIds.has(c.id));
-    needed -= drawn.length;
-    if (needed > 0 && player.discardPile.length > 0) {
-      shuffledCount = player.discardPile.length;
-      player.drawPile.push(...this._shuffle(player.discardPile.splice(0)));
-      player.drawPileDisplay = this._shuffle([...player.drawPile]);
-      drawn.push(...player.drawPile.splice(0, needed));
-      const newDrawnIds = new Set(drawn.slice(drawnBeforeShuffle).map(c => c.id));
-      player.drawPileDisplay = player.drawPileDisplay.filter(c => !newDrawnIds.has(c.id));
-    }
-    player.hand.push(...drawn);
-    return { ...this._cardState(player), shuffledCount, drawnBeforeShuffle };
-  }
-
-  _cellOccupants(cellId) {
-    if (!this.cellOccupants[cellId]) this.cellOccupants[cellId] = [];
-    return this.cellOccupants[cellId];
-  }
-
-  _addToCell(cellId, entry) {
-    this._cellOccupants(cellId).push(entry);
-  }
-
-  _removeFromCell(cellId, entry) {
-    const arr = this._cellOccupants(cellId);
-    const idx = arr.indexOf(entry);
-    if (idx !== -1) arr.splice(idx, 1);
-    if (arr.length === 0) delete this.cellOccupants[cellId];
-  }
-
-  _countItemOnCell(cellId, type) {
-    return this._cellOccupants(cellId).filter((e) => e === type).length;
-  }
-
-  _countShellsOnCell(cellId) {
-    return this._countItemOnCell(cellId, "green_shell") + this._countItemOnCell(cellId, "red_shell");
-  }
-
-  _shellTypeOnCell(cellId) {
-    if (this._countItemOnCell(cellId, "green_shell") > 0) return "green_shell";
-    if (this._countItemOnCell(cellId, "red_shell") > 0) return "red_shell";
-    return null;
-  }
-
-  _hazardOnCell(cellId) {
-    if (this._countItemOnCell(cellId, "banana") > 0) return "banana";
-    return this._shellTypeOnCell(cellId);
-  }
-
   _buildPlayerList() {
     const list = [];
     for (const [pid, p] of this.players) {
@@ -165,21 +51,17 @@ class GameRoom extends Room {
     this.currentRound = 0;
     this.turnIndex = -1;
     this.activePlayerId = null;
-    this.rivers = this._createRiverDecks();
-    this.cellOccupants = {};
+    this.rivers = this.decks.createRiverDecks();
+    this.grid.reset();
     for (const player of this.players.values()) {
       Object.assign(player, this._initialPlayerState());
-      this._addToCell(START_CELL, player.playerId);
+      this.grid.add(START_CELL, player.playerId);
     }
     this._syncState();
   }
 
-  _previousCell(cellId) {
-    return this.prevCell[cellId];
-  }
-
   _resolveShell(thrower, throwerClient, targetCellId, shellType = "green_shell") {
-    const occupants = this._cellOccupants(targetCellId);
+    const occupants = this.grid.getOccupants(targetCellId);
 
     // Priority 1: hit a player (excluding thrower), randomly chosen
     const playerIds = occupants.filter((e) => e !== "banana" && e !== "green_shell" && e !== "red_shell" && e !== thrower.playerId && !this.players.get(e)?.starInvincible);
@@ -200,8 +82,8 @@ class GameRoom extends Room {
     }
 
     // Priority 2: hit a banana — both destroyed
-    if (this._countItemOnCell(targetCellId, "banana") > 0) {
-      this._removeFromCell(targetCellId, "banana");
+    if (this.grid.countItem(targetCellId, "banana") > 0) {
+      this.grid.remove(targetCellId, "banana");
       this.broadcast("shellThrown", {
         playerId: thrower.playerId,
         fromCellId: thrower.cellId,
@@ -214,9 +96,9 @@ class GameRoom extends Room {
     }
 
     // Priority 3: hit another shell (green or red) — both destroyed
-    const hitShellType = this._shellTypeOnCell(targetCellId);
+    const hitShellType = this.grid.shellType(targetCellId);
     if (hitShellType) {
-      this._removeFromCell(targetCellId, hitShellType);
+      this.grid.remove(targetCellId, hitShellType);
       this.broadcast("shellThrown", {
         playerId: thrower.playerId,
         fromCellId: thrower.cellId,
@@ -229,7 +111,7 @@ class GameRoom extends Room {
     }
 
     // Nothing to hit — shell stays on cell
-    this._addToCell(targetCellId, shellType);
+    this.grid.add(targetCellId, shellType);
     this.broadcast("shellThrown", {
       playerId: thrower.playerId,
       fromCellId: thrower.cellId,
@@ -243,15 +125,15 @@ class GameRoom extends Room {
   _resolveRedShell(thrower, throwerClient, direction) {
     const path = [];
     let currentCellId = thrower.cellId;
-    const totalCells = this.cells.size;
+    const totalCells = this.grid.cells.size;
 
     for (let step = 0; step < totalCells; step++) {
       currentCellId = direction === "forward"
-        ? this.cells.get(currentCellId).next_cell
-        : this._previousCell(currentCellId);
+        ? this.grid.cells.get(currentCellId).next_cell
+        : this.grid.previousCell(currentCellId);
       path.push(currentCellId);
 
-      const occupants = this._cellOccupants(currentCellId);
+      const occupants = this.grid.getOccupants(currentCellId);
       const isLastStep = step === totalCells - 1;
 
       // Priority 1: hit a player (exclude thrower unless last step)
@@ -276,8 +158,8 @@ class GameRoom extends Room {
       }
 
       // Priority 2: hit a banana
-      if (this._countItemOnCell(currentCellId, "banana") > 0) {
-        this._removeFromCell(currentCellId, "banana");
+      if (this.grid.countItem(currentCellId, "banana") > 0) {
+        this.grid.remove(currentCellId, "banana");
         this.broadcast("shellThrown", {
           playerId: thrower.playerId,
           fromCellId: thrower.cellId,
@@ -291,9 +173,9 @@ class GameRoom extends Room {
       }
 
       // Priority 3: hit a shell (green or red)
-      const hitShellType = this._shellTypeOnCell(currentCellId);
+      const hitShellType = this.grid.shellType(currentCellId);
       if (hitShellType) {
-        this._removeFromCell(currentCellId, hitShellType);
+        this.grid.remove(currentCellId, hitShellType);
         this.broadcast("shellThrown", {
           playerId: thrower.playerId,
           fromCellId: thrower.cellId,
@@ -311,7 +193,7 @@ class GameRoom extends Room {
   _resolveBlueShell(thrower) {
     // Find rank-1 unfinished player
     const finishedIds = new Set(this.ranking);
-    const liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.cells.size);
+    const liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.cells.size);
 
     // Find the best rank among unfinished players
     let bestRank = Infinity;
@@ -335,9 +217,9 @@ class GameRoom extends Room {
     // Build forward path from thrower to target (skip all obstacles)
     const path = [];
     let currentCellId = thrower.cellId;
-    const totalCells = this.cells.size;
+    const totalCells = this.grid.cells.size;
     for (let step = 0; step < totalCells; step++) {
-      currentCellId = this.cells.get(currentCellId).next_cell;
+      currentCellId = this.grid.cells.get(currentCellId).next_cell;
       path.push(currentCellId);
       if (currentCellId === target.cellId) break;
     }
@@ -366,7 +248,7 @@ class GameRoom extends Room {
     if (discardedCardIds.length > 0) {
       this._sendToPlayer(target.playerId, "blueShellHit", {
         discardedCardIds,
-        ...this._cardState(target),
+        ...this.decks.cardState(target),
       });
     }
 
@@ -386,8 +268,10 @@ class GameRoom extends Room {
     if (options._roomId) {
       this.roomId = options._roomId;
     }
-    this._testDeck = options._testDeck || null;
-    this._testRiverDecks = options._testRiverDecks || null;
+    this.decks = new DeckManager({
+      testDeck: options._testDeck || null,
+      testRiverDecks: options._testRiverDecks || null,
+    });
     this.autoDispose = false;
     this._disposeTimer = null;
     this.clientsInfo = new Map();
@@ -412,12 +296,7 @@ class GameRoom extends Room {
 
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const cellsData = JSON.parse(fs.readFileSync(path.join(__dirname, "../../assets/racetrack_0_cells.json"), "utf8"));
-    this.cells = new Map(cellsData.map((cell) => [cell.id, cell]));
-    this.prevCell = {};
-    for (const cell of cellsData) {
-      this.prevCell[cell.next_cell] = cell.id;
-    }
-    this.cellOccupants = {};
+    this.grid = new CellGrid(cellsData);
     this.ranking = [];
 
     this.onMessage("_testSetState", (client, data) => {
@@ -428,7 +307,7 @@ class GameRoom extends Room {
         if (!data.playerId) return;
         player = this.players.get(data.playerId);
       } else {
-        if (!this._testDeck) return;
+        if (!this.decks.isTestMode) return;
         player = this._getPlayer(client);
       }
       if (!player) return;
@@ -445,16 +324,16 @@ class GameRoom extends Room {
         this.turnIndex = playerIds.indexOf(data.activePlayerId);
       }
       if (data.addBanana) {
-        this._addToCell(data.addBanana.cellId, "banana");
+        this.grid.add(data.addBanana.cellId, "banana");
       }
       if (data.removeBanana) {
-        this._removeFromCell(data.removeBanana.cellId, "banana");
+        this.grid.remove(data.removeBanana.cellId, "banana");
       }
       if (data.addShell) {
-        this._addToCell(data.addShell.cellId, "green_shell");
+        this.grid.add(data.addShell.cellId, "green_shell");
       }
       if (data.removeShell) {
-        this._removeFromCell(data.removeShell.cellId, "green_shell");
+        this.grid.remove(data.removeShell.cellId, "green_shell");
       }
       if (data.setRanking) {
         this.ranking = data.setRanking.filter((id) => this.players.has(id));
@@ -527,7 +406,7 @@ class GameRoom extends Room {
       if (player.hand.length > 0) return;
       if (player.pendingDiscard > 0) return;
       if (player.pendingShellChoice) return;
-      client.send("cardsDrawn", this._drawCards(player));
+      client.send("cardsDrawn", this.decks.drawCards(player));
       this._syncState();
     });
 
@@ -546,7 +425,7 @@ class GameRoom extends Room {
 
       player.discardPile.push(card);
       player.pendingItems = [...card.items];
-      this._sendToPlayer(player.playerId, "cardPlayed", { cardId: card.id, ...this._cardState(player) });
+      this._sendToPlayer(player.playerId, "cardPlayed", { cardId: card.id, ...this.decks.cardState(player) });
       this._processNextItem(player);
     });
 
@@ -563,7 +442,7 @@ class GameRoom extends Room {
       client.send("cardDiscarded", {
         cardId: card.id,
         remaining: player.pendingDiscard,
-        ...this._cardState(player),
+        ...this.decks.cardState(player),
       });
       this._syncState();
 
@@ -587,8 +466,8 @@ class GameRoom extends Room {
         this._resolveRedShell(player, client, data.direction);
       } else {
         const targetCellId = data.direction === "forward"
-          ? this.cells.get(player.cellId).next_cell
-          : this._previousCell(player.cellId);
+          ? this.grid.cells.get(player.cellId).next_cell
+          : this.grid.previousCell(player.cellId);
         this._resolveShell(player, client, targetCellId, shellType);
       }
 
@@ -630,7 +509,7 @@ class GameRoom extends Room {
       const card = river.slots[slotIndex];
       player.discardPile.push(card);
       river.slots[slotIndex] = null;
-      client.send("cardBought", { cardId: card.id, riverId: river.id, slotIndex, ...this._cardState(player) });
+      client.send("cardBought", { cardId: card.id, riverId: river.id, slotIndex, ...this.decks.cardState(player) });
       this._syncState();
       if (river.deck.length > 0) {
         this.clock.setTimeout(() => {
@@ -655,9 +534,9 @@ class GameRoom extends Room {
 
   _applyPlayerState(player, data) {
     if (data.cellId !== undefined) {
-      this._removeFromCell(player.cellId, player.playerId);
+      this.grid.remove(player.cellId, player.playerId);
       player.cellId = data.cellId;
-      this._addToCell(player.cellId, player.playerId);
+      this.grid.add(player.cellId, player.playerId);
     }
     if (data.lapCount !== undefined) player.lapCount = data.lapCount;
     if (data.coins !== undefined) player.coins = data.coins;
@@ -680,14 +559,14 @@ class GameRoom extends Room {
       player.hand.push({ id: randomUUID(), items: data.addHandCard.items });
     }
     if (data.setHandCard || data.addHandCard) {
-      this._sendToPlayer(player.playerId, "cardsDrawn", this._cardState(player));
+      this._sendToPlayer(player.playerId, "cardsDrawn", this.decks.cardState(player));
     }
     this._syncState();
   }
 
   _fullState() {
     const liveRanks = this.phase === "playing"
-      ? computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.cells.size)
+      ? computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.cells.size)
       : new Map();
     const players = Array.from(this.players.values()).map((p) => ({
       playerId: p.playerId,
@@ -713,7 +592,7 @@ class GameRoom extends Room {
       phase: this.phase,
       currentRound: this.currentRound,
       activePlayerId: this.activePlayerId,
-      cellOccupants: this.cellOccupants,
+      cellOccupants: this.grid.occupants,
       players,
     };
     if (this.rivers) {
@@ -735,9 +614,9 @@ class GameRoom extends Room {
   }
 
   _initialPlayerState() {
-    const drawPile = this._createDeck();
+    const { drawPile, drawPileDisplay } = this.decks.initialPlayerDeck();
     return {
-      cellId: START_CELL, drawPile, drawPileDisplay: this._shuffle([...drawPile]), hand: [], discardPile: [],
+      cellId: START_CELL, drawPile, drawPileDisplay, hand: [], discardPile: [],
       pendingDiscard: 0, pendingShellChoice: false, pendingItems: [], ready: false, hasPlayedAllCards: false, coins: 0, permanentCoins: 0, lapCount: 0, slowCounters: 0, hasMovedThisTurn: false, starInvincible: false,
     };
   }
@@ -768,7 +647,7 @@ class GameRoom extends Room {
           }
         }
         this.clientsInfo.set(client.sessionId, { type: "player", playerId: existingPlayerId });
-        client.send("cardsDrawn", this._cardState(player));
+        client.send("cardsDrawn", this.decks.cardState(player));
       } else if (this.phase === "lobby") {
         const playerId = randomUUID();
         const name = this._normalizeName(options.name);
@@ -778,7 +657,7 @@ class GameRoom extends Room {
           playerId, name, color, connected: true,
           ...this._initialPlayerState(),
         });
-        this._addToCell(START_CELL, playerId);
+        this.grid.add(START_CELL, playerId);
         this.clientsInfo.set(client.sessionId, { type: "player", playerId });
         client.send("playerId", playerId);
       } else {
@@ -825,7 +704,7 @@ class GameRoom extends Room {
 
 
   _getLiveRank(playerId) {
-    const liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.cells.size);
+    const liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.cells.size);
     return liveRanks.get(playerId) || 0;
   }
 
@@ -844,7 +723,7 @@ class GameRoom extends Room {
     // Compute live ranks
     let liveRanks = new Map();
     if (this.phase === "playing") {
-      liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.cells.size);
+      liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.cells.size);
     }
 
     // Sync players
@@ -913,7 +792,7 @@ class GameRoom extends Room {
 
     // Sync cellOccupants
     const activeCellIds = new Set();
-    for (const cellId of Object.keys(this.cellOccupants)) {
+    for (const cellId of Object.keys(this.grid.occupants)) {
       activeCellIds.add(String(cellId));
       let co = this.state.cellOccupants.get(String(cellId));
       if (!co) {
@@ -922,7 +801,7 @@ class GameRoom extends Room {
         this.state.cellOccupants.set(String(cellId), co);
       }
       while (co.entries.length > 0) co.entries.pop();
-      for (const entry of this.cellOccupants[cellId]) {
+      for (const entry of this.grid.occupants[cellId]) {
         co.entries.push(entry);
       }
     }
@@ -936,7 +815,7 @@ class GameRoom extends Room {
     const wasActive = this.phase === "playing" && this.activePlayerId === playerId;
 
     this._sendToPlayer(playerId, "kicked");
-    this._removeFromCell(player.cellId, playerId);
+    this.grid.remove(player.cellId, playerId);
     this.players.delete(playerId);
     // Remove from ranking if present
     const rankIdx = this.ranking.indexOf(playerId);
@@ -1008,7 +887,7 @@ class GameRoom extends Room {
     } else if (item === "green_shell" || item === "red_shell") {
       player.pendingShellChoice = true;
       player.pendingShellType = item;
-      this._sendToPlayer(player.playerId, "cardPlayed", { ...this._cardState(player) });
+      this._sendToPlayer(player.playerId, "cardPlayed", { ...this.decks.cardState(player) });
       this._syncState();
       return;
     }
@@ -1027,15 +906,75 @@ class GameRoom extends Room {
 
     if (player.lapCount === 0) player.lapCount = 1;
     const oldCellId = player.cellId;
-    player.cellId = this.cells.get(player.cellId).next_cell;
-    this._removeFromCell(oldCellId, player.playerId);
-    this._addToCell(player.cellId, player.playerId);
+    player.cellId = this.grid.cells.get(player.cellId).next_cell;
+    this.grid.remove(oldCellId, player.playerId);
+    this.grid.add(player.cellId, player.playerId);
 
-    const cellData = this.cells.get(player.cellId);
+    const cellData = this.grid.cells.get(player.cellId);
     if (cellData.permanent_coin) {
       player.permanentCoins += cellData.permanent_coin;
       player.coins += cellData.permanent_coin;
       this.broadcast("permanentCoinPickup", {
+        playerId: player.playerId,
+        cellId: player.cellId,
+      });
+    }
+
+    // Detect hazard and place player at the item's slot BEFORE the first sync,
+    // so the client moves the player directly to the item's position.
+    let hitType = null;
+    if (player.starInvincible) {
+      const occupants = this.grid.getOccupants(player.cellId);
+      const otherPlayers = occupants.filter(
+        (e) => e !== player.playerId && e !== "banana" && e !== "green_shell" && e !== "red_shell",
+      );
+      if (otherPlayers.length > 0) {
+        hitType = "star_player";
+      } else {
+        const starItem = this.grid.hazard(player.cellId);
+        if (starItem) {
+          hitType = "star_" + starItem;
+          this.grid.remove(player.cellId, player.playerId);
+          this.grid.replace(player.cellId, starItem, player.playerId);
+        }
+      }
+    } else {
+      hitType = this.grid.hazard(player.cellId);
+      if (hitType) {
+        this.grid.remove(player.cellId, player.playerId);
+        this.grid.replace(player.cellId, hitType, player.playerId);
+      }
+    }
+
+    // Broadcast itemHitBoard BEFORE _syncState so the client freezes the cell
+    // before the patch arrives. This prevents _syncSprites from destroying the
+    // wrong sprite or rearranging items.
+    if (player.starInvincible) {
+      if (hitType === "star_player") {
+        const occupants = this.grid.getOccupants(player.cellId);
+        const otherPlayers = occupants.filter(
+          (e) => e !== player.playerId && e !== "banana" && e !== "green_shell" && e !== "red_shell",
+        );
+        const hitPlayerId = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
+        const hitPlayer = this.players.get(hitPlayerId);
+        hitPlayer.slowCounters++;
+        this.broadcast("itemHitBoard", {
+          type: "star",
+          playerId: hitPlayerId,
+          cellId: player.cellId,
+        });
+      } else if (hitType) {
+        const itemType = hitType.slice("star_".length);
+        this.broadcast("itemHitBoard", {
+          type: itemType,
+          playerId: player.playerId,
+          cellId: player.cellId,
+          starHit: true,
+        });
+      }
+    } else if (hitType) {
+      this.broadcast("itemHitBoard", {
+        type: hitType,
         playerId: player.playerId,
         cellId: player.cellId,
       });
@@ -1055,88 +994,36 @@ class GameRoom extends Room {
     }
 
     if (player.starInvincible) {
-      // Star-invincible: destroy one item on the cell (shell priority: player > banana > shell)
-      const occupants = this._cellOccupants(player.cellId);
-      const otherPlayers = occupants.filter(
-        (e) => e !== player.playerId && e !== "banana" && e !== "green_shell" && e !== "red_shell",
-      );
-      if (otherPlayers.length > 0) {
-        const hitPlayerId = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
-        const hitPlayer = this.players.get(hitPlayerId);
-        hitPlayer.slowCounters++;
-        this.broadcast("itemHitBoard", {
-          type: "star",
-          playerId: hitPlayerId,
-          cellId: player.cellId,
-        });
-      } else if (this._countItemOnCell(player.cellId, "banana") > 0) {
-        this._removeFromCell(player.cellId, "banana");
-        this.broadcast("itemHitBoard", {
-          type: "banana",
-          playerId: player.playerId,
-          cellId: player.cellId,
-          starHit: true,
-        });
-      } else if (this._countItemOnCell(player.cellId, "green_shell") > 0) {
-        this._removeFromCell(player.cellId, "green_shell");
-        this.broadcast("itemHitBoard", {
-          type: "green_shell",
-          playerId: player.playerId,
-          cellId: player.cellId,
-          starHit: true,
-        });
-      } else if (this._countItemOnCell(player.cellId, "red_shell") > 0) {
-        this._removeFromCell(player.cellId, "red_shell");
-        this.broadcast("itemHitBoard", {
-          type: "red_shell",
-          playerId: player.playerId,
-          cellId: player.cellId,
-          starHit: true,
-        });
-      }
       this._syncState();
       this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
-    } else {
-      const hitType = this._hazardOnCell(player.cellId);
-
-      if (hitType) {
-        this._removeFromCell(player.cellId, hitType);
-        // Send itemHitBoard BEFORE _syncState so the message arrives before the patch.
-        // The board's animateItemHit has a built-in moveDelay (400ms) that waits for
-        // the helmet tween to finish before playing the hit effects.
-        this.broadcast("itemHitBoard", {
-          type: hitType,
-          playerId: player.playerId,
-          cellId: player.cellId,
-        });
-        if (hitType === "banana") {
-          const mustDiscard = Math.min(1, player.hand.length);
-          if (mustDiscard > 0) {
-            player.pendingDiscard = mustDiscard;
-            this._sendToPlayer(player.playerId, "discardHit", {
-              source: hitType,
-              mustDiscard,
-              ...this._cardState(player),
-            });
-          }
-          this._syncState();
-          if (player.pendingDiscard === 0) {
-            this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
-          }
-        } else {
-          player.slowCounters++;
-          this._syncState();
+    } else if (hitType) {
+      if (hitType === "banana") {
+        const mustDiscard = Math.min(1, player.hand.length);
+        if (mustDiscard > 0) {
+          player.pendingDiscard = mustDiscard;
+          this._sendToPlayer(player.playerId, "discardHit", {
+            source: hitType,
+            mustDiscard,
+            ...this.decks.cardState(player),
+          });
+        }
+        this._syncState();
+        if (player.pendingDiscard === 0) {
           this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
         }
       } else {
-        // No hit — continue to next item after tween completes
+        player.slowCounters++;
+        this._syncState();
         this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
       }
+    } else {
+      // No hit — continue to next item after tween completes
+      this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
     }
   }
 
   _resolveBananaStep(player) {
-    const occupants = this._cellOccupants(player.cellId);
+    const occupants = this.grid.getOccupants(player.cellId);
     const playerIdx = occupants.indexOf(player.playerId);
     if (playerIdx !== -1) {
       occupants.splice(playerIdx, 0, "banana");
@@ -1156,11 +1043,11 @@ class GameRoom extends Room {
     this.currentRound = 1;
     this.turnIndex = 0;
     this.activePlayerId = Array.from(this.players.keys())[0];
-    this.rivers = this._createRiverDecks();
+    this.rivers = this.decks.createRiverDecks();
 
     // Deal initial hand to all players
     for (const [playerId, player] of this.players) {
-      const drawResult = this._drawCards(player);
+      const drawResult = this.decks.drawCards(player);
       this._sendToPlayer(playerId, "cardsDrawn", drawResult);
     }
 
@@ -1180,7 +1067,7 @@ class GameRoom extends Room {
 
   _endTurnAndAdvance(player) {
     this._resetPlayerTurn(player);
-    const drawResult = this._drawCards(player);
+    const drawResult = this.decks.drawCards(player);
     this._sendToPlayer(player.playerId, "cardsDrawn", drawResult);
     this._syncState();
     this._advanceTurn();
