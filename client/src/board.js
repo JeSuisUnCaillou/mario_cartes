@@ -79,7 +79,7 @@ class PlayerAvatar {
     this.bobTween = this.scene.tweens.add({
       targets: this.helmet,
       y: `-=${bobAmount}`,
-      duration: 200,
+      duration: 120,
       yoyo: true,
       repeat: -1,
       ease: "Sine.easeInOut",
