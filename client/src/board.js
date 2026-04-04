@@ -27,6 +27,7 @@ const CELL_POSITIONS = [
 ];
 
 const SVG_ASPECT = 131.0025 / 104.54418;
+const HELMET_SIZE_RATIO = 1.1;
 let boardPhase = "lobby";
 let latestPlayersData = [];
 let latestGameState = null;
@@ -490,7 +491,7 @@ export function initBoard(gameId) {
     refreshPlayerPositions() {
       const cellW = this.track.displayWidth / 5;
       const helmetSlot = cellW / 4.5;
-      const helmetDisplaySize = helmetSlot * 1.1;
+      const helmetDisplaySize = helmetSlot * HELMET_SIZE_RATIO;
 
       for (const [cellIdStr, occupants] of Object.entries(this.latestCellOccupants)) {
         const cellId = Number(cellIdStr);
@@ -514,7 +515,7 @@ export function initBoard(gameId) {
     tweenCellLayout() {
       const cellW = this.track.displayWidth / 5;
       const helmetSlot = cellW / 4.5;
-      const helmetDisplaySize = helmetSlot * 1.1;
+      const helmetDisplaySize = helmetSlot * HELMET_SIZE_RATIO;
       const itemSize = helmetSlot * 0.9;
 
       for (const [cellIdStr, occupants] of Object.entries(this.latestCellOccupants)) {
@@ -1046,7 +1047,7 @@ export function initBoard(gameId) {
 
       const cellW = this.track.displayWidth / 5;
       const helmetSlot = cellW / 4.5;
-      const helmetDisplaySize = helmetSlot * 1.1;
+      const helmetDisplaySize = helmetSlot * HELMET_SIZE_RATIO;
 
       for (const [cellId, cellPlayers] of byCell) {
         const occupants = this.latestCellOccupants[cellId] || [];
