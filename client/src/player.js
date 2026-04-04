@@ -6,6 +6,7 @@ import {
   renderHand, renderPileContent, updatePileCount, updatePiles, updateCoinDisplay, updateCardMushroomIcons,
 } from "./player_cards.js";
 import { updateBuyButton as _updateBuyButton, openBuyModal as _openBuyModal, renderBuyModal, closeBuyModal } from "./player_buy.js";
+import { openPileModal, closePileModal } from "./player_pile_modal.js";
 import { rankBadge } from "./rank.js";
 import { helmetDataUrl } from "./helmet.js";
 
@@ -26,9 +27,17 @@ let currentHasMovedThisTurn = false;
 let currentRank = 0;
 let currentPlayerCount = 0;
 let pendingShellChoice = false;
+let latestDrawPileDisplay = [];
+let latestDiscardPile = [];
 
 function updateBuyButton() {
   _updateBuyButton(activePlayerId, myPlayerId, latestRivers, pendingDiscards || pendingShellChoice, openBuyModal);
+}
+
+function updatePilesAndTrack(data) {
+  latestDrawPileDisplay = data.drawPileDisplay || [];
+  latestDiscardPile = data.discardPile || [];
+  updatePiles(data);
 }
 
 function openBuyModal() {
@@ -509,6 +518,12 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
   `;
 
   document.getElementById("rules-btn").addEventListener("click", showRulesModal);
+  document.getElementById("draw-pile").addEventListener("click", () => {
+    openPileModal("Draw pile", latestDrawPileDisplay);
+  });
+  document.getElementById("discard-pile").addEventListener("click", () => {
+    openPileModal("Discard pile", latestDiscardPile);
+  });
 
   const nameInput = document.getElementById("player-name");
   nameInput.addEventListener("input", () => {
@@ -678,11 +693,12 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
 
       room.onMessage("cardsDrawn", async (data) => {
         if (animating) return;
+        closePileModal();
         ensureCardElements(data.deck);
         // On reconnect (hand already existed), just render without animation
         if (data.drawnBeforeShuffle === undefined) {
           renderHand(data.hand, addDragListeners);
-          updatePiles(data);
+          updatePilesAndTrack(data);
           currentCoins = data.coins || 0;
           currentPermanentCoins = data.permanentCoins || 0;
           currentSlowCounters = data.slowCounters || 0;
@@ -732,7 +748,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           animDrawCount = await animateDrawCards(secondBatch, addDragListeners, animDrawCount, firstBatch.length);
         }
 
-        updatePiles(data);
+        updatePilesAndTrack(data);
         currentCoins = data.coins || 0;
         currentPermanentCoins = data.permanentCoins || 0;
         currentSlowCounters = data.slowCounters || 0;
@@ -791,11 +807,11 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           clone.style.filter = "none";
           clone.addEventListener("transitionend", () => {
             clone.remove();
-            updatePiles(data);
+            updatePilesAndTrack(data);
           }, { once: true });
         });
         if (clones.length === 0) {
-          updatePiles(data);
+          updatePilesAndTrack(data);
         }
       });
 
@@ -844,7 +860,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
             updatePileCount("draw-count", animDrawCount);
           }
           if (secondBatch.length > 0) animDrawCount = await animateDrawCards(secondBatch, addDragListeners, animDrawCount, firstBatch.length);
-          updatePiles(drawData);
+          updatePilesAndTrack(drawData);
           animating = false;
         }
 
@@ -885,11 +901,11 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           clone.style.filter = "none";
           clone.addEventListener("transitionend", () => {
             clone.remove();
-            updatePiles(data);
+            updatePilesAndTrack(data);
           }, { once: true });
         });
         if (clones.length === 0) {
-          updatePiles(data);
+          updatePilesAndTrack(data);
         }
 
         // Restore play zone when all discards are done
@@ -975,7 +991,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         await new Promise((r) => setTimeout(r, 300));
         document.querySelectorAll("body > .card").forEach((c) => c.remove());
         ensureCardElements(data.deck);
-        updatePiles(data);
+        updatePilesAndTrack(data);
         playZone.classList.remove("discard-hit", "discard-hit-blueshell");
         updatePlayZone();
         updateBuyButton();
@@ -986,7 +1002,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         currentCoins = data.coins;
         currentPermanentCoins = data.permanentCoins || 0;
         updateCoinDisplay(data.coins, currentPermanentCoins, updateBuyButton, currentSlowCounters);
-        updatePiles(data);
+        updatePilesAndTrack(data);
         updateBuyButton();
 
         // Animate bought card from modal to discard pile
