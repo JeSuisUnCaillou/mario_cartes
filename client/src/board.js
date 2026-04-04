@@ -27,7 +27,7 @@ const CELL_POSITIONS = [
 ];
 
 const SVG_ASPECT = 131.0025 / 104.54418;
-const HELMET_SIZE_RATIO = 1.1;
+const HELMET_SIZE_RATIO = 1;
 let boardPhase = "lobby";
 let latestPlayersData = [];
 let latestGameState = null;
@@ -391,6 +391,10 @@ export function initBoard(gameId) {
       this._processingQueue = false;
     }
 
+    get cellW() { return this.track.displayWidth / 5; }
+    get helmetSlot() { return this.cellW / 4.5; }
+    get helmetDisplaySize() { return this.helmetSlot * HELMET_SIZE_RATIO; }
+
     preload() {
       const dpr = window.devicePixelRatio || 1;
       const maxDim = Math.max(window.innerWidth, window.innerHeight) * dpr;
@@ -418,7 +422,7 @@ export function initBoard(gameId) {
     }
 
     update() {
-      const helmetSize = this.track ? this.track.displayWidth / 5 / 4.5 * 0.9 : 0;
+      const helmetSize = this.track ? this.helmetSlot * 0.9 : 0;
       for (const [playerId, star] of this.starOverlays) {
         const helmet = this.helmets.get(playerId);
         if (helmet) {
@@ -449,8 +453,8 @@ export function initBoard(gameId) {
     }
 
     repositionPermacoinSprites() {
-      const cellW = this.track.displayWidth / 5;
-      const itemSize = (cellW / 4.5) * 0.9;
+      const cellW = this.cellW;
+      const itemSize = this.helmetSlot * 0.9;
       for (const [cellId, sprite] of this.permacoinSprites) {
         if (this._dustCloudCells.has(cellId)) continue;
         const occupants = this.latestCellOccupants[cellId] || [];
@@ -470,9 +474,9 @@ export function initBoard(gameId) {
     }
 
     cellSlotPos(cellId, slotIndex, totalSlots) {
-      const cellW = this.track.displayWidth / 5;
+      const cellW = this.cellW;
       const maxPerRow = 4;
-      const helmetSlot = cellW / 4.5;
+      const helmetSlot = this.helmetSlot;
       const center = this.cellPixelPos(cellId);
       const rows = Math.ceil(totalSlots / maxPerRow);
       const row = Math.floor(slotIndex / maxPerRow);
@@ -489,9 +493,9 @@ export function initBoard(gameId) {
     }
 
     refreshPlayerPositions() {
-      const cellW = this.track.displayWidth / 5;
-      const helmetSlot = cellW / 4.5;
-      const helmetDisplaySize = helmetSlot * HELMET_SIZE_RATIO;
+      const cellW = this.cellW;
+      const helmetSlot = this.helmetSlot;
+      const helmetDisplaySize = this.helmetDisplaySize;
 
       for (const [cellIdStr, occupants] of Object.entries(this.latestCellOccupants)) {
         const cellId = Number(cellIdStr);
@@ -513,9 +517,9 @@ export function initBoard(gameId) {
     }
 
     tweenCellLayout() {
-      const cellW = this.track.displayWidth / 5;
-      const helmetSlot = cellW / 4.5;
-      const helmetDisplaySize = helmetSlot * HELMET_SIZE_RATIO;
+      const cellW = this.cellW;
+      const helmetSlot = this.helmetSlot;
+      const helmetDisplaySize = this.helmetDisplaySize;
       const itemSize = helmetSlot * 0.9;
 
       for (const [cellIdStr, occupants] of Object.entries(this.latestCellOccupants)) {
@@ -683,7 +687,7 @@ export function initBoard(gameId) {
       const sprite = this.permacoinSprites.get(cellId);
       if (!sprite) return;
       const origY = sprite.y;
-      const cellW = this.track.displayWidth / 5;
+      const cellW = this.cellW;
       const jumpHeight = cellW / 3;
       sprite.setDepth(10);
       this.tweens.add({
@@ -751,8 +755,8 @@ export function initBoard(gameId) {
     }
 
     snapCellLayout() {
-      const cellW = this.track.displayWidth / 5;
-      const helmetSlot = cellW / 4.5;
+      const cellW = this.cellW;
+      const helmetSlot = this.helmetSlot;
       const bananaSize = helmetSlot * 0.9;
 
       for (const [cellIdStr, occupants] of Object.entries(this.latestCellOccupants)) {
@@ -870,7 +874,7 @@ export function initBoard(gameId) {
       // After move completes, rearrange remaining occupants on the cell
       this.time.delayedCall(moveDelay, () => this.tweenCellLayout());
 
-      const helmetSize = this.track.displayWidth / 5 / 4.5 * 0.9;
+      const helmetSize = this.helmetSlot * 0.9;
 
       if (starHit) {
         // Star-invincible player destroys item: dust cloud on item, no player effects
@@ -912,8 +916,7 @@ export function initBoard(gameId) {
     animateShellThrow(data) {
       const from = this.cellPixelPos(data.fromCellId);
       const to = this.cellPixelPos(data.toCellId);
-      const cellW = this.track.displayWidth / 5;
-      const itemSize = cellW / 4.5 * 0.9;
+      const itemSize = this.helmetSlot * 0.9;
       const textureKey = data.shellType || "green_shell";
 
       // Create shell sprite at thrower position
@@ -967,7 +970,7 @@ export function initBoard(gameId) {
           if (data.hit === "player") {
             // Spin hit player's helmet, launch shell upward, burst stars + dark mushroom
             const helmet = this.helmets.get(data.hitPlayerId);
-            const helmetSize = this.track.displayWidth / 5 / 4.5 * 0.9;
+            const helmetSize = this.helmetSlot * 0.9;
             if (helmet) {
               this.tweens.add({
                 targets: helmet,
@@ -1045,9 +1048,9 @@ export function initBoard(gameId) {
         byCell.get(p.cellId).push(p);
       }
 
-      const cellW = this.track.displayWidth / 5;
-      const helmetSlot = cellW / 4.5;
-      const helmetDisplaySize = helmetSlot * HELMET_SIZE_RATIO;
+      const cellW = this.cellW;
+      const helmetSlot = this.helmetSlot;
+      const helmetDisplaySize = this.helmetDisplaySize;
 
       for (const [cellId, cellPlayers] of byCell) {
         const occupants = this.latestCellOccupants[cellId] || [];
