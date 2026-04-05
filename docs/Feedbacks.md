@@ -1,9 +1,4 @@
 # Feedbacks
-(with fougre)
-
-star should remove slow counters
-
-(with indi)
 
 (with vinc & indira)
 
@@ -32,6 +27,8 @@ the double mushroom only advance once. It should advance two cells. Bug pas repr
 
 
 # DONE
+
+star should remove slow counters
 
 When a card is discarded and placed on top of the discard pile, it should then disapear (and the discard pile itself will show the last card played on top)
 
