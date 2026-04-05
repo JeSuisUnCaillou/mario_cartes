@@ -13,7 +13,6 @@ export function schemaPlayersToArray(state) {
       permanentCoins: p.permanentCoins,
       lapCount: p.lapCount,
       slowCounters: p.slowCounters,
-      hasMovedThisTurn: p.hasMovedThisTurn,
       pendingShellChoice: p.pendingShellChoice,
       finished: p.finished,
       rank: p.rank,

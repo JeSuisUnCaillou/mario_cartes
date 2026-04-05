@@ -181,7 +181,7 @@ describe("Slow mechanic", () => {
     room.leave(); board.leave();
   });
 
-  it("minimum 1 move: 1 mushroom + 1 slow = 1 move, no counter consumed", async () => {
+  it("1 mushroom + 1 slow = 0 moves, counter consumed", async () => {
     const roomId = await createRoom(baseUrl, {
       _testDeck: [["mushroom"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
     });
@@ -200,10 +200,10 @@ describe("Slow mechanic", () => {
     room.send("playCard", { cardId: mushroom.id });
     await waitForMessage(room, "cardPlayed");
 
-    // Should move 1 cell, slow counter NOT consumed (minimum 1 move)
-    const players = await waitForPlayers(board, (ps) => ps[0]?.cellId === 2);
-    expect(players[0].cellId).toBe(2);
-    expect(players[0].slowCounters).toBe(1);
+    // Should NOT move, slow counter consumed
+    const players = await waitForPlayers(board, (ps) => ps[0]?.slowCounters === 0);
+    expect(players[0].cellId).toBe(1);
+    expect(players[0].slowCounters).toBe(0);
 
     room.leave(); board.leave();
   });
@@ -273,36 +273,4 @@ describe("Slow mechanic", () => {
     room1.leave(); room2.leave(); board.leave();
   });
 
-  it("hasMovedThisTurn resets between turns", async () => {
-    const roomId = await createRoom(baseUrl, {
-      _testDeck: [["mushroom"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
-    });
-    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
-    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
-    const { room: board } = await connectBoard(baseUrl, roomId);
-    room1.send("setReady", true);
-    room2.send("setReady", true);
-    room1.send("startGame");
-    const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
-    const cards1 = await waitForMessage(room1, "cardsDrawn");
-    const cards2 = await waitForMessage(room2, "cardsDrawn");
-    const activeId = gs.activePlayerId;
-    const activeRoom = activeId === id1 ? room1 : room2;
-    const activeCards = activeId === id1 ? cards1 : cards2;
-
-    // Play a mushroom — hasMovedThisTurn should become true
-    const mushroom = activeCards.hand.find((c) => c.items.includes("mushroom"));
-    activeRoom.send("playCard", { cardId: mushroom.id });
-    await waitForMessage(activeRoom, "cardPlayed");
-    await waitForPlayers(board, (ps) => ps.find((p) => p.playerId === activeId)?.hasMovedThisTurn === true);
-
-    // End turn explicitly
-    activeRoom.send("endTurn");
-
-    // After turn ends, hasMovedThisTurn should reset
-    const players = await waitForPlayers(board, (ps) => ps.find((p) => p.playerId === activeId)?.hasMovedThisTurn === false);
-    expect(players.find((p) => p.playerId === activeId).hasMovedThisTurn).toBe(false);
-
-    room1.leave(); room2.leave(); board.leave();
-  });
 });

@@ -617,7 +617,7 @@ class GameRoom extends Room {
     const { drawPile, drawPileDisplay } = this.decks.initialPlayerDeck();
     return {
       cellId: START_CELL, drawPile, drawPileDisplay, hand: [], discardPile: [],
-      pendingDiscard: 0, pendingShellChoice: false, pendingItems: [], ready: false, hasPlayedAllCards: false, coins: 0, permanentCoins: 0, lapCount: 0, slowCounters: 0, hasMovedThisTurn: false, starInvincible: false,
+      pendingDiscard: 0, pendingShellChoice: false, pendingItems: [], ready: false, hasPlayedAllCards: false, coins: 0, permanentCoins: 0, lapCount: 0, slowCounters: 0, starInvincible: false,
     };
   }
 
@@ -745,7 +745,6 @@ class GameRoom extends Room {
       sp.permanentCoins = p.permanentCoins;
       sp.lapCount = p.lapCount;
       sp.slowCounters = p.slowCounters;
-      sp.hasMovedThisTurn = p.hasMovedThisTurn;
       sp.pendingShellChoice = p.pendingShellChoice;
       sp.starInvincible = p.starInvincible || false;
       sp.finished = this.ranking.includes(playerId);
@@ -897,13 +896,12 @@ class GameRoom extends Room {
   }
 
   _resolveMushroomStep(player) {
-    if (player.hasMovedThisTurn && player.slowCounters > 0) {
+    if (player.slowCounters > 0) {
       player.slowCounters--;
       this._syncState();
       this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
       return;
     }
-    player.hasMovedThisTurn = true;
 
     if (player.lapCount === 0) player.lapCount = 1;
     const oldCellId = player.cellId;
@@ -1063,7 +1061,6 @@ class GameRoom extends Room {
       player.discardPile.push(...player.hand.splice(0));
     }
     player.hasPlayedAllCards = false;
-    player.hasMovedThisTurn = false;
   }
 
   _endTurnAndAdvance(player) {

@@ -24,7 +24,6 @@ let latestRivers = null;
 let currentCoins = 0;
 let currentPermanentCoins = 0;
 let currentSlowCounters = 0;
-let currentHasMovedThisTurn = false;
 let currentRank = 0;
 let currentPlayerCount = 0;
 let pendingShellChoice = false;
@@ -576,16 +575,15 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
                 isReady = me.ready;
                 renderLobby(room);
               }
-              if (gamePhase === "playing" && (me.coins !== currentCoins || me.permanentCoins !== currentPermanentCoins || me.slowCounters !== currentSlowCounters || me.hasMovedThisTurn !== currentHasMovedThisTurn)) {
-                const slowChanged = me.slowCounters !== currentSlowCounters || me.hasMovedThisTurn !== currentHasMovedThisTurn;
+              if (gamePhase === "playing" && (me.coins !== currentCoins || me.permanentCoins !== currentPermanentCoins || me.slowCounters !== currentSlowCounters)) {
+                const slowChanged = me.slowCounters !== currentSlowCounters;
                 if (me.slowCounters > currentSlowCounters) navigator.vibrate?.(200);
                 currentCoins = me.coins;
                 currentPermanentCoins = me.permanentCoins;
                 currentSlowCounters = me.slowCounters;
-                currentHasMovedThisTurn = me.hasMovedThisTurn;
                 updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton, currentSlowCounters);
                 if (slowChanged) {
-                  updateCardMushroomIcons(currentHasMovedThisTurn && currentSlowCounters > 0);
+                  updateCardMushroomIcons(currentSlowCounters);
                 }
               }
               if (gamePhase === "playing") {
@@ -622,7 +620,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           currentPermanentCoins = data.permanentCoins || 0;
           currentSlowCounters = data.slowCounters || 0;
           updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton, currentSlowCounters);
-          updateCardMushroomIcons(currentHasMovedThisTurn && currentSlowCounters > 0);
+          updateCardMushroomIcons(currentSlowCounters);
           if (data.pendingDiscard > 0) {
             pendingDiscards = data.pendingDiscard;
             closeBuyModal();
@@ -671,9 +669,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
         currentCoins = data.coins || 0;
         currentPermanentCoins = data.permanentCoins || 0;
         currentSlowCounters = data.slowCounters || 0;
-        currentHasMovedThisTurn = false;
         updateCoinDisplay(currentCoins, currentPermanentCoins, updateBuyButton, currentSlowCounters);
-        updateCardMushroomIcons(false);
+        updateCardMushroomIcons(0);
         animating = false;
       });
 

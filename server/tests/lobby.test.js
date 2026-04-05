@@ -73,7 +73,6 @@ describe("Joining a room", () => {
       permanentCoins: 0,
       lapCount: 0,
       slowCounters: 0,
-      hasMovedThisTurn: false,
       pendingShellChoice: false,
       finished: false,
       rank: 0,
