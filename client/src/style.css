@@ -598,7 +598,7 @@ input {
 }
 
 .player-screen.my-turn .play-zone{
-  background: white;
+  background: #e1ffd4;
 }
 
 .player-screen.waiting-turn {
@@ -750,7 +750,7 @@ input {
 
 .play-zone.discard-hit-banana {
   border-color: #e8a317;
-  background: rgba(232, 163, 23, 0.1);
+  background: rgba(232, 163, 23, 0.1) !important;
 }
 
 .play-zone.discard-hit-shell {
