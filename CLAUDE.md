@@ -8,14 +8,20 @@ Monorepo with npm workspaces (`server`, `client`):
 
 - `server/` — Colyseus game server
   - `rooms/GameRoom.js` — main game logic (turns, card play, movement, shells, coins)
+  - `rooms/CellGrid.js` — cell occupant data structure (add/remove/query items and players on cells)
+  - `rooms/DeckManager.js` — deck creation, shuffle, draw, and card state
   - `rooms/schema.js` — Colyseus state schema (PlayerSchema, GameState, rivers, cell occupants)
   - `rooms/decks.js` — card deck loading from YAML
   - `rooms/ranking.js` — live ranking calculation
   - `rooms/riverRules.js` — rank-based shop access
   - `tests/` — integration tests + `helpers.js`
 - `client/src/` — frontend
-  - `board.js` — Phaser scene for the shared big screen (track, sprites, animations)
+  - `board.js` — Phaser scene for the shared big screen (track, state sync, layout)
+  - `board_avatar.js` — PlayerAvatar game object (helmet sprite, name label, wobble/bob tweens)
+  - `board_items.js` — CellItemSprites game object (banana/shell/permacoin sprite management)
+  - `board_animations.js` — BoardAnimator (animation queue, shell throw, item hit, visual effects)
   - `player.js` — DOM-based mobile player screen (hand, card play, buy UI)
+  - `player_drag.js` — CardDragHandler component (drag-to-play/discard interaction)
   - `*.functions.js` — pure functions extracted alongside UI files (tested independently)
   - `__tests__/` — unit tests for `*.functions.js`
 - `assets/` — SVG sprites, `decks.yaml` (card definitions)
@@ -35,6 +41,8 @@ Monorepo with npm workspaces (`server`, `client`):
 - Constants: `UPPER_CASE`. Variables/functions: `camelCase`
 - Card definitions live in `assets/decks.yaml`
 - **DRY (Don't Repeat Yourself)**: never duplicate logic. If the same value, expression, or block appears more than once, extract it into a constant, function, or shared module. When modifying code, actively look for existing duplication to factorize.
+- **Game objects (Phaser canvas)**: encapsulate related sprites, tweens, and state into ES6 classes. Each object owns the lifecycle of its parts (create, animate, destroy). Example: `PlayerAvatar` in `board.js`.
+- **Components (DOM UI)**: encapsulate related HTML, CSS, and behavior into ES6 classes. Each component owns its DOM elements and event listeners.
 
 ## Design Principles
 
@@ -42,6 +50,41 @@ Monorepo with npm workspaces (`server`, `client`):
 - **State over messages**: drive UI from Colyseus schema state, not one-off event messages. The client must reconstruct the correct UI from the current state alone — essential for page reloads. Do not introduce new message types when a state change already carries the information.
 - **Reload-safe**: any screen (board or player) must display the correct state after a page reload at any point during the game.
 - **`*.functions.js` pattern**: extract pure game-state functions into `*.functions.js` files alongside UI files. Test those, not visual logic.
+
+## Board Hit Animations
+
+The server broadcasts `itemHitBoard` BEFORE `_syncState()` so the client processes the message before the patch.
+
+### Player walks into a banana or shell
+
+Server side:
+1. Move player to new cell (`grid.add`)
+2. Detect hazard → `grid.remove(player)` + `grid.replace(item, player)` — player takes the item's slot
+3. `broadcast("itemHitBoard")` — message sent BEFORE patch
+4. `_syncState()` — patch has player at item's slot, item gone
+
+Client side:
+1. Message arrives → `animateItemHit` runs immediately (not queued)
+2. `popSprite` shifts the FIRST sprite of that type out of the sprite map (matching server's first-occurrence hazard detection)
+3. Sets `avatar._onMoveComplete` callback (or fires immediately if move already finished)
+4. Patch arrives → `_syncSprites` sees count matches (we already removed one) → remaining sprites stay in place. `updatePlayers` positions player at the item's former slot
+5. Move tween completes → callback fires → sprite destroyed + `avatar.playHitEffect(shellHit)`
+
+### `playHitEffect` (all simultaneous, inside a Container that follows the helmet)
+- Helmet rotates twice (-720°, 600ms)
+- Hit stars burst outward from helmet
+- Dark mushroom rises (shell hits only)
+- Container tracks helmet position every frame via scene `update()`
+- `_hitTween` guards prevent `_startActiveTweens`/`_stopActiveTweens` from interfering
+
+### Shell thrown at a player
+1. Shell sprite travels along waypoints (timeline)
+2. On arrival: shell destroyed + `avatar.playHitEffect(true)`
+
+### Shell thrown at a banana or shell (dust cloud)
+1. Shell travels to target cell; cell frozen via `_dustCloudCells`
+2. On arrival: target sprite + shell destroyed, dust cloud plays
+3. After 500ms: cell unfreezes, pending occupants applied, cell reorganizes
 
 ## Testing
 
