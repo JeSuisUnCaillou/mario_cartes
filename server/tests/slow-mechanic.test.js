@@ -273,4 +273,45 @@ describe("Slow mechanic", () => {
     room1.leave(); room2.leave(); board.leave();
   });
 
+  it("slow counters capped at 2", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["green_shell"], ["mushroom"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    room1.send("startGame");
+    const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
+    const cards1 = await waitForMessage(room1, "cardsDrawn");
+    const cards2 = await waitForMessage(room2, "cardsDrawn");
+    const activeId = gs.activePlayerId;
+    const activeRoom = activeId === id1 ? room1 : room2;
+    const passiveId = activeId === id1 ? id2 : id1;
+    const activeCards = activeId === id1 ? cards1 : cards2;
+
+    // Give passive player 2 slow counters (already at max)
+    board.send("_testSetState", { playerId: passiveId, slowCounters: 2 });
+    await waitForPlayers(board, (ps) => ps.find((p) => p.playerId === passiveId)?.slowCounters === 2);
+
+    // Active plays mushroom to go to cell 2
+    const mushroom = activeCards.hand.find((c) => c.items.includes("mushroom"));
+    activeRoom.send("playCard", { cardId: mushroom.id });
+    await waitForMessage(activeRoom, "cardPlayed");
+
+    // Throw shell backward at passive on cell 1
+    const shellCard = activeCards.hand.find((c) => c.items.includes("green_shell"));
+    activeRoom.send("playCard", { cardId: shellCard.id });
+    await waitForMessage(activeRoom, "cardPlayed", (p) => p.pendingShellChoice === true);
+    activeRoom.send("shellChoice", { direction: "backward" });
+    await waitForMessage(board, "shellThrown");
+
+    // Passive should still have 2 slow counters (capped, not 3)
+    const players = await waitForPlayers(board, (ps) => ps.find((p) => p.playerId === passiveId) != null);
+    expect(players.find((p) => p.playerId === passiveId).slowCounters).toBe(2);
+
+    room1.leave(); room2.leave(); board.leave();
+  });
+
 });

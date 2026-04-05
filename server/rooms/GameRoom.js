@@ -26,6 +26,7 @@ const PATCH_DELAY_MS = 60; // Delay between async steps to guarantee separate sc
 const MOVE_DELAY_MS = 700; // Delay after a mushroom move to let the board helmet tween complete with a visible pause
 const RIVER_SLOT_COUNT = 3;
 const MAX_LAPS = 3;
+const MAX_SLOW_COUNTERS = 2;
 const START_CELL = 1;
 
 class GameRoom extends Room {
@@ -68,7 +69,7 @@ class GameRoom extends Room {
     if (playerIds.length > 0) {
       const hitPlayerId = playerIds[Math.floor(Math.random() * playerIds.length)];
       const hitPlayer = this.players.get(hitPlayerId);
-      hitPlayer.slowCounters++;
+      if (hitPlayer.slowCounters < MAX_SLOW_COUNTERS) hitPlayer.slowCounters++;
       this.broadcast("shellThrown", {
         playerId: thrower.playerId,
         fromCellId: thrower.cellId,
@@ -143,7 +144,7 @@ class GameRoom extends Room {
       if (playerIds.length > 0) {
         const hitPlayerId = playerIds[Math.floor(Math.random() * playerIds.length)];
         const hitPlayer = this.players.get(hitPlayerId);
-        hitPlayer.slowCounters++;
+        if (hitPlayer.slowCounters < MAX_SLOW_COUNTERS) hitPlayer.slowCounters++;
         this.broadcast("shellThrown", {
           playerId: thrower.playerId,
           fromCellId: thrower.cellId,
@@ -956,7 +957,7 @@ class GameRoom extends Room {
         );
         const hitPlayerId = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
         const hitPlayer = this.players.get(hitPlayerId);
-        hitPlayer.slowCounters++;
+        if (hitPlayer.slowCounters < MAX_SLOW_COUNTERS) hitPlayer.slowCounters++;
         this.broadcast("itemHitBoard", {
           type: "star",
           playerId: hitPlayerId,
@@ -1011,7 +1012,7 @@ class GameRoom extends Room {
           this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
         }
       } else {
-        player.slowCounters++;
+        if (player.slowCounters < MAX_SLOW_COUNTERS) player.slowCounters++;
         this._syncState();
         this.clock.setTimeout(() => this._processNextItem(player), MOVE_DELAY_MS);
       }
