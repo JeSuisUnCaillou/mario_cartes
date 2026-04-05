@@ -4,11 +4,9 @@
 
 Limiter le nombre de champignons noirs et simplifier la règle ?
 
-Ecrire les règles des items sur le board aussi, à droite
-
 Automatic end of turn when no option left
 
-the active player shoud have a subtle wobble animation on his avatar on the track.
+Ecrire les règles des items sur le board aussi, à droite
   
 choose target on cell with several targets
 
@@ -27,6 +25,8 @@ the double mushroom only advance once. It should advance two cells. Bug pas repr
 
 
 # DONE
+
+the active player shoud have a subtle wobble animation on his avatar on the track.
 
 star should remove slow counters
 
