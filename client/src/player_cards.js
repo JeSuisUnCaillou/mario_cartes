@@ -14,14 +14,17 @@ export function clearCardElements() {
   cardElements.clear();
 }
 
-export function updateCardMushroomIcons(useDark) {
-  const src = useDark ? "/dark_mushroom.svg" : "/mushroom.svg";
+export function updateCardMushroomIcons(darkCount) {
   for (const [, el] of cardElements) {
     let items = [];
     try { items = JSON.parse(el.dataset.items); } catch (e) {}
     const icons = el.querySelectorAll(".card-item");
+    let remaining = darkCount;
     items.forEach((item, i) => {
-      if (item === "mushroom") icons[i].src = src;
+      if (item === "mushroom") {
+        icons[i].src = remaining > 0 ? "/dark_mushroom.svg" : "/mushroom.svg";
+        remaining--;
+      }
     });
   }
 }
