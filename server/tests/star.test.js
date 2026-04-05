@@ -290,6 +290,42 @@ describe("Star", () => {
     room1.leave(); room2.leave(); board.leave();
   });
 
+  it("star clears existing slow counters on pickup", async () => {
+    const roomId = await createRoom(baseUrl, {
+      _testDeck: [["star"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
+    });
+    const { room: room1, playerId: id1 } = await connectPlayer(baseUrl, roomId);
+    const { room: room2, playerId: id2 } = await connectPlayer(baseUrl, roomId);
+    const { room: board } = await connectBoard(baseUrl, roomId);
+    room1.send("setReady", true);
+    room2.send("setReady", true);
+    room1.send("startGame");
+    const gs = await waitForMessage(room1, "gameState", (g) => g.phase === "playing");
+    const cards1 = await waitForMessage(room1, "cardsDrawn");
+    const cards2 = await waitForMessage(room2, "cardsDrawn");
+    const activeId = gs.activePlayerId;
+    const activeRoom = activeId === id1 ? room1 : room2;
+    const activeCards = activeId === id1 ? cards1 : cards2;
+
+    // Give active player 2 slow counters
+    board.send("_testSetState", { playerId: activeId, slowCounters: 2 });
+    await waitForPlayers(board, (ps) => ps.find((p) => p.playerId === activeId)?.slowCounters === 2);
+
+    // Play star card — should clear slow counters
+    const starCard = activeCards.hand.find((c) => c.items.includes("star"));
+    activeRoom.send("playCard", { cardId: starCard.id });
+
+    const players = await waitForPlayers(board, (ps) => {
+      const p = ps.find((p) => p.playerId === activeId);
+      return p?.starInvincible && p?.slowCounters === 0;
+    });
+    const active = players.find((p) => p.playerId === activeId);
+    expect(active.slowCounters).toBe(0);
+    expect(active.starInvincible).toBe(true);
+
+    room1.leave(); room2.leave(); board.leave();
+  });
+
   it("star invincibility persists through other turns and resets at start of next turn", async () => {
     const roomId = await createRoom(baseUrl, {
       _testDeck: [["star"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
