@@ -116,13 +116,15 @@ function renderDebugModal(state) {
   const roundInput = numInput(state.currentRound);
   gameForm.appendChild(labeledField("Round", roundInput));
 
-  const gameApply = el("button", "debug-apply-btn", "Apply");
-  gameApply.addEventListener("click", () => {
+  const applyGameState = () => {
     boardRoom.send("_debugSetGameState", {
       phase: phaseSelect.value,
       activePlayerId: activeSelect.value || null,
     });
-  });
+  };
+  const gameApply = el("button", "debug-apply-btn", "Apply");
+  gameApply.addEventListener("click", applyGameState);
+  gameForm.addEventListener("keydown", (e) => { if (e.key === "Enter") applyGameState(); });
   gameForm.appendChild(gameApply);
 
   const restartBtn = el("button", "debug-apply-btn debug-restart-btn", "Restart game");
@@ -167,8 +169,7 @@ function renderDebugModal(state) {
     discardInput.classList.add("debug-readonly");
     pForm.appendChild(labeledField("Discard", discardInput));
 
-    const pApply = el("button", "debug-apply-btn", "Apply");
-    pApply.addEventListener("click", () => {
+    const applyPlayerState = () => {
       boardRoom.send("_testSetState", {
         playerId: p.playerId,
         cellId: Number(cellInput.value),
@@ -177,7 +178,10 @@ function renderDebugModal(state) {
         permanentCoins: Number(permCoinsInput.value),
         pendingDiscard: Number(bananaDiscInput.value),
       });
-    });
+    };
+    const pApply = el("button", "debug-apply-btn", "Apply");
+    pApply.addEventListener("click", applyPlayerState);
+    pForm.addEventListener("keydown", (e) => { if (e.key === "Enter") applyPlayerState(); });
     pForm.appendChild(pApply);
     pCard.appendChild(pForm);
 
