@@ -6,7 +6,7 @@ Prix des rivières : prix de base + (nb joueurs - rank)*2
 
 red shell on invincible player : should not ignore, should hit and do no damage
 
-Add special "rivers" to discard-draw (2 coins) or remove a card (6 coins)
+Add special money sinks to discard-draw (2 coins) or remove a card (6 coins)
 
 when more tha 3 coins, display (x4) instead
 
