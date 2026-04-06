@@ -701,6 +701,12 @@ class GameRoom extends Room {
       this.clock.setTimeout(() => this.disconnect(), 100);
     });
 
+    this.onMessage("restartGame", (client) => {
+      const info = this.clientsInfo.get(client.sessionId);
+      if (!info || info.type !== "board") return;
+      this._resetGame();
+    });
+
     this.onMessage("startOver", () => {
       if (this.phase !== "finished") return;
       this._resetGame();

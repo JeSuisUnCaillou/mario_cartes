@@ -6,6 +6,7 @@ import { BoardAnimator } from "./board_animations.js";
 import { renderRivers as renderRiverRows } from "./river.js";
 import { loadHelmetTexture, helmetDataUrl } from "./helmet.js";
 import { isDebugModalOpen, setDebugRoom, onDebugState, setupDebugKeyboard } from "./board_debug.js";
+import { setMenuRoom, setupMenuKeyboard, toggleMenuModal } from "./board_menu.js";
 import { rankBadge } from "./rank.js";
 import { schemaPlayersToArray, schemaCellOccupantsToObject, schemaToGameState } from "./schema.js";
 import { PlayerAvatar } from "./board_avatar.js";
@@ -57,14 +58,11 @@ function createTopBar() {
   const bar = document.createElement("div");
   bar.className = "board-top-bar";
 
-  const exitBtn = document.createElement("button");
-  exitBtn.className = "board-exit-btn";
-  exitBtn.textContent = "End the game";
-  exitBtn.addEventListener("click", () => {
-    if (boardRoom) boardRoom.send("destroyRoom");
-    window.location.href = "/";
-  });
-  bar.appendChild(exitBtn);
+  const menuBtn = document.createElement("button");
+  menuBtn.className = "board-menu-btn";
+  menuBtn.textContent = "Menu";
+  menuBtn.addEventListener("click", toggleMenuModal);
+  bar.appendChild(menuBtn);
 
   const riversContainer = document.createElement("div");
   riversContainer.className = "board-rivers";
@@ -514,6 +512,7 @@ export function initBoard(gameId) {
     setupRoom(room, roomId) {
       boardRoom = room;
       setDebugRoom(room);
+      setMenuRoom(room);
 
       // Schema-based state sync
       let playersDirty = false;
@@ -731,5 +730,6 @@ export function initBoard(gameId) {
   });
 
   setupDebugKeyboard();
+  setupMenuKeyboard();
 }
 
