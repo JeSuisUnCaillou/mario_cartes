@@ -82,9 +82,9 @@ function showRulesModal() {
     { icon: "/banana.svg", title: "Banana", text: "Drop a banana on your cell. Landing on a banana: discard 1 card." },
     { icon: "/green_shell.svg", title: "Green Shell", text: "Throw to adjacent cell, forward or backward. Gives dark mushrooms to players, or destroys bananas and shells." },
     { icon: "/red_shell.svg", title: "Red Shell", text: "Travels until it hits something, forward or backward. Same hit effects as green shell." },
-    { icon: "/blue_shell.svg", title: "Blue Shell", text: "Automatically targets 1st player. That player discards their entire hand." },
     { icon: "/dark_mushroom.svg", title: "Dark Mushroom", text: "Each cancels one mushroom. Max 2 per player. Reset at end of turn." },
     { icon: "/star.svg", title: "Star", text: "Become invincible until the start of your next turn. Immune to all items. Destroys items on cells you enter." },
+    { icon: "/blue_shell.svg", title: "Blue Shell", text: "Automatically targets 1st player. That player discards their entire hand." },
   ];
 
   for (const rule of rules) {
