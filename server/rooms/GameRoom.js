@@ -24,6 +24,7 @@ const PLAYER_COLORS = [
 ];
 const PATCH_DELAY_MS = 60; // Delay between async steps to guarantee separate schema patches (> patchRate 50ms)
 const MOVE_DELAY_MS = 700; // Delay after a mushroom move to let the board helmet tween complete with a visible pause
+const SHELL_ANIM_MS = 400; // shell travel of one cell (400ms) — matches client animation
 const RIVER_SLOT_COUNT = 3;
 const MAX_LAPS = 3;
 const MAX_SLOW_COUNTERS = 2;
@@ -628,7 +629,7 @@ class GameRoom extends Room {
       }
 
       if (player.pendingItems.length > 0) {
-        this._processNextItem(player);
+        this.clock.setTimeout(() => this._processNextItem(player), SHELL_ANIM_MS);
       }
     });
 

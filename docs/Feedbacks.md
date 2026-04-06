@@ -17,7 +17,6 @@ Add special money sinks to discard-draw (2 coins) or remove a card (6 coins)
 
 Timer de la durée de la partie.
 
-when a cards says 'shell move', animate the shell first then the move. sequentially.
 
 rename "red path" into short path, "blue path" into long path.
 
@@ -46,6 +45,9 @@ the double mushroom only advance once. It should advance two cells. Bug pas repr
 
 
 # DONE
+
+when a cards says 'shell move', animate the shell first then the move. sequentially.
+
 
 On the player's client, when he has more than 3 coins blue coins, display only one blue coin with x4 (for example) instead. Do the same for the normal coins.
 
