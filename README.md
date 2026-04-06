@@ -49,12 +49,12 @@ npm test -w client
 
 ### Items
 Each card contains 1–3 items resolved sequentially from top to bottom:
-- **Mushroom**: Move forward 1 cell (subject to dark mushrooms).
+- **Mushroom**: Move forward 1 cell (subject to dark mushrooms). At a fork, the player chooses which path (red or blue) to take.
 - **Coin**: Gain 1 coin until end of turn.
 - **Permanent coin**: A permanent coin is kept from turn to turn. Permanent coins are spent last.
 - **Banana**: Drop a banana on your cell. Landing on a banana: discard 1 card.
-- **Green shell**: Throw to adjacent cell, forward or backward. Gives dark mushrooms to players, or destroys bananas and shells.
-- **Red shell**: Forward: travels until it hits something. Backward: one cell only. Same hit effects as green shell.
+- **Green shell**: Throw to adjacent cell, forward or backward. At a fork or merge, the player chooses which path. Gives dark mushrooms to players, or destroys bananas and shells.
+- **Red shell**: Forward: travels until it hits something. Backward: one cell only. At a fork, the player chooses which path. Same hit effects as green shell.
 - **Blue shell**: Automatically targets 1st player. That player discards their entire hand.
 - **Dark mushroom**: Each cancels one mushroom. Max 2 per player. Reset at end of turn.
 - **Star**: Become invincible until the start of your next turn. Immune to all shells and bananas. Destroys one item on each cell you enter (same priority as shells: players > bananas > shells).
@@ -79,14 +79,14 @@ Each card contains 1–3 items resolved sequentially from top to bottom:
 
 ### Track
 
-Only one track exists at the moment :
-- 14 cells in a rectangular loop. Cell 1 is the start/finish line.
+- 22 cells with a branching path. Cell 1 is the start/finish line.
+- At cell 8, the track splits into a red path (3 cells) and a blue path (5 cells), rejoining at cell 12.
 - Cells can contain bananas, shells, and/or multiple player carts.
-- Cells 3, 7, 12 award a permanent coin when landed on.
+- Cells 4, 14, 16, 21 award permanent coins when landed on (cell 16 awards 2).
 
 ### Banana Penalty
 - Landing on a banana: player must discard 1 card from hand.
 
 ### Win Condition
 - First player to complete 3 laps wins. Game ends when only one player is left.
-- Live ranking during play is based on lap count + cell position.
+- Live ranking during play is based on lap count + shortest distance to finish line.
