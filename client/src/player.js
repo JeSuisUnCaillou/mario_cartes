@@ -199,7 +199,7 @@ function showPathModal() {
 
   const redBtn = document.createElement("button");
   redBtn.className = "path-modal-btn path-modal-red";
-  redBtn.innerHTML = "Red path &#x1F534;";
+  redBtn.textContent = "Red path";
   redBtn.addEventListener("click", () => {
     if (currentRoom) currentRoom.send("pathChoice", { color: "red" });
     pendingPathChoice = false;
@@ -211,7 +211,7 @@ function showPathModal() {
 
   const blueBtn = document.createElement("button");
   blueBtn.className = "path-modal-btn path-modal-blue";
-  blueBtn.innerHTML = "Blue path &#x1F535;";
+  blueBtn.textContent = "Blue path";
   blueBtn.addEventListener("click", () => {
     if (currentRoom) currentRoom.send("pathChoice", { color: "blue" });
     pendingPathChoice = false;

@@ -8,8 +8,6 @@ red shell on invincible player : should not ignore, should hit and do no damage,
 
 Add special money sinks to discard-draw (2 coins) or remove a card (6 coins)
 
-when more than 3 coins, display (x4) instead
-
 [red green] should be [green red]
 [camp bana bana] should be [bana bana champ]
 
@@ -46,6 +44,8 @@ the double mushroom only advance once. It should advance two cells. Bug pas repr
 
 
 # DONE
+
+when more than 3 coins, display (x4) instead
 
 red_shell should prioritise blue path if all other players are in the blue path when its thrown backwards too
 
