@@ -1,5 +1,3 @@
-import { RANK_ICONS, ordinalSuffix } from "./rank.js";
-import { canBuyFromRiver } from "./river.functions.js";
 import { ITEM_ICONS, createCardDOM } from "./constants.js";
 
 function createRiverCard(card) {
@@ -114,42 +112,26 @@ function detectRefills(prevRivers, newRivers) {
  * @param {object} options
  * @param {function} [options.onCardClick] - (river, card) => void
  * @param {function} [options.isAffordable] - (river) => boolean
+ * @param {function} [options.effectivePrice] - (river) => number — displayed price (defaults to river.cost)
+ * @param {boolean} [options.showRankMalus] - show "+ rank malus" label below price
  */
-function renderRankIndicators(riverId, riverCount, playerCount) {
-  const container = document.createElement("div");
-  container.className = "river-rank-indicators";
-  const maxRank = playerCount > 0 ? Math.min(RANK_ICONS.length, playerCount) : RANK_ICONS.length;
-  for (let rank = 1; rank <= maxRank; rank++) {
-    const wrapper = document.createElement("span");
-    const icon = document.createElement("img");
-    icon.src = RANK_ICONS[rank - 1];
-    icon.className = "river-rank-icon";
-    icon.draggable = false;
-    if (!canBuyFromRiver(rank, riverCount, riverId, playerCount)) {
-      wrapper.className = "river-rank-denied";
-    }
-    wrapper.appendChild(icon);
-    const label = document.createElement("span");
-    label.className = "river-rank-label";
-    label.textContent = ordinalSuffix(rank);
-    wrapper.appendChild(label);
-    container.appendChild(wrapper);
-  }
-  return container;
-}
-
 export function renderRiverRow(river, options = {}) {
-  const { onCardClick, isAffordable, isAccessible, rankIndicators, riverCount, playerCount } = options;
+  const { onCardClick, isAffordable, effectivePrice, showRankMalus } = options;
 
   const row = document.createElement("div");
   row.className = "river-row";
   row.dataset.riverId = river.id;
 
+  const displayPrice = effectivePrice ? effectivePrice(river) : river.cost;
+
   const costLabel = document.createElement("div");
   costLabel.className = "river-cost";
-  costLabel.innerHTML = `<span class="river-cost-badge"><span>${river.cost}</span><img src="/coin.svg" class="river-cost-icon" /></span>`;
-  if (rankIndicators) {
-    costLabel.appendChild(renderRankIndicators(river.id, riverCount, playerCount));
+  costLabel.innerHTML = `<span class="river-cost-badge"><span>${displayPrice}</span><img src="/coin.svg" class="river-cost-icon" /></span>`;
+  if (showRankMalus) {
+    const malus = document.createElement("div");
+    malus.className = "river-rank-malus";
+    malus.textContent = "+ rank malus";
+    costLabel.appendChild(malus);
   }
   row.appendChild(costLabel);
 
@@ -161,18 +143,10 @@ export function renderRiverRow(river, options = {}) {
   const slotsContainer = document.createElement("div");
   slotsContainer.className = "river-slots";
 
-  const accessible = !isAccessible || isAccessible(river);
-
-  if (!accessible) {
-    row.classList.add("inaccessible");
-  }
-
   for (const card of river.slots) {
     if (card) {
       const cardEl = createRiverCard(card);
-      if (!accessible) {
-        cardEl.classList.add("inaccessible");
-      } else if (isAffordable && !isAffordable(river)) {
+      if (isAffordable && !isAffordable(river)) {
         cardEl.classList.add("unaffordable");
       } else if (onCardClick) {
         cardEl.style.cursor = "pointer";

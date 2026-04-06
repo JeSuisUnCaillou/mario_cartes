@@ -322,10 +322,10 @@ function removeLeaderboard() {
   if (overlay) overlay.remove();
 }
 
-function renderRivers(rivers, playerCount) {
+function renderRivers(rivers) {
   const container = document.getElementById("board-rivers");
   if (!container) return;
-  renderRiverRows(container, rivers, { rankIndicators: true, riverCount: rivers.length, playerCount });
+  renderRiverRows(container, rivers, { showRankMalus: true });
 }
 
 export function initBoard(gameId) {

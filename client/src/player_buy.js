@@ -1,6 +1,5 @@
 import { renderRivers } from "./river.js";
-import { rankBadge } from "./rank.js";
-import { canBuyFromRiver } from "./river.functions.js";
+import { getRiverPrice } from "./river.functions.js";
 import { renderCoinIcons } from "./constants.js";
 
 export function updateBuyButton(activePlayerId, myPlayerId, latestRivers, blocked, openBuyModal) {
@@ -51,11 +50,8 @@ export function renderBuyModal(currentRoom, latestRivers, currentCoins, currentR
         currentRoom.send("buyCard", { riverId: river.id, cardId: card.id });
       }
     },
-    isAffordable: (river) => currentCoins >= river.cost,
-    isAccessible: (river) => canBuyFromRiver(currentRank, latestRivers.length, river.id, playerCount),
-    rankIndicators: true,
-    riverCount: latestRivers.length,
-    playerCount,
+    effectivePrice: (river) => getRiverPrice(river.cost, currentRank, playerCount),
+    isAffordable: (river) => currentCoins >= getRiverPrice(river.cost, currentRank, playerCount),
   });
 
   // Coin display on top of rivers
@@ -63,14 +59,6 @@ export function renderBuyModal(currentRoom, latestRivers, currentCoins, currentR
   coinBar.className = "buy-modal-coins";
   renderCoinIcons(coinBar, currentCoins, currentPermanentCoins);
   content.prepend(coinBar);
-
-  // Rank display on top of coins
-  if (currentRank > 0) {
-    const rankBar = document.createElement("div");
-    rankBar.className = "buy-modal-rank";
-    rankBar.innerHTML = rankBadge(currentRank, "buy-modal-rank-icon");
-    content.prepend(rankBar);
-  }
 }
 
 export function closeBuyModal() {

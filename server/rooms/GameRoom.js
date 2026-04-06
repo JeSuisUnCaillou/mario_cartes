@@ -5,7 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { MapSchema, ArraySchema } from "@colyseus/schema";
 import { computeLiveRanks } from "./ranking.js";
-import { canBuyFromRiver } from "./riverRules.js";
+import { getRiverPrice } from "./riverRules.js";
 import { CellGrid } from "./CellGrid.js";
 import { DeckManager } from "./DeckManager.js";
 import {
@@ -639,12 +639,12 @@ class GameRoom extends Room {
       if (!river) return;
       const slotIndex = river.slots.findIndex((c) => c && c.id === data.cardId);
       if (slotIndex === -1) return;
-      if (player.coins < river.cost) return;
       const rank = this._getLiveRank(player.playerId);
-      if (!canBuyFromRiver(rank, this.rivers.length, river.id, this.players.size)) return;
+      const price = getRiverPrice(river.cost, rank, this.players.size);
+      if (player.coins < price) return;
       const regularCoins = player.coins - player.permanentCoins;
-      const fromPermanent = Math.max(0, river.cost - regularCoins);
-      player.coins -= river.cost;
+      const fromPermanent = Math.max(0, price - regularCoins);
+      player.coins -= price;
       player.permanentCoins -= fromPermanent;
       const card = river.slots[slotIndex];
       player.discardPile.push(card);

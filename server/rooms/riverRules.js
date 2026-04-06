@@ -1,9 +1,8 @@
 // Intentionally duplicated in client/src/river.functions.js — keep both in sync.
-function canBuyFromRiver(rank, riverCount, riverId, playerCount) {
-  if (rank === 0) return true;
-  if (rank >= riverCount) return true;
-  if (playerCount > 0 && rank >= playerCount) return true;
-  return riverId < rank;
+const PRICE_SCALE_FACTOR = 1;
+
+function getRiverPrice(baseCost, rank, playerCount) {
+  return baseCost + (playerCount - rank) * PRICE_SCALE_FACTOR;
 }
 
-export { canBuyFromRiver };
+export { getRiverPrice };
