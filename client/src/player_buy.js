@@ -51,7 +51,7 @@ export function renderBuyModal(currentRoom, latestRivers, currentCoins, currentR
       }
     },
     effectivePrice: (river) => getRiverPrice(river.cost, currentRank, playerCount),
-    isAffordable: (river) => currentCoins >= getRiverPrice(river.cost, currentRank, playerCount),
+    isAffordable: (river) => currentCoins + currentPermanentCoins >= getRiverPrice(river.cost, currentRank, playerCount),
   });
 
   // Coin display on top of rivers

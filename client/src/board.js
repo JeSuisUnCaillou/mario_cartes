@@ -200,10 +200,10 @@ function updateInfoBarPlayers(players) {
     }
 
     if (boardPhase !== "lobby") {
-      const coinCount = p.coins || 0;
+      const regularCount = p.coins || 0;
       const permCount = p.permanentCoins || 0;
-      const hasNormalCoins = coinCount > permCount;
-      const coinIcon = hasNormalCoins ? "/coin.svg" : "/permacoin.svg";
+      const coinCount = regularCount + permCount;
+      const coinIcon = regularCount > 0 ? "/coin.svg" : "/permacoin.svg";
       let html = "";
       if (coinCount === 0) {
         html = `<span class="board-coin-count board-coin-zero">0</span><img src="/coin.svg" class="board-coin-icon board-coin-zero" />`;

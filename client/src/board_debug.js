@@ -150,7 +150,7 @@ function renderDebugModal(state) {
     pForm.appendChild(labeledField("Cell", cellInput));
     const lapInput = numInput(p.lapCount, 0, 4);
     pForm.appendChild(labeledField("Lap", lapInput));
-    const regularCoinsInput = numInput(Math.max(0, p.coins - p.permanentCoins), 0);
+    const regularCoinsInput = numInput(p.coins || 0, 0);
     pForm.appendChild(labeledField("Coins", regularCoinsInput));
     const permCoinsInput = numInput(p.permanentCoins, 0);
     pForm.appendChild(labeledField("Perm. coins", permCoinsInput));
@@ -176,7 +176,7 @@ function renderDebugModal(state) {
         playerId: p.playerId,
         cellId: Number(cellInput.value),
         lapCount: Number(lapInput.value),
-        coins: Number(regularCoinsInput.value) + Number(permCoinsInput.value),
+        coins: Number(regularCoinsInput.value),
         permanentCoins: Number(permCoinsInput.value),
         slowCounters: Number(slowInput.value),
         pendingDiscard: Number(bananaDiscInput.value),

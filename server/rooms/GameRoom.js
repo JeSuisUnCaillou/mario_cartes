@@ -675,10 +675,10 @@ class GameRoom extends Room {
       if (slotIndex === -1) return;
       const rank = this._getLiveRank(player.playerId);
       const price = getRiverPrice(river.cost, rank, this.players.size);
-      if (player.coins < price) return;
-      const regularCoins = player.coins - player.permanentCoins;
-      const fromPermanent = Math.max(0, price - regularCoins);
-      player.coins -= price;
+      if (player.coins + player.permanentCoins < price) return;
+      const fromRegular = Math.min(price, player.coins);
+      const fromPermanent = price - fromRegular;
+      player.coins -= fromRegular;
       player.permanentCoins -= fromPermanent;
       const card = river.slots[slotIndex];
       player.discardPile.push(card);
@@ -1145,7 +1145,6 @@ class GameRoom extends Room {
     const cellData = this.grid.cells.get(player.cellId);
     if (cellData.permanent_coin) {
       player.permanentCoins += cellData.permanent_coin;
-      player.coins += cellData.permanent_coin;
       this.broadcast("permanentCoinPickup", {
         playerId: player.playerId,
         cellId: player.cellId,
@@ -1287,7 +1286,7 @@ class GameRoom extends Room {
   }
 
   _resetPlayerTurn(player) {
-    player.coins = player.permanentCoins;
+    player.coins = 0;
     player.slowCounters = 0;
     player.pendingItems = [];
     if (player.hand.length > 0) {

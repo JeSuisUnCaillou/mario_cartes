@@ -2387,7 +2387,7 @@ describe("Permanent coins", () => {
     room.leave();
   });
 
-  it("landing on permanent coin cell increments permanentCoins and coins", async () => {
+  it("landing on permanent coin cell increments permanentCoins", async () => {
     // Cell 1→2→3; cell 3 has permanent_coin: 1
     const roomId = await createRoom(baseUrl, {
       _testDeck: [["mushroom", "mushroom"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
@@ -2402,12 +2402,12 @@ describe("Permanent coins", () => {
     await waitForMessage(room, "cardPlayed");
     const players = await waitForPlayers(room, (list) => list[0].permanentCoins === 1);
     expect(players[0].permanentCoins).toBe(1);
-    expect(players[0].coins).toBe(1);
+    expect(players[0].coins).toBe(0);
     expect(players[0].cellId).toBe(3);
     room.leave();
   });
 
-  it("endTurn restores coins to permanentCoins", async () => {
+  it("endTurn resets coins to 0 but keeps permanentCoins", async () => {
     const roomId = await createRoom(baseUrl, {
       _testDeck: [["mushroom", "mushroom"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"], ["coin"]],
     });
@@ -2421,15 +2421,15 @@ describe("Permanent coins", () => {
     room.send("playCard", { cardId: mmCard.id });
     await waitForMessage(room, "cardPlayed");
     await waitForPlayers(room, (list) => list[0].permanentCoins === 1);
-    // Play a coin card to earn 1 regular coin (total coins = 2)
+    // Play a coin card to earn 1 regular coin
     const coinCard = cards.hand.find((c) => c.items.length === 1 && c.items[0] === "coin");
     room.send("playCard", { cardId: coinCard.id });
     await waitForMessage(room, "cardPlayed");
-    await waitForPlayers(room, (list) => list[0].coins === 2);
-    // End turn: regular coins reset, permanent coins restored
+    await waitForPlayers(room, (list) => list[0].coins === 1);
+    // End turn: regular coins reset to 0, permanent coins unchanged
     room.send("endTurn");
-    const players = await waitForPlayers(room, (list) => list[0].coins === 1);
-    expect(players[0].coins).toBe(1);
+    const players = await waitForPlayers(room, (list) => list[0].coins === 0);
+    expect(players[0].coins).toBe(0);
     expect(players[0].permanentCoins).toBe(1);
     room.leave();
   });
@@ -2464,10 +2464,10 @@ describe("Permanent coins", () => {
     mmCard = cards.hand.find((c) => c.items.join(",") === "mushroom,mushroom");
     room.send("playCard", { cardId: mmCard.id });
     await waitForMessage(room, "cardPlayed");
-    // After endTurn coins=1 (permanentCoins=1), then gain 1 more permanent = coins 2, permanentCoins 2
+    // After endTurn coins=0 (permanentCoins=1), then gain 1 more permanent = coins 0, permanentCoins 2
     const players = await waitForPlayers(room, (list) => list[0].permanentCoins === 2);
     expect(players[0].permanentCoins).toBe(2);
-    expect(players[0].coins).toBe(2);
+    expect(players[0].coins).toBe(0);
     room.leave();
   });
 
@@ -2493,25 +2493,25 @@ describe("Permanent coins", () => {
     await waitForMessage(room, "cardPlayed");
     await waitForPlayers(room, (list) => list[0].permanentCoins === 1);
 
-    // Play 2 coin cards to earn 2 regular coins (total coins = 3, permanentCoins = 1)
+    // Play 2 coin cards to earn 2 regular coins (coins = 2, permanentCoins = 1)
     const coinCards = cards.hand.filter((c) => c.items.length === 1 && c.items[0] === "coin");
     room.send("playCard", { cardId: coinCards[0].id });
     await waitForMessage(room, "cardPlayed");
     room.send("playCard", { cardId: coinCards[1].id });
     await waitForMessage(room, "cardPlayed");
-    await waitForPlayers(room, (list) => list[0].coins === 3);
+    await waitForPlayers(room, (list) => list[0].coins === 2);
 
     // Buy a river 0 card (cost 1) — spends 1 regular coin
     const river0Card = gs.rivers[0].slots[0];
     room.send("buyCard", { riverId: 0, cardId: river0Card.id });
     const bought = await waitForMessage(room, "cardBought");
-    expect(bought.coins).toBe(2); // 3 - 1 = 2
+    expect(bought.coins).toBe(1); // 2 - 1 = 1
     expect(bought.permanentCoins).toBe(1);
 
-    // End turn: coins should restore to permanentCoins (1)
+    // End turn: regular coins reset to 0, permanent coins unchanged
     room.send("endTurn");
-    const players = await waitForPlayers(room, (list) => list[0].coins === 1);
-    expect(players[0].coins).toBe(1);
+    const players = await waitForPlayers(room, (list) => list[0].coins === 0);
+    expect(players[0].coins).toBe(0);
     expect(players[0].permanentCoins).toBe(1);
     room.leave();
   });
@@ -2538,7 +2538,7 @@ describe("Permanent coins", () => {
     await waitForMessage(room, "cardPlayed");
     await waitForPlayers(room, (list) => list[0].permanentCoins === 1);
 
-    // No coin cards played — only 1 permanent coin available (coins=1, permanentCoins=1)
+    // No coin cards played — only 1 permanent coin available (coins=0, permanentCoins=1)
     // Buy a river 0 card (cost 1) — must spend the permanent coin
     const river0Card = gs.rivers[0].slots[0];
     room.send("buyCard", { riverId: 0, cardId: river0Card.id });
