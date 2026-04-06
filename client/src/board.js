@@ -9,34 +9,7 @@ import { isDebugModalOpen, setDebugRoom, onDebugState, setupDebugKeyboard } from
 import { rankBadge } from "./rank.js";
 import { schemaPlayersToArray, schemaCellOccupantsToObject, schemaToGameState } from "./schema.js";
 import { PlayerAvatar } from "./board_avatar.js";
-
-const CELL_POSITIONS = [
-  null,           // index 0 unused (cells are 1-indexed)
-  [0.055, 0.550], // 1 — finish
-  [0.077, 0.368], // 2
-  [0.147, 0.216], // 3
-  [0.255, 0.115], // 4
-  [0.376, 0.082], // 5
-  [0.493, 0.116], // 6
-  [0.606, 0.173], // 7
-  [0.721, 0.206], // 8
-  [0.710, 0.376], // 9 (red)
-  [0.687, 0.543], // 10 (red)
-  [0.666, 0.710], // 11 (red)
-  [0.656, 0.878], // 12
-  [0.842, 0.256], // 13 (blue)
-  [0.924, 0.408], // 14 (blue)
-  [0.943, 0.588], // 15 (blue)
-  [0.886, 0.772], // 16 (blue)
-  [0.773, 0.871], // 17 (blue)
-  [0.536, 0.898], // 18
-  [0.415, 0.915], // 19
-  [0.294, 0.909], // 20
-  [0.178, 0.858], // 21
-  [0.085, 0.729], // 22
-];
-
-const SVG_ASPECT = 236.684 / 158.96899;
+import { CELL_POSITIONS, SVG_ASPECT } from "./board.functions.js";
 const HELMET_SIZE_RATIO = 1;
 
 let boardPhase = "lobby";

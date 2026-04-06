@@ -323,7 +323,8 @@ class GameRoom extends Room {
 
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const trackFile = options._testTrack || "racetrack_1_cells.json";
-    const cellsData = JSON.parse(fs.readFileSync(path.join(__dirname, "../../assets/" + trackFile), "utf8"));
+    const trackJson = JSON.parse(fs.readFileSync(path.join(__dirname, "../../assets/" + trackFile), "utf8"));
+    const cellsData = trackJson.cells || trackJson;
     this.grid = new CellGrid(cellsData);
     this.ranking = [];
 
