@@ -1,5 +1,7 @@
 # Feedbacks
 
+Correctly display the list of players when they are a lot : flex wrap, widen the side column, toussa
+
 (with lavo)
 
 when the first player has already finished, what about the blue shell ?
