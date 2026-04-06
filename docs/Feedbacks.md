@@ -1,5 +1,9 @@
 # Feedbacks
 
+(with lavo)
+
+Prix des rivières : prix de base + nb joueurs - (rank * 2)
+
 (with indi)
 when a cards says 'shell move', animate the shell first then the move. sequentially.
 
