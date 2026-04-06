@@ -62,7 +62,8 @@ function appendCoins(container, count, src, collapsed) {
 export function renderCoinIcons(container, coins, permanentCoins) {
   const blueCount = Math.min(coins, permanentCoins);
   const goldCount = Math.max(0, coins - permanentCoins);
-  const collapsed = blueCount > 3 && goldCount > 3;
-  appendCoins(container, blueCount, "/permacoin.svg", collapsed);
-  appendCoins(container, goldCount, "/coin.svg", collapsed);
+  const bothPresent = blueCount > 0 && goldCount > 0;
+  const collapseBoth = bothPresent && blueCount > 3 && goldCount > 3;
+  appendCoins(container, blueCount, "/permacoin.svg", collapseBoth || (!bothPresent && blueCount > 3));
+  appendCoins(container, goldCount, "/coin.svg", collapseBoth || (!bothPresent && goldCount > 3));
 }
