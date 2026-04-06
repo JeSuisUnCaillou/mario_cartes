@@ -153,6 +153,38 @@ class GameRoom extends Room {
     return nextCells[0]; // no players on either → default to shortest
   }
 
+  _redShellHasTarget(thrower, direction, startCellId) {
+    let currentCellId = thrower.cellId;
+    const totalCells = this.grid.cells.size;
+    const isBackward = direction === "backward";
+
+    for (let step = 0; step < totalCells; step++) {
+      if (step === 0 && startCellId) {
+        currentCellId = startCellId;
+      } else if (step === 0 && (direction === "red" || direction === "blue")) {
+        const candidates = this.grid.nextCells(currentCellId);
+        currentCellId = candidates.find((id) => this.grid.cells.get(id).path_color === direction) || candidates[0];
+      } else {
+        const nextCells = this.grid.nextCells(currentCellId);
+        if (!isBackward && nextCells.length > 1) {
+          currentCellId = this._redShellPickBranch(currentCellId, thrower);
+        } else {
+          currentCellId = isBackward
+            ? this.grid.previousCell(currentCellId)
+            : this.grid.nextCell(currentCellId);
+        }
+      }
+
+      const occupants = this.grid.getOccupants(currentCellId);
+      const isLastStep = step === totalCells - 1;
+      for (const e of occupants) {
+        if (e === "banana" || e === "green_shell" || e === "red_shell") return true;
+        if ((isLastStep || e !== thrower.playerId) && !this.players.get(e)?.starInvincible) return true;
+      }
+    }
+    return false;
+  }
+
   _resolveRedShell(thrower, throwerClient, direction, startCellId) {
     const path = [];
     let currentCellId = thrower.cellId;
@@ -727,7 +759,7 @@ class GameRoom extends Room {
     const { drawPile, drawPileDisplay } = this.decks.initialPlayerDeck();
     return {
       cellId: START_CELL, drawPile, drawPileDisplay, hand: [], discardPile: [],
-      pendingDiscard: 0, pendingShellChoice: false, pendingPathChoice: false, pendingItems: [], shellChoiceOptions: null, ready: false, hasPlayedAllCards: false, coins: 0, permanentCoins: 0, lapCount: 0, slowCounters: 0, starInvincible: false,
+      pendingDiscard: 0, pendingShellChoice: false, pendingPathChoice: false, pendingItems: [], shellChoiceOptions: null, disabledShellOptions: [], ready: false, hasPlayedAllCards: false, coins: 0, permanentCoins: 0, lapCount: 0, slowCounters: 0, starInvincible: false,
     };
   }
 
@@ -1007,11 +1039,34 @@ class GameRoom extends Room {
       } else {
         player.shellChoiceOptions = ["forward", "backward"];
       }
+      // For red shells, check which directions have targets
+      player.disabledShellOptions = [];
+      if (item === "red_shell") {
+        for (const option of player.shellChoiceOptions) {
+          let hasTarget;
+          if (option === "forward") {
+            hasTarget = this._redShellHasTarget(player, "forward");
+          } else if (option === "backward") {
+            hasTarget = this._redShellHasTarget(player, "backward");
+          } else {
+            // "red" or "blue" — determine if forward (fork) or backward (merge)
+            const isForward = nextCells.length > 1;
+            if (isForward) {
+              hasTarget = this._redShellHasTarget(player, option);
+            } else {
+              const targetCellId = prevCells.find((id) => this.grid.cells.get(id).path_color === option);
+              hasTarget = this._redShellHasTarget(player, "backward", targetCellId);
+            }
+          }
+          if (!hasTarget) player.disabledShellOptions.push(option);
+        }
+      }
       this._sendToPlayer(player.playerId, "cardPlayed", {
         ...this.decks.cardState(player),
         pendingShellChoice: true,
         pendingShellType: item,
         shellChoiceOptions: player.shellChoiceOptions,
+        disabledShellOptions: player.disabledShellOptions,
       });
       this._syncState();
       return;

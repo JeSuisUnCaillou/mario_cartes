@@ -1636,6 +1636,13 @@ input {
   background: #1f6b1f;
 }
 
+.shell-modal-btn:disabled {
+  background: #444;
+  color: #888;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .shell-modal-red {
   background: #c0392b;
 }

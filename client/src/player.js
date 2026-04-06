@@ -134,9 +134,10 @@ const SHELL_OPTION_CLASSES = {
   blue: "shell-modal-blue",
 };
 
-function showShellModal(shellType, options) {
+function showShellModal(shellType, options, disabledOptions) {
   closeShellModal();
   if (!options) options = ["forward", "backward"];
+  if (!disabledOptions) disabledOptions = [];
 
   const overlay = document.createElement("div");
   overlay.className = "shell-modal";
@@ -156,13 +157,17 @@ function showShellModal(shellType, options) {
     const btn = document.createElement("button");
     btn.className = `shell-modal-btn ${SHELL_OPTION_CLASSES[option] || ""}`;
     btn.innerHTML = shellOptionLabel(option, options);
-    btn.addEventListener("click", () => {
-      if (currentRoom) currentRoom.send("shellChoice", { direction: option });
-      pendingShellChoice = false;
-      closeShellModal();
-      updatePlayZone();
-      updateBuyButton();
-    });
+    if (disabledOptions.includes(option)) {
+      btn.disabled = true;
+    } else {
+      btn.addEventListener("click", () => {
+        if (currentRoom) currentRoom.send("shellChoice", { direction: option });
+        pendingShellChoice = false;
+        closeShellModal();
+        updatePlayZone();
+        updateBuyButton();
+      });
+    }
     buttons.appendChild(btn);
   }
 
@@ -698,7 +703,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           }
           if (data.pendingShellChoice) {
             pendingShellChoice = true;
-            showShellModal(data.pendingShellType, data.shellChoiceOptions);
+            showShellModal(data.pendingShellType, data.shellChoiceOptions, data.disabledShellOptions);
             updatePlayZone();
             updateBuyButton();
           }
@@ -748,7 +753,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           // State-only update (e.g. after green_shell resolves pendingShellChoice)
           if (data.pendingShellChoice) {
             pendingShellChoice = true;
-            showShellModal(data.pendingShellType, data.shellChoiceOptions);
+            showShellModal(data.pendingShellType, data.shellChoiceOptions, data.disabledShellOptions);
             updatePlayZone();
             updateBuyButton();
           }

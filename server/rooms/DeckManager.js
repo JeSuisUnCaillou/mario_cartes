@@ -64,6 +64,7 @@ export class DeckManager {
       pendingShellChoice: player.pendingShellChoice,
       pendingShellType: player.pendingShellType,
       shellChoiceOptions: player.shellChoiceOptions,
+      disabledShellOptions: player.disabledShellOptions,
       pendingPathChoice: player.pendingPathChoice,
       coins: player.coins,
       permanentCoins: player.permanentCoins,
