@@ -127,11 +127,18 @@ class GameRoom extends Room {
     const path = [];
     let currentCellId = thrower.cellId;
     const totalCells = this.grid.cells.size;
+    const isBackward = direction === "backward";
 
     for (let step = 0; step < totalCells; step++) {
-      currentCellId = direction === "forward"
-        ? this.grid.cells.get(currentCellId).next_cell
-        : this.grid.previousCell(currentCellId);
+      if (step === 0 && (direction === "red" || direction === "blue")) {
+        // First step at a fork: pick the branch matching the chosen color
+        const candidates = this.grid.nextCells(currentCellId);
+        currentCellId = candidates.find((id) => this.grid.cells.get(id).path_color === direction) || candidates[0];
+      } else {
+        currentCellId = isBackward
+          ? this.grid.previousCell(currentCellId)
+          : this.grid.nextCell(currentCellId);
+      }
       path.push(currentCellId);
 
       const occupants = this.grid.getOccupants(currentCellId);
@@ -191,10 +198,36 @@ class GameRoom extends Room {
     }
   }
 
+  _bfsPath(fromCellId, toCellId) {
+    const visited = new Map(); // cellId → parent cellId
+    visited.set(fromCellId, null);
+    const queue = [fromCellId];
+    while (queue.length > 0) {
+      const current = queue.shift();
+      for (const nextId of this.grid.nextCells(current)) {
+        if (visited.has(nextId)) continue;
+        visited.set(nextId, current);
+        if (nextId === toCellId) {
+          // Reconstruct path (excluding start)
+          const path = [];
+          let node = toCellId;
+          while (node !== fromCellId) {
+            path.unshift(node);
+            node = visited.get(node);
+          }
+          return path;
+        }
+        queue.push(nextId);
+      }
+    }
+    // Fallback: should not happen on a connected track
+    return [toCellId];
+  }
+
   _resolveBlueShell(thrower) {
     // Find rank-1 unfinished player
     const finishedIds = new Set(this.ranking);
-    const liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.cells.size);
+    const liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.distToFinish, this.grid.maxDistance);
 
     // Find the best rank among unfinished players
     let bestRank = Infinity;
@@ -215,15 +248,8 @@ class GameRoom extends Room {
     const targetId = pool[Math.floor(Math.random() * pool.length)];
     const target = this.players.get(targetId);
 
-    // Build forward path from thrower to target (skip all obstacles)
-    const path = [];
-    let currentCellId = thrower.cellId;
-    const totalCells = this.grid.cells.size;
-    for (let step = 0; step < totalCells; step++) {
-      currentCellId = this.grid.cells.get(currentCellId).next_cell;
-      path.push(currentCellId);
-      if (currentCellId === target.cellId) break;
-    }
+    // BFS forward from thrower to target (handles branching paths)
+    const path = this._bfsPath(thrower.cellId, target.cellId);
 
     if (target.starInvincible) {
       // Star blocks the blue shell — animate but no effect
@@ -456,19 +482,35 @@ class GameRoom extends Room {
       const player = this._getPlayer(client);
       if (!player) return;
       if (!player.pendingShellChoice) return;
-      if (data.direction !== "forward" && data.direction !== "backward") return;
+      const validDirs = ["forward", "backward", "red", "blue"];
+      if (!validDirs.includes(data.direction)) return;
 
       player.pendingShellChoice = false;
       const shellType = player.pendingShellType;
       player.pendingShellType = null;
       if (!shellType) return;
 
-      if (shellType === "red_shell" && data.direction === "forward") {
+      let targetCellId;
+      if (data.direction === "red" || data.direction === "blue") {
+        // Fork or merge: find the cell matching the chosen path color
+        const isForward = this.grid.nextCells(player.cellId).length > 1;
+        if (isForward) {
+          targetCellId = this.grid.nextCells(player.cellId)
+            .find((id) => this.grid.cells.get(id).path_color === data.direction);
+        } else {
+          targetCellId = this.grid.previousCells(player.cellId)
+            .find((id) => this.grid.cells.get(id).path_color === data.direction);
+        }
+      } else if (data.direction === "forward") {
+        targetCellId = this.grid.nextCell(player.cellId);
+      } else {
+        targetCellId = this.grid.previousCell(player.cellId);
+      }
+      if (!targetCellId) return;
+
+      if (shellType === "red_shell" && data.direction !== "backward") {
         this._resolveRedShell(player, client, data.direction);
       } else {
-        const targetCellId = data.direction === "forward"
-          ? this.grid.cells.get(player.cellId).next_cell
-          : this.grid.previousCell(player.cellId);
         this._resolveShell(player, client, targetCellId, shellType);
       }
 
@@ -567,7 +609,7 @@ class GameRoom extends Room {
 
   _fullState() {
     const liveRanks = this.phase === "playing"
-      ? computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.cells.size)
+      ? computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.distToFinish, this.grid.maxDistance)
       : new Map();
     const players = Array.from(this.players.values()).map((p) => ({
       playerId: p.playerId,
@@ -705,7 +747,7 @@ class GameRoom extends Room {
 
 
   _getLiveRank(playerId) {
-    const liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.cells.size);
+    const liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.distToFinish, this.grid.maxDistance);
     return liveRanks.get(playerId) || 0;
   }
 
@@ -724,7 +766,7 @@ class GameRoom extends Room {
     // Compute live ranks
     let liveRanks = new Map();
     if (this.phase === "playing") {
-      liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.cells.size);
+      liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.distToFinish, this.grid.maxDistance);
     }
 
     // Sync players
@@ -906,7 +948,7 @@ class GameRoom extends Room {
 
     if (player.lapCount === 0) player.lapCount = 1;
     const oldCellId = player.cellId;
-    player.cellId = this.grid.cells.get(player.cellId).next_cell;
+    player.cellId = this.grid.nextCell(player.cellId);
     this.grid.remove(oldCellId, player.playerId);
     this.grid.add(player.cellId, player.playerId);
 

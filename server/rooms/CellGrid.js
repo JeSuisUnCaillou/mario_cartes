@@ -1,15 +1,80 @@
 export class CellGrid {
   constructor(cellsData) {
-    this.cells = new Map(cellsData.map((cell) => [cell.id, cell]));
-    this.prevCell = {};
+    // Normalize next_cell to always be an array
     for (const cell of cellsData) {
-      this.prevCell[cell.next_cell] = cell.id;
+      if (!Array.isArray(cell.next_cell)) cell.next_cell = [cell.next_cell];
     }
+
+    this.cells = new Map(cellsData.map((cell) => [cell.id, cell]));
+
+    // Build reverse adjacency: cellId → array of predecessor ids
+    this.prevCells = new Map();
+    for (const cell of cellsData) {
+      for (const nextId of cell.next_cell) {
+        if (!this.prevCells.has(nextId)) this.prevCells.set(nextId, []);
+        this.prevCells.get(nextId).push(cell.id);
+      }
+    }
+
+    this._computeDistances(cellsData);
     this.occupants = {};
+  }
+
+  _computeDistances(cellsData) {
+    const finishCell = cellsData.find((c) => c.finish_line);
+    const finishId = finishCell.id;
+
+    // Build reverse adjacency for BFS
+    const reverseAdj = new Map();
+    for (const cell of cellsData) {
+      for (const nextId of cell.next_cell) {
+        if (!reverseAdj.has(nextId)) reverseAdj.set(nextId, []);
+        reverseAdj.get(nextId).push(cell.id);
+      }
+    }
+
+    // BFS backward from finish cell
+    this.distToFinish = new Map();
+    this.distToFinish.set(finishId, 0);
+    const queue = [finishId];
+    while (queue.length > 0) {
+      const current = queue.shift();
+      const preds = reverseAdj.get(current) || [];
+      for (const pred of preds) {
+        if (!this.distToFinish.has(pred)) {
+          this.distToFinish.set(pred, this.distToFinish.get(current) + 1);
+          queue.push(pred);
+        }
+      }
+    }
+
+    this.maxDistance = Math.max(...this.distToFinish.values());
   }
 
   reset() {
     this.occupants = {};
+  }
+
+  nextCell(cellId) {
+    return this.cells.get(cellId).next_cell[0];
+  }
+
+  nextCells(cellId) {
+    return this.cells.get(cellId).next_cell;
+  }
+
+  previousCell(cellId) {
+    const preds = this.prevCells.get(cellId);
+    if (!preds || preds.length === 0) return undefined;
+    if (preds.length === 1) return preds[0];
+    // Pick predecessor closest to finish (shorter path)
+    return preds.reduce((best, id) =>
+      this.distToFinish.get(id) < this.distToFinish.get(best) ? id : best,
+    );
+  }
+
+  previousCells(cellId) {
+    return this.prevCells.get(cellId) || [];
   }
 
   getOccupants(cellId) {
@@ -53,9 +118,5 @@ export class CellGrid {
   hazard(cellId) {
     if (this.countItem(cellId, "banana") > 0) return "banana";
     return this.shellType(cellId);
-  }
-
-  previousCell(cellId) {
-    return this.prevCell[cellId];
   }
 }
