@@ -70,10 +70,8 @@ Each card contains 1–3 items resolved sequentially from top to bottom:
 - At turn end: remaining hand cards are discarded, then draw 5 new cards.
 
 ### Rivers (Card Shop)
-- 3 rivers with costs of 1, 3, and 5 coins. Each shows 3 buyable cards.
-- **Rank-based access** (catch-up mechanic): trailing players can buy from higher-tier rivers.
-  - Rank 1: river 1 only. Rank 2: rivers 1–2. Rank 3+: all rivers.
-  - The last-place player always has access to all rivers, regardless of player count.
+- 3 rivers with base costs of 1, 3, and 5 coins. Each shows 3 buyable cards.
+- **Rank-scaled pricing** (catch-up mechanic): effective price = base cost + (player count − rank). Leaders pay more, last place pays base price only.
 - Bought cards go to discard pile. Slot refills from the river's deck.
 
 
