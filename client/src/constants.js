@@ -35,9 +35,9 @@ export function createCardDOM(card, className = "card") {
   return el;
 }
 
-function appendCoins(container, count, src) {
+function appendCoins(container, count, src, collapsed) {
   if (count <= 0) return;
-  if (count > 3) {
+  if (collapsed) {
     const wrapper = document.createElement("span");
     wrapper.className = "coin-group";
     const img = document.createElement("img");
@@ -62,6 +62,7 @@ function appendCoins(container, count, src) {
 export function renderCoinIcons(container, coins, permanentCoins) {
   const blueCount = Math.min(coins, permanentCoins);
   const goldCount = Math.max(0, coins - permanentCoins);
-  appendCoins(container, blueCount, "/permacoin.svg");
-  appendCoins(container, goldCount, "/coin.svg");
+  const collapsed = blueCount > 3 && goldCount > 3;
+  appendCoins(container, blueCount, "/permacoin.svg", collapsed);
+  appendCoins(container, goldCount, "/coin.svg", collapsed);
 }
