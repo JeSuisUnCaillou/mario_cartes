@@ -153,6 +153,34 @@ class GameRoom extends Room {
     return nextCells[0]; // no players on either → default to shortest
   }
 
+  _redShellPickBranchBackward(cellId, thrower) {
+    const prevCells = this.grid.previousCells(cellId);
+    if (prevCells.length <= 1) return prevCells[0];
+
+    const hasPlayer = (startId) => {
+      let id = startId;
+      while (id) {
+        const cell = this.grid.cells.get(id);
+        const occupants = this.grid.getOccupants(id);
+        const hittable = occupants.some(
+          (e) => e !== "banana" && e !== "green_shell" && e !== "red_shell"
+            && e !== thrower.playerId && !this.players.get(e)?.starInvincible,
+        );
+        if (hittable) return true;
+        const prevIds = this.grid.previousCells(id);
+        const prev = prevIds[0];
+        if (!prev || !this.grid.cells.get(prev).path_color || this.grid.cells.get(prev).path_color !== cell.path_color) break;
+        id = prev;
+      }
+      return false;
+    };
+
+    // Prefer first predecessor (shorter path) unless only the other has players
+    if (hasPlayer(prevCells[0])) return prevCells[0];
+    if (hasPlayer(prevCells[1])) return prevCells[1];
+    return this.grid.previousCell(cellId); // no players on either → default to shortest
+  }
+
   _redShellHasTarget(thrower, direction, startCellId) {
     let currentCellId = thrower.cellId;
     const totalCells = this.grid.cells.size;
@@ -165,12 +193,15 @@ class GameRoom extends Room {
         const candidates = this.grid.nextCells(currentCellId);
         currentCellId = candidates.find((id) => this.grid.cells.get(id).path_color === direction) || candidates[0];
       } else {
-        const nextCells = this.grid.nextCells(currentCellId);
-        if (!isBackward && nextCells.length > 1) {
-          currentCellId = this._redShellPickBranch(currentCellId, thrower);
+        if (isBackward) {
+          const prevCells = this.grid.previousCells(currentCellId);
+          currentCellId = prevCells.length > 1
+            ? this._redShellPickBranchBackward(currentCellId, thrower)
+            : this.grid.previousCell(currentCellId);
         } else {
-          currentCellId = isBackward
-            ? this.grid.previousCell(currentCellId)
+          const nextCells = this.grid.nextCells(currentCellId);
+          currentCellId = nextCells.length > 1
+            ? this._redShellPickBranch(currentCellId, thrower)
             : this.grid.nextCell(currentCellId);
         }
       }
@@ -200,12 +231,15 @@ class GameRoom extends Room {
         const candidates = this.grid.nextCells(currentCellId);
         currentCellId = candidates.find((id) => this.grid.cells.get(id).path_color === direction) || candidates[0];
       } else {
-        const nextCells = this.grid.nextCells(currentCellId);
-        if (!isBackward && nextCells.length > 1) {
-          currentCellId = this._redShellPickBranch(currentCellId, thrower);
+        if (isBackward) {
+          const prevCells = this.grid.previousCells(currentCellId);
+          currentCellId = prevCells.length > 1
+            ? this._redShellPickBranchBackward(currentCellId, thrower)
+            : this.grid.previousCell(currentCellId);
         } else {
-          currentCellId = isBackward
-            ? this.grid.previousCell(currentCellId)
+          const nextCells = this.grid.nextCells(currentCellId);
+          currentCellId = nextCells.length > 1
+            ? this._redShellPickBranch(currentCellId, thrower)
             : this.grid.nextCell(currentCellId);
         }
       }
