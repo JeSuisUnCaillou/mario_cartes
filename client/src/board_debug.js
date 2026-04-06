@@ -43,8 +43,11 @@ function openDebugModal() {
   if (!overlay) {
     overlay = document.createElement("div");
     overlay.className = "debug-modal";
+    let mouseDownTarget = null;
+    overlay.addEventListener("mousedown", (e) => { mouseDownTarget = e.target; });
     overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) closeDebugModal();
+      if (e.target === overlay && mouseDownTarget === overlay) closeDebugModal();
+      mouseDownTarget = null;
     });
 
     const close = document.createElement("button");
