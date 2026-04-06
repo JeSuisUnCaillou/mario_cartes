@@ -548,6 +548,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
       $.onRemove("rivers", () => { riversDirty = true; });
 
       room.onStateChange((state) => {
+        const anyDirty = gameStateDirty || riversDirty || playersDirty;
         if (gameStateDirty || riversDirty) {
           gamePhase = state.phase;
           const prevActive = activePlayerId;
@@ -621,7 +622,6 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
 
           updatePlayZone();
           updateBuyButton();
-          if (document.querySelector(".buy-modal")) renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins, currentPlayerCount);
           gameStateDirty = false;
           riversDirty = false;
         }
@@ -674,6 +674,8 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           }
           playersDirty = false;
         }
+
+        if (anyDirty && document.querySelector(".buy-modal")) renderBuyModal(currentRoom, latestRivers, currentCoins, currentRank, currentPermanentCoins, currentPlayerCount);
       });
 
       room.onMessage("cardsDrawn", async (data) => {
