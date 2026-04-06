@@ -153,14 +153,17 @@ class GameRoom extends Room {
     return nextCells[0]; // no players on either → default to shortest
   }
 
-  _resolveRedShell(thrower, throwerClient, direction) {
+  _resolveRedShell(thrower, throwerClient, direction, startCellId) {
     const path = [];
     let currentCellId = thrower.cellId;
     const totalCells = this.grid.cells.size;
     const isBackward = direction === "backward";
 
     for (let step = 0; step < totalCells; step++) {
-      if (step === 0 && (direction === "red" || direction === "blue")) {
+      if (step === 0 && startCellId) {
+        // Explicit start cell (e.g. backward into a specific branch at a merge)
+        currentCellId = startCellId;
+      } else if (step === 0 && (direction === "red" || direction === "blue")) {
         // First step at a fork: pick the branch matching the chosen color
         const candidates = this.grid.nextCells(currentCellId);
         currentCellId = candidates.find((id) => this.grid.cells.get(id).path_color === direction) || candidates[0];
@@ -547,8 +550,15 @@ class GameRoom extends Room {
       }
       if (!targetCellId) return;
 
-      if (shellType === "red_shell" && data.direction !== "backward") {
-        this._resolveRedShell(player, client, data.direction);
+      const isRedShellTravel = shellType === "red_shell"
+        && data.direction !== "backward"
+        && data.direction !== "forward";
+      if (shellType === "red_shell" && data.direction === "forward") {
+        this._resolveRedShell(player, client, "forward");
+      } else if (isRedShellTravel) {
+        // "red"/"blue" direction: forward at a fork, backward at a merge
+        const isForward = this.grid.nextCells(player.cellId).length > 1;
+        this._resolveRedShell(player, client, isForward ? data.direction : "backward", isForward ? null : targetCellId);
       } else {
         this._resolveShell(player, client, targetCellId, shellType);
       }
