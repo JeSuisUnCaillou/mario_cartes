@@ -11,9 +11,9 @@ Aiming a cell containing several items with a shell should prompt the player to 
 ✔️ Explication des règles
 ✔️ Player's disconnection shown on his client, with reconnect button
 les cartes spéciales
-> Carapace bleue : percute directement le premier joueur lui fait défausser toute sa main.
+> ✔️ Carapace bleue : percute directement le premier joueur lui fait défausser toute sa main.
 > 
-> étoile magique : rend le personnage insensible à tout jusqu’au début de son prochain tour et fait avancer d’une case. -> détruit un objet par case traversée quand même. -> met un slow sur les joueurs aussi. Prio joueur -> banane -> shell.
+> ✔️ étoile magique : rend le personnage insensible à tout jusqu’au début de son prochain tour et fait avancer d’une case. -> détruit un objet par case traversée quand même. -> met un slow sur les joueurs aussi. Prio joueur -> banane -> shell.
 > 
 > Champignon en Or : fait gagner un champignon plus un champignon pour chaque carte que l’on décide de se défausser
 > 
@@ -23,9 +23,9 @@ les cartes spéciales
 > 
 > Eclair : tous les autres joueurs se défausse d’une carte + 1 slow
 
-LOG des games en DB
 faire un meilleur circuit
 le singe et la tortue
+LOG des games en DB
 le faux bloc
 
 # tech

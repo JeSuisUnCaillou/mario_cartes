@@ -2,15 +2,13 @@
 
 (with vinc & indira)
 
-Limiter le nombre de champignons noirs et simplifier la règle ?
+when choosing forward/backward => illuminate the cell options on the board with the same colors
 
 Automatic end of turn when no option left
 
 Ecrire les règles des items sur le board aussi, à droite
   
 choose target on cell with several targets
-
-when choosing forward/backward => illuminate the cell options on the board with the same colors
 
 config game in lobby : nb turns
 
@@ -25,6 +23,8 @@ the double mushroom only advance once. It should advance two cells. Bug pas repr
 
 
 # DONE
+
+Limiter le nombre de champignons noirs et simplifier la règle ?
 
 the active player shoud have a subtle wobble animation on his avatar on the track.
 
