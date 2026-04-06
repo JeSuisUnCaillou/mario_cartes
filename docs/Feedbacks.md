@@ -2,6 +2,8 @@
 
 (with lavo)
 
+when the first player has already finished, what about the blue shell ?
+
 force vertical display on phone, never rotate (need PWA ?)
 
 red shell on invincible player : should not ignore, should hit and do no damage, with stars but no rotations.
@@ -45,7 +47,7 @@ the double mushroom only advance once. It should advance two cells. Bug pas repr
 
 # DONE
 
-when more than 3 coins, display (x4) instead
+On the player's client, when he has more than 3 coins blue coins, display only one blue coin with x4 (for example) instead. Do the same for the normal coins.
 
 red_shell should prioritise blue path if all other players are in the blue path when its thrown backwards too
 
