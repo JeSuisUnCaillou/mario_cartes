@@ -434,6 +434,7 @@ class GameRoom extends Room {
       if (player.hand.length > 0) return;
       if (player.pendingDiscard > 0) return;
       if (player.pendingShellChoice) return;
+      if (player.pendingPathChoice) return;
       client.send("cardsDrawn", this.decks.drawCards(player));
       this._syncState();
     });
@@ -445,6 +446,7 @@ class GameRoom extends Room {
       if (player.playerId !== this.activePlayerId) return;
       if (player.pendingDiscard > 0) return;
       if (player.pendingShellChoice) return;
+      if (player.pendingPathChoice) return;
       if (player.pendingItems.length > 0) return;
       const cardIndex = player.hand.findIndex((c) => c.id === data.cardId);
       if (cardIndex === -1) return;
@@ -527,6 +529,7 @@ class GameRoom extends Room {
       if (player.playerId !== this.activePlayerId) return;
       if (player.pendingDiscard > 0) return;
       if (player.pendingShellChoice) return;
+      if (player.pendingPathChoice) return;
       if (player.pendingItems.length > 0) return;
       this._endTurnAndAdvance(player);
     });
@@ -538,6 +541,7 @@ class GameRoom extends Room {
       if (player.playerId !== this.activePlayerId) return;
       if (player.pendingDiscard > 0) return;
       if (player.pendingShellChoice) return;
+      if (player.pendingPathChoice) return;
       if (player.pendingItems.length > 0) return;
       const river = this.rivers.find((r) => r.id === data.riverId);
       if (!river) return;
@@ -587,6 +591,7 @@ class GameRoom extends Room {
     if (data.permanentCoins !== undefined) player.permanentCoins = data.permanentCoins;
     if (data.pendingDiscard !== undefined) player.pendingDiscard = data.pendingDiscard;
     if (data.pendingShellChoice !== undefined) player.pendingShellChoice = data.pendingShellChoice;
+    if (data.pendingPathChoice !== undefined) player.pendingPathChoice = data.pendingPathChoice;
     if (data.slowCounters !== undefined) player.slowCounters = data.slowCounters;
     if (data.starInvincible !== undefined) player.starInvincible = data.starInvincible;
     if (data.setHandCard) {
@@ -624,6 +629,7 @@ class GameRoom extends Room {
       rank: liveRanks.get(p.playerId) || 0,
       pendingDiscard: p.pendingDiscard,
       pendingShellChoice: p.pendingShellChoice,
+      pendingPathChoice: p.pendingPathChoice,
       handCount: p.hand.length,
       drawCount: p.drawPile.length,
       discardCount: p.discardPile.length,
@@ -661,7 +667,7 @@ class GameRoom extends Room {
     const { drawPile, drawPileDisplay } = this.decks.initialPlayerDeck();
     return {
       cellId: START_CELL, drawPile, drawPileDisplay, hand: [], discardPile: [],
-      pendingDiscard: 0, pendingShellChoice: false, pendingItems: [], ready: false, hasPlayedAllCards: false, coins: 0, permanentCoins: 0, lapCount: 0, slowCounters: 0, starInvincible: false,
+      pendingDiscard: 0, pendingShellChoice: false, pendingPathChoice: false, pendingItems: [], ready: false, hasPlayedAllCards: false, coins: 0, permanentCoins: 0, lapCount: 0, slowCounters: 0, starInvincible: false,
     };
   }
 
@@ -790,6 +796,7 @@ class GameRoom extends Room {
       sp.lapCount = p.lapCount;
       sp.slowCounters = p.slowCounters;
       sp.pendingShellChoice = p.pendingShellChoice;
+      sp.pendingPathChoice = p.pendingPathChoice;
       sp.starInvincible = p.starInvincible || false;
       sp.finished = this.ranking.includes(playerId);
       sp.rank = liveRanks.get(playerId) || 0;

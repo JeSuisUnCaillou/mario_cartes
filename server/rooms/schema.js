@@ -12,6 +12,7 @@ const PlayerSchema = schema({
   lapCount: "number",
   slowCounters: "number",
   pendingShellChoice: "boolean",
+  pendingPathChoice: "boolean",
   finished: "boolean",
   rank: "number",
   starInvincible: "boolean",
