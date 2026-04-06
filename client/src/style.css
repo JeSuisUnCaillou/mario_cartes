@@ -749,6 +749,18 @@ input {
   height: 32px;
 }
 
+.coin-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.coin-count {
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+}
+
 .cards-zone {
   display: flex;
   align-items: flex-end;

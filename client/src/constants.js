@@ -35,19 +35,33 @@ export function createCardDOM(card, className = "card") {
   return el;
 }
 
+function appendCoins(container, count, src) {
+  if (count <= 0) return;
+  if (count > 3) {
+    const wrapper = document.createElement("span");
+    wrapper.className = "coin-group";
+    const img = document.createElement("img");
+    img.src = src;
+    img.className = "coin-icon";
+    wrapper.appendChild(img);
+    const label = document.createElement("span");
+    label.className = "coin-count";
+    label.textContent = `x${count}`;
+    wrapper.appendChild(label);
+    container.appendChild(wrapper);
+  } else {
+    for (let i = 0; i < count; i++) {
+      const img = document.createElement("img");
+      img.src = src;
+      img.className = "coin-icon";
+      container.appendChild(img);
+    }
+  }
+}
+
 export function renderCoinIcons(container, coins, permanentCoins) {
   const blueCount = Math.min(coins, permanentCoins);
   const goldCount = Math.max(0, coins - permanentCoins);
-  for (let i = 0; i < blueCount; i++) {
-    const img = document.createElement("img");
-    img.src = "/permacoin.svg";
-    img.className = "coin-icon";
-    container.appendChild(img);
-  }
-  for (let i = 0; i < goldCount; i++) {
-    const img = document.createElement("img");
-    img.src = "/coin.svg";
-    img.className = "coin-icon";
-    container.appendChild(img);
-  }
+  appendCoins(container, blueCount, "/permacoin.svg");
+  appendCoins(container, goldCount, "/coin.svg");
 }
