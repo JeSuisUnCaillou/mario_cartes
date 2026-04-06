@@ -123,6 +123,36 @@ class GameRoom extends Room {
     this._syncState();
   }
 
+  _redShellPickBranch(cellId, thrower) {
+    const nextCells = this.grid.nextCells(cellId);
+    if (nextCells.length <= 1) return nextCells[0];
+
+    // Check each branch for hittable players
+    const hasPlayer = (startId) => {
+      let id = startId;
+      while (id) {
+        const cell = this.grid.cells.get(id);
+        const occupants = this.grid.getOccupants(id);
+        const hittable = occupants.some(
+          (e) => e !== "banana" && e !== "green_shell" && e !== "red_shell"
+            && e !== thrower.playerId && !this.players.get(e)?.starInvincible,
+        );
+        if (hittable) return true;
+        // Stop when the branch ends (no path_color or different path_color)
+        const nextIds = this.grid.nextCells(id);
+        const next = nextIds[0];
+        if (!next || !this.grid.cells.get(next).path_color || this.grid.cells.get(next).path_color !== cell.path_color) break;
+        id = next;
+      }
+      return false;
+    };
+
+    // Prefer first branch (shorter) unless only the other branch has players
+    if (hasPlayer(nextCells[0])) return nextCells[0];
+    if (hasPlayer(nextCells[1])) return nextCells[1];
+    return nextCells[0]; // no players on either → default to shortest
+  }
+
   _resolveRedShell(thrower, throwerClient, direction) {
     const path = [];
     let currentCellId = thrower.cellId;
@@ -135,9 +165,14 @@ class GameRoom extends Room {
         const candidates = this.grid.nextCells(currentCellId);
         currentCellId = candidates.find((id) => this.grid.cells.get(id).path_color === direction) || candidates[0];
       } else {
-        currentCellId = isBackward
-          ? this.grid.previousCell(currentCellId)
-          : this.grid.nextCell(currentCellId);
+        const nextCells = this.grid.nextCells(currentCellId);
+        if (!isBackward && nextCells.length > 1) {
+          currentCellId = this._redShellPickBranch(currentCellId, thrower);
+        } else {
+          currentCellId = isBackward
+            ? this.grid.previousCell(currentCellId)
+            : this.grid.nextCell(currentCellId);
+        }
       }
       path.push(currentCellId);
 
