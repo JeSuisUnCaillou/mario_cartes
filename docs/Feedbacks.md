@@ -1,5 +1,12 @@
 # Feedbacks
 
+(with indi)
+when a cards says 'shell move', animate the shell first then the move. sequentially.
+
+rename "red path" into short path, "blue path" into long path.
+
+OH IDEE : calculer et envoyer au client les positions des cellules forward et backward, pour les afficher au bon endroit dans la modale.
+
 (with vinc & indira)
 
 when choosing forward/backward => illuminate the cell options on the board with the same colors
