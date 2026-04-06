@@ -147,6 +147,8 @@ function renderDebugModal(state) {
     pForm.appendChild(labeledField("Lap", lapInput));
     const coinsInput = numInput(p.coins, 0);
     pForm.appendChild(labeledField("Coins", coinsInput));
+    const permCoinsInput = numInput(p.permanentCoins, 0);
+    pForm.appendChild(labeledField("Perm. coins", permCoinsInput));
     const rankInput = numInput(p.rank);
     rankInput.readOnly = true;
     rankInput.classList.add("debug-readonly");
@@ -169,6 +171,7 @@ function renderDebugModal(state) {
         cellId: Number(cellInput.value),
         lapCount: Number(lapInput.value),
         coins: Number(coinsInput.value),
+        permanentCoins: Number(permCoinsInput.value),
         pendingDiscard: Number(bananaDiscInput.value),
       });
     });
