@@ -27,6 +27,7 @@ let currentSlowCounters = 0;
 let currentRank = 0;
 let currentPlayerCount = 0;
 let pendingShellChoice = false;
+let pendingPathChoice = false;
 let latestDrawPileDisplay = [];
 let latestDiscardPile = [];
 
@@ -41,7 +42,7 @@ function addDragListeners(card) {
 }
 
 function updateBuyButton() {
-  _updateBuyButton(activePlayerId, myPlayerId, latestRivers, pendingDiscards || pendingShellChoice, openBuyModal);
+  _updateBuyButton(activePlayerId, myPlayerId, latestRivers, pendingDiscards || pendingShellChoice || pendingPathChoice, openBuyModal);
 }
 
 function updatePilesAndTrack(data) {
@@ -114,8 +115,24 @@ function closeRulesModal() {
   if (modal) modal.remove();
 }
 
-function showShellModal(shellType) {
+const SHELL_OPTION_LABELS = {
+  forward: "Forward &#x2191;",
+  backward: "Backward &#x2193;",
+  red: "Red path &#x1F534;",
+  blue: "Blue path &#x1F535;",
+};
+
+const SHELL_OPTION_CLASSES = {
+  forward: "shell-modal-forward",
+  backward: "shell-modal-backward",
+  red: "shell-modal-red",
+  blue: "shell-modal-blue",
+};
+
+function showShellModal(shellType, options) {
   closeShellModal();
+  if (!options) options = ["forward", "backward"];
+
   const overlay = document.createElement("div");
   overlay.className = "shell-modal";
 
@@ -130,29 +147,19 @@ function showShellModal(shellType) {
   const buttons = document.createElement("div");
   buttons.className = "shell-modal-buttons";
 
-  const forwardBtn = document.createElement("button");
-  forwardBtn.className = "shell-modal-btn shell-modal-forward";
-  forwardBtn.innerHTML = "Forward &#x2191;";
-  forwardBtn.addEventListener("click", () => {
-    if (currentRoom) currentRoom.send("shellChoice", { direction: "forward" });
-    pendingShellChoice = false;
-    closeShellModal();
-    updatePlayZone();
-    updateBuyButton();
-  });
-  buttons.appendChild(forwardBtn);
-
-  const backwardBtn = document.createElement("button");
-  backwardBtn.className = "shell-modal-btn shell-modal-backward";
-  backwardBtn.innerHTML = "Backward &#x2193;";
-  backwardBtn.addEventListener("click", () => {
-    if (currentRoom) currentRoom.send("shellChoice", { direction: "backward" });
-    pendingShellChoice = false;
-    closeShellModal();
-    updatePlayZone();
-    updateBuyButton();
-  });
-  buttons.appendChild(backwardBtn);
+  for (const option of options) {
+    const btn = document.createElement("button");
+    btn.className = `shell-modal-btn ${SHELL_OPTION_CLASSES[option] || ""}`;
+    btn.innerHTML = SHELL_OPTION_LABELS[option] || option;
+    btn.addEventListener("click", () => {
+      if (currentRoom) currentRoom.send("shellChoice", { direction: option });
+      pendingShellChoice = false;
+      closeShellModal();
+      updatePlayZone();
+      updateBuyButton();
+    });
+    buttons.appendChild(btn);
+  }
 
   content.appendChild(buttons);
   overlay.appendChild(content);
@@ -161,6 +168,56 @@ function showShellModal(shellType) {
 
 function closeShellModal() {
   const modal = document.querySelector(".shell-modal");
+  if (modal) modal.remove();
+}
+
+function showPathModal() {
+  closePathModal();
+  const overlay = document.createElement("div");
+  overlay.className = "path-modal";
+
+  const content = document.createElement("div");
+  content.className = "path-modal-content";
+
+  const title = document.createElement("h2");
+  title.className = "path-modal-title";
+  title.textContent = "Choose your path";
+  content.appendChild(title);
+
+  const buttons = document.createElement("div");
+  buttons.className = "path-modal-buttons";
+
+  const redBtn = document.createElement("button");
+  redBtn.className = "path-modal-btn path-modal-red";
+  redBtn.innerHTML = "Red path &#x1F534;";
+  redBtn.addEventListener("click", () => {
+    if (currentRoom) currentRoom.send("pathChoice", { color: "red" });
+    pendingPathChoice = false;
+    closePathModal();
+    updatePlayZone();
+    updateBuyButton();
+  });
+  buttons.appendChild(redBtn);
+
+  const blueBtn = document.createElement("button");
+  blueBtn.className = "path-modal-btn path-modal-blue";
+  blueBtn.innerHTML = "Blue path &#x1F535;";
+  blueBtn.addEventListener("click", () => {
+    if (currentRoom) currentRoom.send("pathChoice", { color: "blue" });
+    pendingPathChoice = false;
+    closePathModal();
+    updatePlayZone();
+    updateBuyButton();
+  });
+  buttons.appendChild(blueBtn);
+
+  content.appendChild(buttons);
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
+}
+
+function closePathModal() {
+  const modal = document.querySelector(".path-modal");
   if (modal) modal.remove();
 }
 
@@ -183,12 +240,12 @@ function updatePlayZone() {
   if (endTurnContainer && !document.getElementById("end-turn-btn")) {
     endTurnContainer.innerHTML = `<button id="end-turn-btn" class="end-turn-btn">End turn</button>`;
     document.getElementById("end-turn-btn").addEventListener("click", () => {
-      if (drag.isPlaying || animating || pendingDiscards > 0 || pendingShellChoice) return;
+      if (drag.isPlaying || animating || pendingDiscards > 0 || pendingShellChoice || pendingPathChoice) return;
       if (currentRoom) currentRoom.send("endTurn");
     });
   }
   const endTurnBtn = document.getElementById("end-turn-btn");
-  if (playZone.classList.contains("discard-hit") || pendingShellChoice) {
+  if (playZone.classList.contains("discard-hit") || pendingShellChoice || pendingPathChoice) {
     if (endTurnBtn) {
       const isMyTurn = activePlayerId === myPlayerId;
       endTurnBtn.style.visibility = isMyTurn ? "" : "hidden";
@@ -454,6 +511,7 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
     animating = false;
     pendingDiscards = 0;
     pendingShellChoice = false;
+    pendingPathChoice = false;
 
       // Schema-based state sync for public game state
       let gameStateDirty = false;
@@ -635,7 +693,13 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           }
           if (data.pendingShellChoice) {
             pendingShellChoice = true;
-            showShellModal(data.pendingShellType);
+            showShellModal(data.pendingShellType, data.shellChoiceOptions);
+            updatePlayZone();
+            updateBuyButton();
+          }
+          if (data.pendingPathChoice) {
+            pendingPathChoice = true;
+            showPathModal();
             updatePlayZone();
             updateBuyButton();
           }
@@ -679,7 +743,13 @@ function startGame(gameId, name, existingPlayerId, existingRoom) {
           // State-only update (e.g. after green_shell resolves pendingShellChoice)
           if (data.pendingShellChoice) {
             pendingShellChoice = true;
-            showShellModal(data.pendingShellType);
+            showShellModal(data.pendingShellType, data.shellChoiceOptions);
+            updatePlayZone();
+            updateBuyButton();
+          }
+          if (data.pendingPathChoice) {
+            pendingPathChoice = true;
+            showPathModal();
             updatePlayZone();
             updateBuyButton();
           }

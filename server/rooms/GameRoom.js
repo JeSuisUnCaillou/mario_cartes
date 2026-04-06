@@ -954,7 +954,24 @@ class GameRoom extends Room {
     } else if (item === "green_shell" || item === "red_shell") {
       player.pendingShellChoice = true;
       player.pendingShellType = item;
-      this._sendToPlayer(player.playerId, "cardPlayed", { ...this.decks.cardState(player) });
+      const nextCells = this.grid.nextCells(player.cellId);
+      const prevCells = this.grid.previousCells(player.cellId);
+      let shellChoiceOptions;
+      if (nextCells.length > 1) {
+        // At a fork: show path colors + backward
+        shellChoiceOptions = [...nextCells.map((id) => this.grid.cells.get(id).path_color), "backward"];
+      } else if (prevCells.length > 1) {
+        // At a merge: show forward + path colors for backward
+        shellChoiceOptions = ["forward", ...prevCells.map((id) => this.grid.cells.get(id).path_color)];
+      } else {
+        shellChoiceOptions = ["forward", "backward"];
+      }
+      this._sendToPlayer(player.playerId, "cardPlayed", {
+        ...this.decks.cardState(player),
+        pendingShellChoice: true,
+        pendingShellType: item,
+        shellChoiceOptions,
+      });
       this._syncState();
       return;
     }

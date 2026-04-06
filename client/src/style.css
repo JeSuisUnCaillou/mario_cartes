@@ -1626,6 +1626,73 @@ input {
   background: #1f6b1f;
 }
 
+.shell-modal-red {
+  background: #c0392b;
+}
+.shell-modal-red:active {
+  background: #962d22;
+}
+
+.shell-modal-blue {
+  background: #2980b9;
+}
+.shell-modal-blue:active {
+  background: #1f6391;
+}
+
+/* Path choice modal */
+.path-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.88);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.path-modal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+
+.path-modal-title {
+  color: #fff;
+  font-size: 1.4em;
+  text-align: center;
+  margin: 0;
+}
+
+.path-modal-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.path-modal-btn {
+  padding: 24px 36px;
+  font-size: 1.3em;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+}
+
+.path-modal-btn:active {
+  filter: brightness(0.8);
+}
+
+.path-modal-red {
+  background: #c0392b;
+}
+
+.path-modal-blue {
+  background: #2980b9;
+}
+
 /* Rules button */
 .rules-btn {
   position: absolute;
