@@ -297,9 +297,6 @@ html, body, #app {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  margin-bottom: 5px;
-  padding-bottom: 5px;
-  border-bottom: 1px solid grey;
   width: 100%;
 }
 
