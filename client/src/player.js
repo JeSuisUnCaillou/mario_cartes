@@ -118,9 +118,14 @@ function closeRulesModal() {
 const SHELL_OPTION_LABELS = {
   forward: "Forward &#x2191;",
   backward: "Backward &#x2193;",
-  red: "Red path &#x1F534;",
-  blue: "Blue path &#x1F535;",
 };
+
+function shellOptionLabel(option, options) {
+  if (SHELL_OPTION_LABELS[option]) return SHELL_OPTION_LABELS[option];
+  // red/blue at a fork (with "backward") → forward direction; at a merge (with "forward") → backward
+  const isForward = options.includes("backward");
+  return isForward ? "Forward &#x2191;" : "Backward &#x2193;";
+}
 
 const SHELL_OPTION_CLASSES = {
   forward: "shell-modal-forward",
@@ -150,7 +155,7 @@ function showShellModal(shellType, options) {
   for (const option of options) {
     const btn = document.createElement("button");
     btn.className = `shell-modal-btn ${SHELL_OPTION_CLASSES[option] || ""}`;
-    btn.innerHTML = SHELL_OPTION_LABELS[option] || option;
+    btn.innerHTML = shellOptionLabel(option, options);
     btn.addEventListener("click", () => {
       if (currentRoom) currentRoom.send("shellChoice", { direction: option });
       pendingShellChoice = false;
