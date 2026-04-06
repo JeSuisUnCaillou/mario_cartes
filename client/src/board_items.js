@@ -16,7 +16,7 @@ export class CellItemSprites {
   get helmetSlot() { return this.scene.cellW / 4.5; }
 
   slotOffset(cellId) {
-    return permacoinCells.has(cellId) ? 1 : 0;
+    return permacoinCells.get(cellId) || 0;
   }
 
   isFrozen(cellId) { return this._dustCloudCells.has(cellId); }
@@ -28,26 +28,33 @@ export class CellItemSprites {
   hasInflight(cellId) { return this._inflightShells.has(cellId); }
 
   createPermacoins() {
-    for (const cellId of permacoinCells) {
+    for (const [cellId, count] of permacoinCells) {
       const center = this.cellPixelPos(cellId);
-      const sprite = this.scene.add.image(center.x, center.y, "permacoin");
-      sprite.setDepth(0);
-      sprite.setVisible(false);
-      this.permacoinSprites.set(cellId, sprite);
+      const sprites = [];
+      for (let i = 0; i < count; i++) {
+        const sprite = this.scene.add.image(center.x, center.y, "permacoin");
+        sprite.setDepth(0);
+        sprite.setVisible(false);
+        sprites.push(sprite);
+      }
+      this.permacoinSprites.set(cellId, sprites);
     }
     this.repositionPermacoins(this.scene.latestCellOccupants);
   }
 
   repositionPermacoins(cellOccupants) {
     const itemSize = this.helmetSlot * 0.7;
-    for (const [cellId, sprite] of this.permacoinSprites) {
+    for (const [cellId, sprites] of this.permacoinSprites) {
       if (this.isFrozen(cellId)) continue;
       const occupants = cellOccupants[cellId] || [];
-      const total = occupants.length + 1; // +1 for permacoin at slot 0
-      const { x, y } = this.cellSlotPos(cellId, 0, total);
-      sprite.setPosition(x, y);
-      sprite.setScale(itemSize / sprite.width);
-      if (!sprite.visible) sprite.setVisible(true);
+      const coinCount = sprites.length;
+      const total = occupants.length + coinCount;
+      sprites.forEach((sprite, i) => {
+        const { x, y } = this.cellSlotPos(cellId, i, total);
+        sprite.setPosition(x, y);
+        sprite.setScale(itemSize / sprite.width);
+        if (!sprite.visible) sprite.setVisible(true);
+      });
     }
   }
 

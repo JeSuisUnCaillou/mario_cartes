@@ -39,31 +39,33 @@ export class BoardAnimator {
   }
 
   animatePermacoinPickup(cellId) {
-    const sprite = this.items.permacoinSprites.get(cellId);
-    if (!sprite) return;
-    const origY = sprite.y;
+    const sprites = this.items.permacoinSprites.get(cellId);
+    if (!sprites || sprites.length === 0) return;
     const cellW = this.scene.cellW;
     const jumpHeight = cellW / 3;
-    sprite.setDepth(10);
-    this.scene.tweens.add({
-      targets: sprite,
-      y: origY - jumpHeight,
-      duration: 300,
-      ease: "Power2",
-      yoyo: true,
-      onComplete: () => {
-        sprite.setDepth(0);
-      },
-    });
-    this.scene.tweens.add({
-      targets: sprite,
-      angle: 720,
-      duration: 600,
-      ease: "Linear",
-      onComplete: () => {
-        sprite.setAngle(0);
-      },
-    });
+    for (const sprite of sprites) {
+      const origY = sprite.y;
+      sprite.setDepth(10);
+      this.scene.tweens.add({
+        targets: sprite,
+        y: origY - jumpHeight,
+        duration: 300,
+        ease: "Power2",
+        yoyo: true,
+        onComplete: () => {
+          sprite.setDepth(0);
+        },
+      });
+      this.scene.tweens.add({
+        targets: sprite,
+        angle: 720,
+        duration: 600,
+        ease: "Linear",
+        onComplete: () => {
+          sprite.setAngle(0);
+        },
+      });
+    }
   }
 
   animateItemHit(playerId, cellId, itemType = "banana", starHit = false) {

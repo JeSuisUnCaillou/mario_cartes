@@ -36,12 +36,12 @@ describe("itemCounts", () => {
 });
 
 describe("permacoinCells", () => {
-  it("is a Set of cell IDs with permanent coins", () => {
-    expect(permacoinCells).toBeInstanceOf(Set);
-    expect(permacoinCells.has(4)).toBe(true);
-    expect(permacoinCells.has(14)).toBe(true);
-    expect(permacoinCells.has(16)).toBe(true);
-    expect(permacoinCells.has(21)).toBe(true);
+  it("is a Map of cell IDs to permanent coin counts", () => {
+    expect(permacoinCells).toBeInstanceOf(Map);
+    expect(permacoinCells.get(4)).toBe(1);
+    expect(permacoinCells.get(14)).toBe(1);
+    expect(permacoinCells.get(16)).toBe(2);
+    expect(permacoinCells.get(21)).toBe(1);
   });
 
   it("does not include cells without permanent coins", () => {
