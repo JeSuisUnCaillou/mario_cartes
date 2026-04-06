@@ -28,7 +28,7 @@ const CELL_POSITIONS = [
   [0.096, 0.626], // 14 — left side
 ];
 
-const SVG_ASPECT = 131.0025 / 104.54418;
+const SVG_ASPECT = 236.684 / 158.96899;
 const HELMET_SIZE_RATIO = 1;
 
 let boardPhase = "lobby";
@@ -392,7 +392,7 @@ export function initBoard(gameId) {
       const maxDim = Math.max(window.innerWidth, window.innerHeight) * dpr;
       const trackW = Math.round(maxDim);
       const trackH = Math.round(maxDim / SVG_ASPECT);
-      this.load.svg("racetrack", "/racetrack_0.svg", { width: trackW, height: trackH });
+      this.load.svg("racetrack", "/racetrack_1.svg", { width: trackW, height: trackH });
       const spriteSize = Math.round(maxDim / 5 / 4.5 * 0.9);
       this.load.svg("banana", "/banana.svg", { width: spriteSize, height: spriteSize });
       this.load.svg("green_shell", "/green_shell.svg", { width: spriteSize, height: spriteSize });

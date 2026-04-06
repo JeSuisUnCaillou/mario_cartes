@@ -322,7 +322,8 @@ class GameRoom extends Room {
     this.state.cellOccupants = new MapSchema();
 
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const cellsData = JSON.parse(fs.readFileSync(path.join(__dirname, "../../assets/racetrack_0_cells.json"), "utf8"));
+    const trackFile = options._testTrack || "racetrack_1_cells.json";
+    const cellsData = JSON.parse(fs.readFileSync(path.join(__dirname, "../../assets/" + trackFile), "utf8"));
     this.grid = new CellGrid(cellsData);
     this.ranking = [];
 

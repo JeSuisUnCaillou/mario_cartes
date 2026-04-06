@@ -71,6 +71,8 @@ export async function startServer() {
 }
 
 export async function createRoom(baseUrl, options) {
+  // Default to racetrack_0 for tests (production uses racetrack_1)
+  options = { _testTrack: "racetrack_0_cells.json", ...options };
   let res;
   if (options) {
     res = await fetch(`${baseUrl}/create`, {
