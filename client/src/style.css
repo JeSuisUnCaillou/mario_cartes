@@ -971,6 +971,10 @@ input {
   min-height: 40px;
 }
 
+.buy-modal-coins .coin-count {
+  color: #fff;
+}
+
 .buy-modal-content {
   display: flex;
   flex-direction: column;
