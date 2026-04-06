@@ -683,7 +683,7 @@ class GameRoom extends Room {
     const { drawPile, drawPileDisplay } = this.decks.initialPlayerDeck();
     return {
       cellId: START_CELL, drawPile, drawPileDisplay, hand: [], discardPile: [],
-      pendingDiscard: 0, pendingShellChoice: false, pendingPathChoice: false, pendingItems: [], ready: false, hasPlayedAllCards: false, coins: 0, permanentCoins: 0, lapCount: 0, slowCounters: 0, starInvincible: false,
+      pendingDiscard: 0, pendingShellChoice: false, pendingPathChoice: false, pendingItems: [], shellChoiceOptions: null, ready: false, hasPlayedAllCards: false, coins: 0, permanentCoins: 0, lapCount: 0, slowCounters: 0, starInvincible: false,
     };
   }
 
@@ -956,21 +956,18 @@ class GameRoom extends Room {
       player.pendingShellType = item;
       const nextCells = this.grid.nextCells(player.cellId);
       const prevCells = this.grid.previousCells(player.cellId);
-      let shellChoiceOptions;
       if (nextCells.length > 1) {
-        // At a fork: show path colors + backward
-        shellChoiceOptions = [...nextCells.map((id) => this.grid.cells.get(id).path_color), "backward"];
+        player.shellChoiceOptions = [...nextCells.map((id) => this.grid.cells.get(id).path_color), "backward"];
       } else if (prevCells.length > 1) {
-        // At a merge: show forward + path colors for backward
-        shellChoiceOptions = ["forward", ...prevCells.map((id) => this.grid.cells.get(id).path_color)];
+        player.shellChoiceOptions = ["forward", ...prevCells.map((id) => this.grid.cells.get(id).path_color)];
       } else {
-        shellChoiceOptions = ["forward", "backward"];
+        player.shellChoiceOptions = ["forward", "backward"];
       }
       this._sendToPlayer(player.playerId, "cardPlayed", {
         ...this.decks.cardState(player),
         pendingShellChoice: true,
         pendingShellType: item,
-        shellChoiceOptions,
+        shellChoiceOptions: player.shellChoiceOptions,
       });
       this._syncState();
       return;
