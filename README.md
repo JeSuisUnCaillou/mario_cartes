@@ -49,12 +49,12 @@ npm test -w client
 
 ### Items
 Each card contains 1–3 items resolved sequentially from top to bottom:
-- **Mushroom**: Move forward 1 cell (subject to dark mushrooms). At a fork, the player chooses which path (red or blue) to take.
+- **Mushroom**: Move forward 1 cell (subject to dark mushrooms).
 - **Coin**: Gain 1 coin until end of turn.
 - **Permanent coin**: A permanent coin is kept from turn to turn. Permanent coins are spent last.
 - **Banana**: Drop a banana on your cell. Landing on a banana: discard 1 card.
-- **Green shell**: Throw to adjacent cell, forward or backward. At a fork or merge, the player chooses which path. Gives dark mushrooms to players, or destroys bananas and shells.
-- **Red shell**: Travels until it hits something, forward or backward. At a fork or merge, the player chooses which path. Same hit effects as green shell.
+- **Green shell**: Throw to adjacent cell, forward or backward. Gives dark mushrooms to players, or destroys bananas and shells.
+- **Red shell**: Travels until it hits something, forward or backward. Same hit effects as green shell.
 - **Blue shell**: Automatically targets 1st player. That player discards their entire hand.
 - **Dark mushroom**: Each cancels one mushroom. Max 2 per player. Reset at end of turn.
 - **Star**: Become invincible until the start of your next turn. Immune to all shells and bananas. Destroys one item on each cell you enter (same priority as shells: players > bananas > shells).
