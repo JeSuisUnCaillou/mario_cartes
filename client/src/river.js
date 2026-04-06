@@ -130,7 +130,7 @@ export function renderRiverRow(river, options = {}) {
   if (showRankMalus) {
     const malus = document.createElement("div");
     malus.className = "river-rank-malus";
-    malus.textContent = "+ rank malus";
+    malus.textContent = "+\nrank\nmalus";
     costLabel.appendChild(malus);
   }
   row.appendChild(costLabel);

@@ -405,7 +405,8 @@ html, body, #app {
   color: #aaa;
   font-size: 0.65em;
   margin-top: 2px;
-  white-space: nowrap;
+  white-space: pre-line;
+  line-height: 1.2;
 }
 
 /* Rivers in top bar: compact overrides for board */
