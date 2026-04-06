@@ -158,6 +158,8 @@ function renderDebugModal(state) {
     rankInput.readOnly = true;
     rankInput.classList.add("debug-readonly");
     pForm.appendChild(labeledField("Rank", rankInput));
+    const slowInput = numInput(p.slowCounters || 0, 0);
+    pForm.appendChild(labeledField("Slow", slowInput));
     const bananaDiscInput = numInput(p.pendingDiscard, 0);
     pForm.appendChild(labeledField("Pending discards", bananaDiscInput));
     const drawInput = numInput(p.drawCount);
@@ -176,6 +178,7 @@ function renderDebugModal(state) {
         lapCount: Number(lapInput.value),
         coins: Number(regularCoinsInput.value) + Number(permCoinsInput.value),
         permanentCoins: Number(permCoinsInput.value),
+        slowCounters: Number(slowInput.value),
         pendingDiscard: Number(bananaDiscInput.value),
       });
     };

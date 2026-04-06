@@ -761,6 +761,7 @@ class GameRoom extends Room {
       discardCount: p.discardPile.length,
       hand: p.hand,
       drawPile: p.drawPile,
+      slowCounters: p.slowCounters,
       drawPileDisplay: p.drawPileDisplay,
       discardPile: p.discardPile,
     }));
