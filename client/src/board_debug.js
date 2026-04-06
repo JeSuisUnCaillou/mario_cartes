@@ -1,3 +1,7 @@
+import trackData from "../../assets/racetrack_1_cells.json";
+
+const trackCells = trackData.cells;
+
 let debugModalOpen = false;
 let latestDebugState = null;
 let boardRoom = null;
@@ -137,7 +141,7 @@ function renderDebugModal(state) {
     pCard.appendChild(pTitle);
 
     const pForm = el("div", "debug-form");
-    const cellInput = numInput(p.cellId, 1, 14);
+    const cellInput = numInput(p.cellId, 1, trackCells.length);
     pForm.appendChild(labeledField("Cell", cellInput));
     const lapInput = numInput(p.lapCount, 0, 4);
     pForm.appendChild(labeledField("Lap", lapInput));
@@ -263,9 +267,11 @@ function renderDebugModal(state) {
   const circuitSection = el("div", "debug-section");
   circuitSection.appendChild(el("h3", "debug-section-title", "Circuit"));
   const circuitGrid = el("div", "debug-circuit-grid");
-  for (let cellId = 1; cellId <= 14; cellId++) {
+  for (const cellDef of trackCells) {
+    const cellId = cellDef.id;
     const cellEl = el("div", "debug-cell");
-    const isFinish = cellId === 1;
+    if (cellDef.path_color) cellEl.classList.add(`debug-cell-${cellDef.path_color}`);
+    const isFinish = !!cellDef.finish_line;
     const cellLabel = el("div", "debug-cell-id", `Cell ${cellId}${isFinish ? " \u2691" : ""}`);
     cellEl.appendChild(cellLabel);
 
