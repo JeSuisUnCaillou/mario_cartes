@@ -407,6 +407,7 @@ html, body, #app {
   margin-top: 2px;
   white-space: pre-line;
   line-height: 1.2;
+  text-align: center;
 }
 
 /* Rivers in top bar: compact overrides for board */
