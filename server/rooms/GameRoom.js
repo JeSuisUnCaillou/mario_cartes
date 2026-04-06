@@ -550,15 +550,13 @@ class GameRoom extends Room {
       }
       if (!targetCellId) return;
 
-      const isRedShellTravel = shellType === "red_shell"
-        && data.direction !== "backward"
-        && data.direction !== "forward";
-      if (shellType === "red_shell" && data.direction === "forward") {
-        this._resolveRedShell(player, client, "forward");
-      } else if (isRedShellTravel) {
-        // "red"/"blue" direction: forward at a fork, backward at a merge
-        const isForward = this.grid.nextCells(player.cellId).length > 1;
-        this._resolveRedShell(player, client, isForward ? data.direction : "backward", isForward ? null : targetCellId);
+      if (shellType === "red_shell") {
+        if (data.direction === "red" || data.direction === "blue") {
+          const isForward = this.grid.nextCells(player.cellId).length > 1;
+          this._resolveRedShell(player, client, isForward ? data.direction : "backward", isForward ? null : targetCellId);
+        } else {
+          this._resolveRedShell(player, client, data.direction);
+        }
       } else {
         this._resolveShell(player, client, targetCellId, shellType);
       }

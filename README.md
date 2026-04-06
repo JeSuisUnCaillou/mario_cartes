@@ -54,7 +54,7 @@ Each card contains 1–3 items resolved sequentially from top to bottom:
 - **Permanent coin**: A permanent coin is kept from turn to turn. Permanent coins are spent last.
 - **Banana**: Drop a banana on your cell. Landing on a banana: discard 1 card.
 - **Green shell**: Throw to adjacent cell, forward or backward. At a fork or merge, the player chooses which path. Gives dark mushrooms to players, or destroys bananas and shells.
-- **Red shell**: Forward: travels until it hits something. Backward: one cell only. At a fork, the player chooses which path. Same hit effects as green shell.
+- **Red shell**: Travels until it hits something, forward or backward. At a fork or merge, the player chooses which path. Same hit effects as green shell.
 - **Blue shell**: Automatically targets 1st player. That player discards their entire hand.
 - **Dark mushroom**: Each cancels one mushroom. Max 2 per player. Reset at end of turn.
 - **Star**: Become invincible until the start of your next turn. Immune to all shells and bananas. Destroys one item on each cell you enter (same priority as shells: players > bananas > shells).
