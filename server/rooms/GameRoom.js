@@ -522,6 +522,22 @@ class GameRoom extends Room {
       }
     });
 
+    this.onMessage("pathChoice", (client, data) => {
+      const player = this._getPlayer(client);
+      if (!player) return;
+      if (!player.pendingPathChoice) return;
+      if (data.color !== "red" && data.color !== "blue") return;
+
+      player.pendingPathChoice = false;
+      const nextCells = this.grid.nextCells(player.cellId);
+      const targetCellId = nextCells.find(
+        (id) => this.grid.cells.get(id).path_color === data.color,
+      );
+      if (!targetCellId) return;
+
+      this._executeMushroomMove(player, targetCellId);
+    });
+
     this.onMessage("endTurn", (client) => {
       const player = this._getPlayer(client);
       if (!player) return;
@@ -955,8 +971,26 @@ class GameRoom extends Room {
     }
 
     if (player.lapCount === 0) player.lapCount = 1;
+
+    // Check for fork (multiple next cells)
+    const nextCells = this.grid.nextCells(player.cellId);
+    if (nextCells.length > 1) {
+      player.pendingPathChoice = true;
+      this._sendToPlayer(player.playerId, "cardPlayed", {
+        ...this.decks.cardState(player),
+        pendingPathChoice: true,
+        pathOptions: nextCells.map((id) => this.grid.cells.get(id).path_color),
+      });
+      this._syncState();
+      return;
+    }
+
+    this._executeMushroomMove(player, nextCells[0]);
+  }
+
+  _executeMushroomMove(player, targetCellId) {
     const oldCellId = player.cellId;
-    player.cellId = this.grid.nextCell(player.cellId);
+    player.cellId = targetCellId;
     this.grid.remove(oldCellId, player.playerId);
     this.grid.add(player.cellId, player.playerId);
 
