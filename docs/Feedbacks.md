@@ -2,15 +2,18 @@
 
 (with lavo)
 
-Prix des rivières : prix de base + (nb joueurs - rank)*2
-
-red shell on invincible player : should not ignore, should hit and do no damage
+red shell on invincible player : should not ignore, should hit and do no damage, with stars but no rotations.
 
 Add special money sinks to discard-draw (2 coins) or remove a card (6 coins)
 
-when more tha 3 coins, display (x4) instead
+when more than 3 coins, display (x4) instead
+
+[red green] should be [green red]
+[camp bana bana] should be [bana bana champ]
 
 (with indi)
+
+Timer de la durée de la partie.
 
 when a cards says 'shell move', animate the shell first then the move. sequentially.
 
@@ -41,6 +44,8 @@ the double mushroom only advance once. It should advance two cells. Bug pas repr
 
 
 # DONE
+
+Prix des rivières : prix de base + (nb joueurs - rank)*2
 
 Limiter le nombre de champignons noirs et simplifier la règle ?
 
