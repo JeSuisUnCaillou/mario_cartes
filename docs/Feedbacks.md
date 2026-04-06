@@ -1,6 +1,9 @@
 # Feedbacks
 
+
 Correctly display the list of players when they are a lot : flex wrap, widen the side column, toussa
+
+Proper lobby, different of the game board
 
 (with lavo)
 
