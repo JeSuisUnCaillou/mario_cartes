@@ -2,6 +2,8 @@
 
 (with lavo)
 
+force vertical display on phone, never rotate (need PWA ?)
+
 red shell on invincible player : should not ignore, should hit and do no damage, with stars but no rotations.
 
 Add special money sinks to discard-draw (2 coins) or remove a card (6 coins)
@@ -44,6 +46,8 @@ the double mushroom only advance once. It should advance two cells. Bug pas repr
 
 
 # DONE
+
+red_shell should prioritise blue path if all other players are in the blue path when its thrown backwards too
 
 Prix des rivières : prix de base + (nb joueurs - rank)*2
 
