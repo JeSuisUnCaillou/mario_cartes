@@ -1,4 +1,5 @@
 import { cardItemPositions } from "./player.functions.js";
+import { coinDisplayEntries } from "./coin_display.functions.js";
 
 export const ITEM_ICONS = {
   coin: "/coin.svg",
@@ -35,33 +36,25 @@ export function createCardDOM(card, className = "card") {
   return el;
 }
 
-function appendCoins(container, count, src, collapsed) {
-  if (count <= 0) return;
-  if (collapsed) {
-    const wrapper = document.createElement("span");
-    wrapper.className = "coin-group";
-    const img = document.createElement("img");
-    img.src = src;
-    img.className = "coin-icon";
-    wrapper.appendChild(img);
-    const label = document.createElement("span");
-    label.className = "coin-count";
-    label.textContent = `x${count}`;
-    wrapper.appendChild(label);
-    container.appendChild(wrapper);
-  } else {
-    for (let i = 0; i < count; i++) {
+export function renderCoinIcons(container, coins, permanentCoins) {
+  for (const entry of coinDisplayEntries(coins, permanentCoins)) {
+    if (entry.kind === "group") {
+      const wrapper = document.createElement("span");
+      wrapper.className = "coin-group";
       const img = document.createElement("img");
-      img.src = src;
+      img.src = entry.src;
+      img.className = "coin-icon";
+      wrapper.appendChild(img);
+      const label = document.createElement("span");
+      label.className = "coin-count";
+      label.textContent = `x${entry.count}`;
+      wrapper.appendChild(label);
+      container.appendChild(wrapper);
+    } else {
+      const img = document.createElement("img");
+      img.src = entry.src;
       img.className = "coin-icon";
       container.appendChild(img);
     }
   }
-}
-
-export function renderCoinIcons(container, coins, permanentCoins) {
-  const bothPresent = permanentCoins > 0 && coins > 0;
-  const collapseBoth = bothPresent && permanentCoins > 3 && coins > 3;
-  appendCoins(container, permanentCoins, "/permacoin.svg", collapseBoth || (!bothPresent && permanentCoins > 3));
-  appendCoins(container, coins, "/coin.svg", collapseBoth || (!bothPresent && coins > 3));
 }
