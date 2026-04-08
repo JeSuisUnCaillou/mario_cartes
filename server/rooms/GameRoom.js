@@ -332,7 +332,7 @@ class GameRoom extends Room {
   _resolveBlueShell(thrower) {
     // Find rank-1 unfinished player
     const finishedIds = new Set(this.ranking);
-    const liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.distToFinish, this.grid.maxDistance);
+    const liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.distFromStart, this.grid.maxDistanceFromStart);
 
     // Find the best rank among unfinished players
     let bestRank = Infinity;
@@ -748,7 +748,7 @@ class GameRoom extends Room {
 
   _fullState() {
     const liveRanks = this.phase === "playing"
-      ? computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.distToFinish, this.grid.maxDistance)
+      ? computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.distFromStart, this.grid.maxDistanceFromStart)
       : new Map();
     const players = Array.from(this.players.values()).map((p) => ({
       playerId: p.playerId,
@@ -888,7 +888,7 @@ class GameRoom extends Room {
 
 
   _getLiveRank(playerId) {
-    const liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.distToFinish, this.grid.maxDistance);
+    const liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.distFromStart, this.grid.maxDistanceFromStart);
     return liveRanks.get(playerId) || 0;
   }
 
@@ -907,7 +907,7 @@ class GameRoom extends Room {
     // Compute live ranks
     let liveRanks = new Map();
     if (this.phase === "playing") {
-      liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.distToFinish, this.grid.maxDistance);
+      liveRanks = computeLiveRanks(this._buildPlayerList(), this._buildFinishedRanks(), this.grid.distFromStart, this.grid.maxDistanceFromStart);
     }
 
     // Sync players

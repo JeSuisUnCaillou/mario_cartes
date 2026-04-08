@@ -1,4 +1,4 @@
-function computeLiveRanks(players, finishedRanks, distToFinish, maxDistance) {
+function computeLiveRanks(players, finishedRanks, distFromStart, maxDistFromStart) {
   const ranks = new Map();
 
   for (const { playerId, finalRank } of finishedRanks) {
@@ -6,12 +6,11 @@ function computeLiveRanks(players, finishedRanks, distToFinish, maxDistance) {
   }
 
   const finishedIds = new Set(finishedRanks.map((f) => f.playerId));
-  const lapSize = maxDistance + 1;
+  const lapSize = maxDistFromStart + 1;
   const unfinished = players
     .filter((p) => !finishedIds.has(p.playerId))
     .map((p) => {
-      const dist = distToFinish.get(p.cellId);
-      const progress = dist === 0 ? 0 : lapSize - dist;
+      const progress = distFromStart.get(p.cellId) ?? 0;
       return {
         playerId: p.playerId,
         score: p.lapCount === 0 ? 0 : (p.lapCount - 1) * lapSize + progress,

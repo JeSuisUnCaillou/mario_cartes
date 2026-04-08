@@ -49,6 +49,25 @@ export class CellGrid {
     }
 
     this.maxDistance = Math.max(...this.distToFinish.values());
+
+    // Forward BFS from the finish/start cell — distance traveled along the lap.
+    // Distances increase as players move forward; on crossing finish the lap counter
+    // increments and distance resets to 0, keeping total score monotonic.
+    this.distFromStart = new Map();
+    this.distFromStart.set(finishId, 0);
+    const fwdQueue = [finishId];
+    while (fwdQueue.length > 0) {
+      const current = fwdQueue.shift();
+      const nexts = this.cells.get(current).next_cell || [];
+      for (const next of nexts) {
+        if (next === finishId) continue;
+        if (!this.distFromStart.has(next)) {
+          this.distFromStart.set(next, this.distFromStart.get(current) + 1);
+          fwdQueue.push(next);
+        }
+      }
+    }
+    this.maxDistanceFromStart = Math.max(...this.distFromStart.values());
   }
 
   reset() {
