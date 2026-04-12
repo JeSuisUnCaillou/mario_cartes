@@ -10,7 +10,6 @@ river_1:
   cost: 1
   deck:
     - 10x coin coin
-    - 10x coin banana
     - 10x coin green_shell
 
 river_2:
@@ -40,7 +39,6 @@ river_2:
 river_3:
   cost: 5
   deck:
-    - banana banana banana
     - 3x banana mushroom mushroom
     - mushroom banana banana
     - 4x coin coin mushroom
