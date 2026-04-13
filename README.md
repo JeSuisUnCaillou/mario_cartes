@@ -61,7 +61,6 @@ Each card contains 1–3 items resolved sequentially from top to bottom:
 
 ### Turns
 - One player is active at a time. The active player can play cards, buy river cards, or end their turn.
-- Turn order cycles each round (P1→P2→…→PN, then P2→P3→…→P1, etc.).
 - Finished players are skipped.
 
 ### Draw & Discard
@@ -73,17 +72,6 @@ Each card contains 1–3 items resolved sequentially from top to bottom:
 - 3 rivers with base costs of 1, 3, and 5 coins. Each shows 3 buyable cards.
 - **Rank-scaled pricing** (catch-up mechanic): effective price = base cost + (player count − rank). Leaders pay more, last place pays base price only.
 - Bought cards go to discard pile. Slot refills from the river's deck.
-
-
-### Track
-
-- 22 cells with a branching path. Cell 1 is the start/finish line.
-- At cell 8, the track splits into a red path (3 cells) and a blue path (5 cells), rejoining at cell 12.
-- Cells can contain bananas, shells, and/or multiple player carts.
-- Cells 4, 14, 16, 21 award permanent coins when landed on (cell 16 awards 2).
-
-### Banana Penalty
-- Landing on a banana: player must discard 1 card from hand.
 
 ### Win Condition
 - First player to complete 3 laps wins. Game ends when only one player is left.
