@@ -1,6 +1,5 @@
 # Feedbacks
 
-
 Correctly display the list of players when they are a lot : flex wrap, widen the side column, toussa
 
 Proper lobby, different of the game board
@@ -50,6 +49,8 @@ the double mushroom only advance once. It should advance two cells. Bug pas repr
 
 
 # DONE
+
+Compute distance from start instead of distance to finish, for the ranking
 
 when a cards says 'shell move', animate the shell first then the move. sequentially.
 
