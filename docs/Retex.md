@@ -36,6 +36,7 @@ Etape 3: Faire avancer un joueur sur le circuit quand il clique sur le bouton "P
 etc...
 
 Et ça marche de ouf ! A chaque étape :
+- Je crée le(s) asset(s) dont je vais avoir besoin
 - `/clear` pour reset le contexte
 - je pitch ma feature dans un `/plan`
 - j'itère rapidement sur le plan proposé
@@ -54,7 +55,12 @@ Dès le début, j'ai mis dans le CLAUDE.md qu'il doit faire ses commits tout seu
 
 Rapidement j'ai du ajouter l'instruction de faire passer les infos du back au front via le game state, plutôt que via plein d'évènements isolés, pour garantir que le jeu reste consistent si on reload un page.
 
+Il répétait du code ! J'ai dû lui mettre dans le CLAUDE.md la règle de DRY.
+
+Je lui ai dit de tenir à jour la description des règles du jeu quand il en change le code, ça c'était pratique.
+
 Et tout au long de la semaine, dès qu'il faisait 2 fois un truc qui ne me plaisait pas, je lui disait d'inscrire une nouvelle instruction dans CLAUDE.md pour éviter de récidiver.
+
 
 
 ### CLAUDE.md vs README.md
@@ -83,9 +89,10 @@ Plusieurs fois il m'a pété mes animations, ou mon CSS. Et quand je lui expliqu
 
 En fait, quand je décrit une animation ou un placement visuel, j'étais jamais assez précis. Comme il a pas idée de ce qui est logique visuellement - même juste "bien aligné" ça n'a pas de sens pour lui - il était tout le temps à côté de la plaque.
 
-J'ai fini par pondre une [description hyper détaillée des séquences d'animations](https://github.com/JeSuisUnCaillou/mario_cartes/blob/main/CLAUDE.md?plain=1#L57:L88), presque du pseudocode quoi, pour qu'il arrive à l'implémenter correctement.
+J'ai fini par pondre une [description hyper détaillée des séquences d'animations](https://github.com/JeSuisUnCaillou/mario_cartes/blob/retex/docs/shaping/v1.3.1%20-%20Redo%20animations%20after%20OOP%20refacto.md?plain=1#L5:L25), presque du pseudocode quoi, pour qu'il arrive à l'implémenter correctement. Je lui ai ensuite fait re-décrire à partir du code satisfaisant [ici](https://github.com/JeSuisUnCaillou/mario_cartes/blob/main/CLAUDE.md?plain=1#L57:L88).
 
-Pour le CSS, j'ai juste été le faire moi-même plusieurs fois, c'était plus rapide que de lui expliquer.
+Pour le CSS, j'ai juste été le faire moi-même plusieurs fois, c'étaitjuste plus rapide que de lui expliquer 🙄.
+
 
 ## Mes 2 plus grosses refactos
 
@@ -115,11 +122,39 @@ Eh bien ce cher claude avait pas du tout DU TOUT fait de programmation objet : t
 
 Je lui dit que dans un jeu vidéo, "OOP is important", et lui demande de lister tous les objets qu'il pourrait créer pour regrouper du code. Il me fait une liste, j'itère sur ce que je veux et ne veux pas, et il me fait une belle refacto (qui a de nouveau pété les animations, tu t'en doutais).
 
+## Les trucs qui marchaient quand même super bien
+
+- Générer le [fichier des positions des cases du circuit](https://github.com/JeSuisUnCaillou/mario_cartes/blob/retex/assets/racetrack_1_cells.json#L21:L21) -> un prompt et c'est fait !
+- Etendre une mécanique existante : Quand j'ai implémenté la carapace rouge, alors que la carapace verte existait déjà, il a one-shot la feature. Aucun feedback à faire :D
+- Les algos "basiques" : calculer le ranking à partir de la distance à la ligne de départ, j'ai pas eu besoin de trop expliquer l'algo il a tout de suite bien interprété le besoin
+- La home page a été designée par claude à partir d'un prompt vraiment très vague, il a repris les assets qu'il avait et a fait un truc basique. J'ai pu itérer moi-même un peu sur le contenu à la suite, mais au moins j'avais un point de départ.
+- Review de code : A un moment donné, j'ai utilisé `/review`, pour qu'il aille juger son propre travail. J'enchaîne avec un `/plan` `Planifie la review que tu viens de faire`, puis l'implémentation déroule vraiment très bien, comme tout est très détaillé.
+
+
 ## Le prix
 
 J'avais pris 180€/mois par ce que je ne voulais pas être limité, je comptais mettre tout mon temps dedans. Mais finalement, en voyant la consommation que j'ai eu, 90€/mois aurait suffit.
 
 Je pense que le 180€/mois est nécessaire seulement si tu fait bosser plusieurs agents en parallèle toute la journée, ce que je n'ai pas fait. 
 
+
 # Conclusion
 
+Je pense que sans LLM, j'aurais pu fabriquer le même jeu, mais ça m'aurait probablement pris 3x plus de temps. En tout cas j'aurais pas fait tout ça en une semaine.
+
+- 45 pitchs
+- 36 plans
+- 707 commits
+- 12.5k lignes de codes
+
+## Mon apprentissage principal
+
+Claude c'est pas un dev, c'est bien une machine. Ca fait des années que mon job c'est d'expliquer à une machine le produit que je veux à une machine. Ca ne change pas tellement avec les LLMs.
+
+Un humain va mêler ma phrase à ses propres références, opinions et envies, pour faire les connexions et combler les trous de ce que je n'ai pas spécifié clairement. Une LLM va prendre tout ce que je dis au pied de la lettre, et ne va pas toujours avoir le contexte nécessaire pour faire les connexions et combler les trous de ce que je n'ai pas spécifié.
+
+Un bon prompt de feature, c'est pas une phrase que tu peux dire à un dev humain. Non.
+
+**Un bon prompt de feature, c'est du pseudo-code en langage naturel**.
+
+Le métier n'a pas changé, c'est juste qu'au lieu de coder en JS, python ou ruby, on peut maintenant coder en anglais.
