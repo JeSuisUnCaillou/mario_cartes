@@ -53,6 +53,8 @@ Chaque étape me prend quelques minutes (genre 15-20min à vue de nez, j'ai pas 
 
 Dès le début, j'ai mis dans le CLAUDE.md qu'il doit faire ses commits tout seul, à chaque slice du plan implémenté, et à chaque fix qu'il fait.
 
+Je lui ait indiqué comment tester l'app : tests e2e des mécaniques de jeu sur le backend, et tests unitaires sur certains méthodes du front.
+
 Rapidement j'ai du ajouter l'instruction de faire passer les infos du back au front via le game state, plutôt que via plein d'évènements isolés, pour garantir que le jeu reste consistent si on reload un page.
 
 Il répétait du code ! J'ai dû lui mettre dans le CLAUDE.md la règle de DRY.
