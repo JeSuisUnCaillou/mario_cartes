@@ -17,8 +17,6 @@ html, body, #app {
 
 /* Left sidebar: QR, scan/round, players */
 .board-sidebar {
-  width: 20vh;
-  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -85,9 +83,8 @@ html, body, #app {
   flex-direction: column;
   align-items: center;
   gap: 0.5vh;
-  width: 100%;
   min-height: 0;
-  overflow: hidden;
+  flex-wrap: wrap;
 }
 
 .board-player {
@@ -247,7 +244,6 @@ html, body, #app {
   flex-direction: column;
   align-items: center;
   justify-content: space-evenly;
-  background: #111;
   box-sizing: border-box;
   position: relative;
   padding: 15px;
