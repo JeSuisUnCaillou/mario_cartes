@@ -753,6 +753,7 @@ input {
   display: flex;
   align-items: center;
   gap: 2px;
+  height: 32px;
 }
 
 .coin-count {
