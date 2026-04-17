@@ -1,7 +1,5 @@
 # Feedbacks
 
-Correctly display the list of players when they are a lot : flex wrap, widen the side column, toussa
-
 Proper lobby, different of the game board
 
 (with lavo)
@@ -49,6 +47,7 @@ the double mushroom only advance once. It should advance two cells. Bug pas repr
 
 
 # DONE
+Correctly display the list of players when they are a lot : flex wrap, widen the side column, toussa
 
 Compute distance from start instead of distance to finish, for the ranking
 
